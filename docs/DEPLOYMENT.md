@@ -47,7 +47,7 @@ CLOUDFLARE_WORKERS_SUBDOMAIN=fhfs pnpm run deploy
 
 此前共享后台版本的生产环境仅配置了 `DATABASE_URL`。首次发布独立后台之前，必须补齐 `AUTH_SECRET` 和 `ADMIN_PASSWORD_HASH`；Void 会检查必需 Secret 是否存在，不会自动上传本地 `.env`。
 
-公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。`ADMIN_MODE` 已移除；后台始终留在本部署，不跳转到原站。分享图片和后台图标由本 Worker 生成，`ASSETS` 绑定提供本地字体。
+公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。`ADMIN_MODE` 已移除；后台始终留在本部署，不跳转到原站。分享图片和后台图标在构建时生成，Worker 通过 `ASSETS` 绑定直接返回 PNG，不在请求期间加载字体或运行绘图 WASM。
 
 本地 `.env` 与生产 Secrets 分开；Void 不会自动上传 `.env`。本地环境需要：
 
@@ -60,6 +60,16 @@ ADMIN_PASSWORD_HASH=<本地管理员密码的 salt:hash>
 本应用的公开内容缓存最长 30 秒，保存时立即清除本部署的相关缓存。后台与授权预览绕过公开缓存。原站的缓存策略由原站维护，本应用不依赖原站的页面、图片接口或缓存失效接口。
 
 ## 发布检查
+
+### Worker CPU 额度
+
+本项目继续使用 Workers Free，未开通付费订阅。免费档请求 CPU 上限为 10ms，本地开发与预览不会复现这个限制。动态绘图曾触发 `exceededCpu` / Error 1102，因此图片改为在 Node 构建阶段生成，线上只读取静态 PNG。字体、Satori 和图片渲染器不进入 Worker 的请求路径。
+
+`pnpm assets` 生成双语封面和后台图标，并只读取本部署公开的搜索索引生成文章图片；CI 不需要数据库密钥。新站尚无索引、索引暂时不可用或缺少文章元数据时使用通用封面。线上对照最新的已发布标题、双语副标题、日期和前三个标签；与构建快照不同即使用对应语言封面，下一次发布再生成文章专属图。草稿不会进入公开图片。
+
+发布验收必须检查正式地址上的页面、登录路由和图片，不能用本地构建成功代替线上验证，也不要通过重试隐藏 CPU 错误。依据：[Cloudflare CPU 限制](https://developers.cloudflare.com/workers/platform/limits/)。
+
+### 检查命令
 
 ```sh
 pnpm check

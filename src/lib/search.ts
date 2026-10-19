@@ -33,6 +33,8 @@ export type SearchEntry = {
   href: string;
   /** A short mono note beside the title: a date, a year, a category. */
   meta?: string;
+  /** Published article metadata used by the build to prepare share images. */
+  tags?: string[];
 };
 
 export type SearchHit = SearchEntry & { snippet: string };

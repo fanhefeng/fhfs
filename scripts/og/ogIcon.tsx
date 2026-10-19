@@ -1,4 +1,4 @@
-import "@tanstack/react-start/server-only";
+import React from "react";
 import { renderOgImage } from "./ogResponse";
 import { loadOgFonts } from "./og";
 

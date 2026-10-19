@@ -67,6 +67,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
       text: [post.summary, ...post.tags].join(" "),
       href: `/blog/${post.slug}`,
       meta: post.date,
+      tags: post.tags,
     })),
     ...secrets.map((secret) => ({
       kind: "secret" as const,

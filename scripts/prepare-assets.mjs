@@ -4,9 +4,6 @@ const source = "public",
   target = ".generated/public";
 await mkdir(target, { recursive: true });
 await cp(source, target, { recursive: true });
-// Server-only imports do not emit their URL assets into the client asset directory.
-// The Worker reads these licensed local fonts through its ASSETS binding.
-await cp("src/lib/server/og-fonts", join(target, "og-fonts"), { recursive: true });
 const manifest = JSON.parse(await readFile("src/lib/assets.gen.json", "utf8"));
 for (const [name, info] of Object.entries(manifest.files)) {
   const hash = typeof info === "string" ? info : info.hash;

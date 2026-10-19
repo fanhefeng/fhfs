@@ -1,4 +1,4 @@
-import "@tanstack/react-start/server-only";
+import React from "react";
 import { ARC_L, ARC_R, MARK_VIEW_BOX, NEON, NOTE_D, NOTE_T } from "@/lib/neon/geometry";
 
 /**

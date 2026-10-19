@@ -54,6 +54,11 @@ for (const path of [
   "/admin/apple-icon",
 ]) {
   const response = await read(path);
+  if (!response.ok) {
+    const body = await response.text();
+    const reason = body.match(/<title>(.*?)<\/title>/s)?.[1] ?? body.slice(0, 250);
+    assert.fail(`${path}: HTTP ${response.status}: ${reason}`);
+  }
   assert.equal(response.status, 200, path);
   assert.match(response.headers.get("content-type"), /^image\/png/);
   const png = new Uint8Array(await response.arrayBuffer());

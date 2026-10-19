@@ -1,10 +1,10 @@
-import "@tanstack/react-start/server-only";
+import React from "react";
 import { renderOgImage } from "./ogResponse";
 import { hasLocale } from "use-intl";
 import { routing, type Locale } from "@/i18n/routing";
 import { site } from "@/config/site";
-import { loadOgFonts, OG, OG_BG, OG_FONT_FAMILY, OG_SIZE } from "@/lib/server/og";
-import { OgSignMark } from "@/lib/server/ogMark";
+import { loadOgFonts, OG, OG_BG, OG_FONT_FAMILY, OG_SIZE } from "./og";
+import { OgSignMark } from "./ogMark";
 
 export const size = OG_SIZE;
 export const contentType = "image/png";

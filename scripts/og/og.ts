@@ -1,6 +1,4 @@
-import "@tanstack/react-start/server-only";
-import { getRequest } from "@tanstack/react-start/server";
-import { env } from "./env";
+import { readFile } from "node:fs/promises";
 /**
  * Open Graph image toolkit — the paper palette.
  *
@@ -49,12 +47,12 @@ export type OgFont = {
   style: "normal";
 };
 
-/** prepare-assets copies these licensed fonts outside the Worker script. */
+/** Licensed fonts are read only by the build, never by a Worker request. */
 const files = {
-  latinBody: "/og-fonts/Nunito-400.woff",
-  latinDisplay: "/og-fonts/Nunito-700.woff",
-  cjkBody: "/og-fonts/RoundedSC-400.woff",
-  cjkDisplay: "/og-fonts/RoundedSC-600.woff",
+  latinBody: "src/lib/server/og-fonts/Nunito-400.woff",
+  latinDisplay: "src/lib/server/og-fonts/Nunito-700.woff",
+  cjkBody: "src/lib/server/og-fonts/RoundedSC-400.woff",
+  cjkDisplay: "src/lib/server/og-fonts/RoundedSC-600.woff",
 } as const;
 
 const loaded = new Map<keyof typeof files, ArrayBuffer>();
@@ -62,10 +60,11 @@ const loaded = new Map<keyof typeof files, ArrayBuffer>();
 async function load(key: keyof typeof files): Promise<ArrayBuffer> {
   const existing = loaded.get(key);
   if (existing) return existing;
-  const request = new Request(new URL(files[key], getRequest().url));
-  const response = await env.ASSETS.fetch(request);
-  if (!response.ok) throw new Error(`Bundled OG font could not be loaded: ${key}`);
-  const data = await response.arrayBuffer();
+  const bytes = await readFile(files[key]);
+  const data = bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength,
+  ) as ArrayBuffer;
   loaded.set(key, data);
   return data;
 }

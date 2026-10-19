@@ -1,11 +1,9 @@
-import "@tanstack/react-start/server-only";
+import React from "react";
 import { renderOgImage } from "./ogResponse";
-import { hasLocale } from "use-intl";
-import { routing, type Locale } from "@/i18n/routing";
 import { site } from "@/config/site";
-import { getPost } from "@/lib/server/content";
-import { loadOgFonts, OG, OG_BG, OG_FONT_FAMILY, OG_SIZE } from "@/lib/server/og";
-import { OgSignMark } from "@/lib/server/ogMark";
+import type { SharePost } from "../../src/lib/shareImage";
+import { loadOgFonts, OG, OG_BG, OG_FONT_FAMILY, OG_SIZE } from "./og";
+import { OgSignMark } from "./ogMark";
 
 export const size = OG_SIZE;
 export const contentType = "image/png";
@@ -27,20 +25,13 @@ function titleSize(text: string) {
 }
 
 export default async function PostOgImage({
-  params,
+  post,
+  counterpart,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  post: SharePost;
+  counterpart?: SharePost;
 }) {
-  const { locale, slug } = await params;
-  const l: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
-  const other: Locale = l === "zh" ? "en" : "zh";
-
-  const post = await getPost(slug, l, false);
-  const title = post?.title ?? site.signName;
-  // Bilingual typography: the counterpart title sits under the headline as a
-  // quiet second deck. Skipped when the post only exists in one language (in
-  // which case getPost falls back and both lookups return the same string).
-  const counterpart = await getPost(slug, other, false);
+  const title = post.title;
   const subtitle = counterpart && counterpart.title !== title ? counterpart.title : null;
 
   const date = post ? post.date.replaceAll("-", ".") : "";

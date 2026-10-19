@@ -17,7 +17,7 @@ export const site = {
    *  the OG images. Read from the deployment (src/lib/siteUrl.ts), so binding
    *  a domain moves all of them with no edit here; only server code reads it
    *  — in the browser it is the fallback, which nothing there looks at. */
-  url: siteUrl({ VITE_SITE_URL: import.meta.env.VITE_SITE_URL }),
+  url: siteUrl({ VITE_SITE_URL: import.meta.env?.VITE_SITE_URL }),
   author: "fhf",
   /** Where the author is: the zone the footer clock keeps, and the one every
    *  page formats dates in — so a prerender on a UTC build machine prints the

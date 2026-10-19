@@ -1,5 +1,4 @@
-import "@tanstack/react-start/server-only";
-import { ImageResponse, type ImageResponseOptions } from "cf-workers-og/workerd";
+import { ImageResponse, type ImageResponseOptions } from "cf-workers-og/node";
 import type { ReactNode } from "react";
 
 /** Use only the supplied local fonts; no provider or legacy site is contacted. */
