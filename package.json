@@ -16,7 +16,9 @@
     "format:check": "vp fmt --check",
     "test": "vp test run",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "deploy": "void deploy",
+    "deploy": "void deploy --platform cloudflare",
+    "deploy:cloudflare": "void deploy --platform cloudflare",
+    "deploy:void": "void deploy --platform void",
     "assets": "node scripts/prepare-assets.mjs",
     "prepare": "void prepare",
     "smoke": "node scripts/smoke.mjs"

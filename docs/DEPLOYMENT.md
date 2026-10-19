@@ -2,6 +2,28 @@
 
 新站已通过 Void 官方 CLI 发布到 Cloudflare Worker `fhfs`，线上地址为 [fhfs.fhfs.workers.dev](https://fhfs.fhfs.workers.dev)。2026-10-19 首次成功发布版本：`f8f8e4c8-a1f3-4bae-8cc6-2ceb2b8ea15a`。
 
+现有 Cloudflare 部署继续保留。`pnpm run deploy` 和 `pnpm run deploy:cloudflare` 显式选择 Cloudflare，额外的 Void Cloud 部署使用 `pnpm run deploy:void`。
+
+## 额外部署到 Void Cloud
+
+2026-10-19 已验证官方平台 `https://api.void.cloud` 的连接。GitHub 登录返回 `Signup Restricted`，要求平台管理员邀请；当前尚未创建 Void Cloud 项目、上传数据库凭据或分配新的 `void.app` 地址。
+
+邀请须发送到实际用于 Void Cloud 登录的已验证邮箱。平台欢迎页没有公开申请表，提示向平台管理员索取邀请。获得邀请后，在独立的连接目录完成 `void connect https://api.void.cloud` 和 `void account login`，保留本仓库 `.void/project.json` 的 Cloudflare 默认目标。
+
+另建一个托管项目，只配置共享的 `DATABASE_URL`；保持默认 `ADMIN_MODE=shared`，复用原后台和 `fhfs-media.fhfs.workers.dev`，不创建数据库、不迁移数据、不复制上传或登录密钥。Secret 命令在已连接到 Void Cloud 的独立目录中执行，并通过 `--project` 指定新托管项目；不要在当前 Cloudflare 目录中直接运行 Secret 命令。
+
+将 `YOUR_SLUG` 替换为平台实际创建的项目 slug，在本仓库发布：
+
+```sh
+VOID_API_URL=https://api.void.cloud \
+VITE_SITE_URL=https://YOUR_SLUG.void.app \
+pnpm run deploy:void --project YOUR_SLUG
+```
+
+显式平台、API 和项目参数使新发布独立于现有 Worker。`VITE_SITE_URL` 用于该站的 canonical、sitemap、RSS 和 Open Graph 地址；最终域名以平台返回结果为准。发布成功后再对新地址运行生产 smoke，检查共享内容和后台跳转。
+
+## 现有 Cloudflare 部署
+
 使用 `void` 的官方 Cloudflare 登录，不读取或提取其他 CLI 的认证令牌：
 
 ```sh
