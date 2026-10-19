@@ -10,7 +10,7 @@
 
 需要在仓库 Actions Secrets 中保存专用的 `CLOUDFLARE_API_TOKEN`，权限限制到此账户下的目标 Worker。账户 ID 和 `workers.dev` 子域是公开配置，已在工作流中固定。`DATABASE_URL` 继续保存在现有 Worker 的加密 Secret 中，不需要复制到 GitHub，也不运行数据库迁移。
 
-只使用 Cloudflare 部署目标；`pnpm run deploy` 和 `pnpm run deploy:cloudflare` 都显式选择 `--platform cloudflare`。Void Cloud 托管部署已取消。
+只使用 Cloudflare 部署目标；`pnpm run deploy` 和 `pnpm run deploy:cloudflare` 都先生成 `.generated/public` 中的哈希资源，再显式选择 `--platform cloudflare`。Void CLI 内部构建不运行 `package.json` 的 build 脚本，因此每次发布都必须执行资源生成，不能依赖本地已有目录或其他 CI 任务的构建产物。Void Cloud 托管部署已取消。
 
 ## 现有 Cloudflare 部署
 
