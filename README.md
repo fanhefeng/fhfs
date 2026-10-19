@@ -41,6 +41,4 @@ pnpm smoke http://127.0.0.1:4173 --shared-admin
 
 ## 部署
 
-通过 Void 官方 CLI 部署到 Cloudflare Workers。详细说明见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。发布前运行 `pnpm check`、`pnpm build` 和生产预览 smoke。
-
-两个发布入口显式区分目标：`pnpm run deploy:cloudflare` 发布现有 Cloudflare Worker；`pnpm run deploy:void` 发布额外的 Void Cloud 项目。Void Cloud 当前需要管理员邀请，新部署尚未创建；获得访问权限后按部署文档配置独立项目和共享数据库 Secret。
+GitHub `main` 分支推送后，Actions 先运行检查、测试与构建，通过后使用 Void 官方 CLI 更新现有 Cloudflare Worker，并执行线上 smoke。PR 只检查，不发布。详细说明见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。手动发布使用 `pnpm run deploy:cloudflare`。

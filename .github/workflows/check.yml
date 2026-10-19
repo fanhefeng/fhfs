@@ -1,8 +1,9 @@
-name: check
+name: CI and deploy
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -20,3 +21,49 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+  deploy:
+    name: Deploy production
+    needs: check
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: fhfs-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check that this is still the latest main commit
+        id: revision
+        shell: bash
+        run: |
+          remote_main_sha=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
+          if [ "$remote_main_sha" = "$GITHUB_SHA" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping an older commit because main has advanced."
+          fi
+      - name: Publish with Void to Cloudflare
+        if: steps.revision.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: fb12b12d229e15430dd17b9af5d6f1fe
+          CLOUDFLARE_WORKERS_SUBDOMAIN: fhfs
+          WRANGLER_LOG_PATH: .void/wrangler.log
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Configure the repository Secret CLOUDFLARE_API_TOKEN."
+            exit 1
+          fi
+          pnpm run deploy:cloudflare
+      - name: Verify public pages and shared backend redirects
+        if: steps.revision.outputs.deploy == 'true'
+        run: pnpm smoke https://fhfs.fhfs.workers.dev --shared-admin
