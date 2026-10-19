@@ -8,4 +8,5 @@ export default defineEnv({
   GITHUB_TOKEN: string().optional(),
   GITHUB_WEBHOOK_SECRET: string().optional(),
   SITE_URL: string().optional(),
+  VITE_SITE_URL: string().optional(),
 });

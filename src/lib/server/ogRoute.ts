@@ -28,6 +28,7 @@ export async function openGraphImage(locale: string, slug?: string) {
     if (!response.ok) throw new Error("Share image manifest unavailable");
     images = await response.json<ShareImages>();
   }
+  if (!images![`${locale}/${slug}`]) return png(`/share-images/cover-${locale}.png`);
   // Published summaries only: a draft preview must never escape into a share card.
   const [posts, alternate] = await Promise.all([
     getPosts(locale),

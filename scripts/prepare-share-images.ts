@@ -4,12 +4,14 @@ import { join } from "node:path";
 import cover from "./og/ogCover";
 import article from "./og/ogPost";
 import icon from "./og/ogIcon";
-import { site } from "../src/config/site";
+import { siteUrl } from "../src/lib/siteUrl";
+import { validKey } from "../src/lib/forms";
 import { routing } from "../src/i18n/routing";
 import type { SearchEntry } from "../src/lib/search";
 import { shareSignature, type ShareImages } from "../src/lib/shareImage";
 
 const target = ".generated/public/share-images";
+const origin = siteUrl({ VITE_SITE_URL: process.env.VITE_SITE_URL });
 await rm(target, { recursive: true, force: true });
 await mkdir(target, { recursive: true });
 async function save(name: string, response: Response) {
@@ -17,7 +19,7 @@ async function save(name: string, response: Response) {
   await writeFile(join(target, name), new Uint8Array(await response.arrayBuffer()));
 }
 for (const locale of routing.locales) {
-  await save(`cover-${locale}.png`, await cover({ params: Promise.resolve({ locale }) }));
+  await save(`cover-${locale}.png`, await cover({ params: Promise.resolve({ locale }), origin }));
 }
 await save("admin-icon.png", await icon());
 
@@ -26,7 +28,7 @@ await save("admin-icon.png", await icon());
 const indexes = new Map<string, SearchEntry[]>();
 for (const locale of routing.locales) {
   try {
-    const response = await fetch(`${site.url}/${locale}/search.json`, {
+    const response = await fetch(`${origin}/${locale}/search.json`, {
       signal: AbortSignal.timeout(15_000),
       redirect: "error",
     });
@@ -44,7 +46,7 @@ for (const locale of routing.locales) {
   for (const entry of indexes.get(locale) ?? []) {
     if (entry.kind !== "post" || !entry.meta || !Array.isArray(entry.tags)) continue;
     const slug = entry.href.slice("/blog/".length);
-    if (!entry.href.startsWith("/blog/") || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) continue;
+    if (!entry.href.startsWith("/blog/") || !validKey(slug)) continue;
     const counterpart = indexes.get(other)?.find((row) => row.href === entry.href);
     // Without both locale indexes the other headline might be missing. Use a cover.
     if (!counterpart?.meta || !Array.isArray(counterpart.tags)) continue;
@@ -53,7 +55,7 @@ for (const locale of routing.locales) {
     const signature = shareSignature(post, alternate);
     const hash = createHash("sha256").update(signature).digest("hex").slice(0, 16);
     const name = `${locale}-${slug}-${hash}.png`;
-    await save(name, await article({ post, counterpart: alternate }));
+    await save(name, await article({ post, counterpart: alternate, origin }));
     images[`${locale}/${slug}`] = { signature, path: `/share-images/${name}` };
   }
 }

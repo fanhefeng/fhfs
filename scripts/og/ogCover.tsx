@@ -14,11 +14,17 @@ export const contentType = "image/png";
  * low like a magazine cover, the tagline under an amber rule. No glass and
  * no glow effects — satori renders neither, and the print voice wants ink.
  */
-export default async function OgImage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function OgImage({
+  params,
+  origin = site.url,
+}: {
+  params: Promise<{ locale: string }>;
+  origin?: string;
+}) {
   const { locale } = await params;
   const l: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
   const tagline = site.description[l];
-  const host = new URL(site.url).host;
+  const host = new URL(origin).host;
 
   const fonts = await loadOgFonts(site.signName, `${tagline}${host}`);
 

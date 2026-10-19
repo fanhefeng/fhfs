@@ -16,9 +16,10 @@ DATABASE_URL_UNPOOLED=
 AUTH_SECRET=
 ADMIN_PASSWORD_HASH=
 
-# Optional. The production origin for canonical URLs, the sitemap and RSS, e.g.
-# https://example.com. On Vercel it is read from the project's production
-# domain by itself; set this only to override that, or when hosting elsewhere.
+# Optional. Public production origin for canonical URLs, feeds and build-time
+# share images. Defaults to https://fhfs.fhfs.workers.dev. No trailing slash.
+VITE_SITE_URL=
+# Optional. Legacy script origin fallback; the application uses VITE_SITE_URL.
 SITE_URL=
 
 # Optional. Dedicated upload signing secret, shared with the media Worker.

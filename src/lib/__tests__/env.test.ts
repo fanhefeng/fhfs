@@ -61,6 +61,19 @@ describe("envProblems", () => {
     );
   });
 
+  it("validates the public build origin used by pages and share snapshots", () => {
+    expect(envProblems({ ...good, VITE_SITE_URL: "https://example.com" })).toEqual([]);
+    for (const VITE_SITE_URL of [
+      "https://example.com/",
+      "https://example.com/path",
+      "http://example.com",
+    ]) {
+      expect(envProblems({ ...good, VITE_SITE_URL })).toEqual([
+        expect.stringMatching(/^VITE_SITE_URL/),
+      ]);
+    }
+  });
+
   it("requires a dedicated webhook secret with no pasted whitespace", () => {
     expect(envProblems({ ...good, GITHUB_WEBHOOK_SECRET: "x".repeat(64) })).toEqual([]);
     for (const value of [

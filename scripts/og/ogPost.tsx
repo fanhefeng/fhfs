@@ -27,16 +27,18 @@ function titleSize(text: string) {
 export default async function PostOgImage({
   post,
   counterpart,
+  origin = site.url,
 }: {
   post: SharePost;
   counterpart?: SharePost;
+  origin?: string;
 }) {
   const title = post.title;
   const subtitle = counterpart && counterpart.title !== title ? counterpart.title : null;
 
-  const date = post ? post.date.replaceAll("-", ".") : "";
-  const meta = [date, ...(post?.tags ?? []).slice(0, 3)].filter(Boolean).join("  ·  ");
-  const host = new URL(site.url).host;
+  const date = post.date.replaceAll("-", ".");
+  const meta = [date, ...post.tags.slice(0, 3)].filter(Boolean).join("  ·  ");
+  const host = new URL(origin).host;
 
   const fonts = await loadOgFonts(`${title}${site.signName}`, `${subtitle ?? ""}${meta}${host}`);
 
