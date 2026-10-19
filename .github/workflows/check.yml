@@ -64,6 +64,6 @@ jobs:
             exit 1
           fi
           pnpm run deploy:cloudflare
-      - name: Verify public pages and shared backend redirects
+      - name: Verify public pages and native backend authentication
         if: steps.revision.outputs.deploy == 'true'
-        run: pnpm smoke https://fhfs.fhfs.workers.dev --shared-admin
+        run: pnpm smoke https://fhfs.fhfs.workers.dev

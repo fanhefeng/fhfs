@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 
-const sharedAdmin = process.argv.includes("--shared-admin");
 const base = new URL(process.argv[2] ?? "http://127.0.0.1:4173");
 const read = async (path, options) =>
   fetch(new URL(path, base), { signal: AbortSignal.timeout(30_000), ...options });
@@ -41,12 +40,31 @@ for (const path of ["/fr", "/fr/search.json", "/fr/rss.xml", "/zh/blog/this-page
 for (const path of ["/admin", "/admin/posts", "/admin/copy", "/admin/posts/new"]) {
   const response = await read(path, { redirect: "manual" });
   assert.ok([302, 303, 307].includes(response.status), `${path} must require login`);
-  assert.match(
-    response.headers.get("location"),
-    sharedAdmin ? /^https:\/\/fhfs-site\.vercel\.app\/admin/ : /\/admin\/login/,
+  const login = new URL(response.headers.get("location"), base);
+  assert.equal(login.origin, base.origin, `${path} stays on this deployment`);
+  assert.equal(login.pathname, "/admin/login");
+}
+assert.equal((await read("/admin/login", { redirect: "manual" })).status, 200);
+const article = paths.find((path) => /^\/zh\/blog\/[^/]+$/.test(path));
+assert.ok(article, "sitemap includes a published article");
+for (const path of [
+  "/zh/opengraph-image",
+  "/en/opengraph-image",
+  `${article}/opengraph-image`,
+  "/admin/apple-icon",
+]) {
+  const response = await read(path);
+  assert.equal(response.status, 200, path);
+  assert.match(response.headers.get("content-type"), /^image\/png/);
+  const png = new Uint8Array(await response.arrayBuffer());
+  assert.deepEqual(
+    Array.from(png.subarray(0, 8)),
+    [137, 80, 78, 71, 13, 10, 26, 10],
+    `${path} is a PNG`,
   );
 }
-assert.equal((await read("/admin/login", { redirect: "manual" })).status, sharedAdmin ? 307 : 200);
+for (const path of ["/fr/opengraph-image", "/zh/blog/invalid.slug/opengraph-image"])
+  assert.equal((await read(path)).status, 404, path);
 assert.equal(
   (
     await read("/admin/media/uploads", {
@@ -70,5 +88,5 @@ assert.match(home.headers.get("content-security-policy"), /frame-ancestors 'none
 assert.match(home.headers.get("cache-control"), /no-store/);
 assert.deepEqual(failures, []);
 console.log(
-  `Verified ${checked} sitemap pages, bilingual feeds/search, 404s, auth redirects, CSRF, assets, and security headers.`,
+  `Verified ${checked} sitemap pages, bilingual feeds/search, local share images, 404s, native admin auth, CSRF, assets, and security headers.`,
 );

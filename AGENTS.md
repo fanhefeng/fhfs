@@ -10,7 +10,9 @@ Vite+ owns dev/build, lint, formatting, and Vitest. Do not reintroduce Next.js.
 Server functions must dynamically import server modules inside their handlers.
 Keep credentials and the database driver out of client bundles.
 
-The Neon database and media Worker are shared with fhfs-site. Keep the existing
+The Neon database and media Worker are shared with fhfs-site. Keep the
+application and admin deployment independent: never redirect admin routes or
+proxy application endpoints to fhfs-site. Keep the existing
 schema and upload lease protocol compatible. Never run migrations, seed scripts,
 or write tests against production. Test writes require an explicitly isolated
 test database. Public content caches expire within 30 seconds so edits made by

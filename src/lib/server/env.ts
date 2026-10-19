@@ -5,11 +5,11 @@ import { env as bindings } from "cloudflare:workers";
 // env.ts at the project root is Void's deployment validation schema.
 export const env = bindings as unknown as {
   DATABASE_URL: string;
-  ADMIN_MODE?: "shared" | "local";
   AUTH_SECRET: string;
   ADMIN_PASSWORD_HASH: string;
   MEDIA_UPLOAD_SECRET?: string;
   GITHUB_TOKEN?: string;
   GITHUB_WEBHOOK_SECRET?: string;
   SITE_URL?: string;
+  ASSETS: { fetch(request: Request): Promise<Response> };
 };

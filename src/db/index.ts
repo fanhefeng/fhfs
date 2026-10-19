@@ -24,9 +24,7 @@ const url = env.DATABASE_URL;
 
 if (!url) {
   throw new Error(
-    "DATABASE_URL is not set. It is required at build time and at runtime — " +
-      "pull it with `vercel env pull .env.local`, or copy the pooled " +
-      "connection string from the Neon dashboard.",
+    "DATABASE_URL is not set. Configure it in the local .env and the Worker's Void secrets.",
   );
 }
 

@@ -1,11 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { login, type LoginState } from "./actions";
 import { buttonClass, inputClass } from "../styles";
 
 export function LoginForm({ next }: { next: string }) {
-  const [state, formAction, pending] = useActionState<LoginState, FormData>(login, {});
+  const signIn = useServerFn(login);
+  const [state, formAction, pending] = useActionState<LoginState, FormData>(
+    async (previous, form) => (await signIn(previous, form)) ?? {},
+    {},
+  );
 
   return (
     <form action={formAction} className="mt-6">

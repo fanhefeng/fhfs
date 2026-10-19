@@ -3,6 +3,7 @@
 import Link from "@/components/ui/Link";
 import { usePathname } from "@/lib/navigation";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { logout } from "./login/actions";
 import { SECTION_GROUPS, type SectionCounts } from "./sections";
 import { metaClass } from "./styles";
@@ -31,6 +32,7 @@ import { metaClass } from "./styles";
 export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const signOutAction = useServerFn(logout);
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -111,7 +113,7 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
   );
 
   const signOut = (
-    <form action={logout}>
+    <form action={signOutAction}>
       <button
         type="submit"
         className="min-h-11 px-2 font-mono text-meta uppercase tracking-meta text-fg-tertiary transition-colors hover:text-accent"

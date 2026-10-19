@@ -28,3 +28,59 @@ describe("content shared with fhfs-site", () => {
     expect(read).toHaveBeenCalledTimes(3);
   });
 });
+
+describe("Worker request boundaries", () => {
+  it("never shares a pending read between requests", async () => {
+    vi.useFakeTimers();
+    const resolvers: Array<(value: number) => void> = [];
+    const read = vi.fn(() => new Promise<number>((resolve) => resolvers.push(resolve)));
+    const cached = unstable_cache(read, ["pending-request-test"]);
+    const first = cached();
+    const second = cached();
+    expect(read).toHaveBeenCalledTimes(2);
+    resolvers[1]!(2);
+    expect(await second).toBe(2);
+    resolvers[0]!(1);
+    expect(await first).toBe(1);
+    expect(await cached()).toBe(2);
+  });
+
+  it("does not restore an invalidated value when an older read finishes", async () => {
+    let finish!: (value: number) => void;
+    const read = vi.fn(
+      () =>
+        new Promise<number>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const cached = unstable_cache(read, ["invalidation-race"], { tags: ["invalidation-race"] });
+    const old = cached();
+    updateTag("invalidation-race");
+    finish(1);
+    await old;
+    const fresh = cached();
+    expect(read).toHaveBeenCalledTimes(2);
+    finish(2);
+    expect(await fresh).toBe(2);
+  });
+
+  it("bypasses public results in an admin or preview request", async () => {
+    const { withContentCacheBypass } = await import("@/lib/server/cacheScope");
+    let value = 1;
+    const cached = unstable_cache(async () => value, ["preview-bypass"]);
+    expect(await cached()).toBe(1);
+    value = 2;
+    expect(await withContentCacheBypass(true, cached)).toBe(2);
+    expect(await cached()).toBe(1);
+  });
+
+  it("caps an explicit cache lifetime at 30 seconds", async () => {
+    vi.useFakeTimers();
+    const read = vi.fn(async () => 1);
+    const cached = unstable_cache(read, ["bounded-cache-test"], { revalidate: 3600 });
+    await cached();
+    vi.advanceTimersByTime(30_001);
+    await cached();
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+});

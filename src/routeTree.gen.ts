@@ -20,12 +20,14 @@ import { Route as LocaleAboutRouteImport } from './routes/$locale/about'
 import { Route as LocaleIntroRouteImport } from './routes/$locale/intro'
 import { Route as LocaleLifeRouteImport } from './routes/$locale/life'
 import { Route as LocaleMomentsRouteImport } from './routes/$locale/moments'
+import { Route as LocaleOpengraphImageRouteImport } from './routes/$locale/opengraph-image'
 import { Route as LocaleResumeRouteImport } from './routes/$locale/resume'
 import { Route as LocaleRssDotxmlRouteImport } from './routes/$locale/rss[.]xml'
 import { Route as LocaleSearchDotjsonRouteImport } from './routes/$locale/search[.]json'
 import { Route as LocaleSoftwareRouteImport } from './routes/$locale/software'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAboutRouteImport } from './routes/admin/about'
+import { Route as AdminAppleIconRouteImport } from './routes/admin/apple-icon'
 import { Route as AdminAppsRouteImport } from './routes/admin/apps'
 import { Route as AdminChipsRouteImport } from './routes/admin/chips'
 import { Route as AdminCopyRouteImport } from './routes/admin/copy'
@@ -59,6 +61,7 @@ import { Route as AdminSecretsIndexRouteImport } from './routes/admin/secrets/in
 import { Route as AdminSecretsNewRouteImport } from './routes/admin/secrets/new'
 import { Route as ApiGithubWebhookRouteImport } from './routes/api/github/webhook'
 import { Route as ApiMediaCleanupRouteImport } from './routes/api/media/cleanup'
+import { Route as LocaleBlogSlugOpengraphImageRouteImport } from './routes/$locale/blog/$slug/opengraph-image'
 import { Route as LocaleBlogTagsTagRouteImport } from './routes/$locale/blog/tags/$tag'
 import { Route as AdminPostsSlugLocaleIndexRouteImport } from './routes/admin/posts/$slug/$locale.index'
 import { Route as AdminSecretsSlugLocaleIndexRouteImport } from './routes/admin/secrets/$slug/$locale.index'
@@ -118,6 +121,11 @@ const LocaleMomentsRoute = LocaleMomentsRouteImport.update({
   path: '/moments',
   getParentRoute: () => LocaleRoute,
 } as any)
+const LocaleOpengraphImageRoute = LocaleOpengraphImageRouteImport.update({
+  id: '/opengraph-image',
+  path: '/opengraph-image',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleResumeRoute = LocaleResumeRouteImport.update({
   id: '/resume',
   path: '/resume',
@@ -146,6 +154,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminAboutRoute = AdminAboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAppleIconRoute = AdminAppleIconRouteImport.update({
+  id: '/apple-icon',
+  path: '/apple-icon',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAppsRoute = AdminAppsRouteImport.update({
@@ -314,6 +327,12 @@ const ApiMediaCleanupRoute = ApiMediaCleanupRouteImport.update({
   path: '/api/media/cleanup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleBlogSlugOpengraphImageRoute =
+  LocaleBlogSlugOpengraphImageRouteImport.update({
+    id: '/opengraph-image',
+    path: '/opengraph-image',
+    getParentRoute: () => LocaleBlogSlugRoute,
+  } as any)
 const LocaleBlogTagsTagRoute = LocaleBlogTagsTagRouteImport.update({
   id: '/blog/tags/$tag',
   path: '/blog/tags/$tag',
@@ -343,11 +362,13 @@ export interface FileRoutesByFullPath {
   '/$locale/intro': typeof LocaleIntroRoute
   '/$locale/life': typeof LocaleLifeRoute
   '/$locale/moments': typeof LocaleMomentsRoute
+  '/$locale/opengraph-image': typeof LocaleOpengraphImageRoute
   '/$locale/resume': typeof LocaleResumeRoute
   '/$locale/rss.xml': typeof LocaleRssDotxmlRoute
   '/$locale/search.json': typeof LocaleSearchDotjsonRoute
   '/$locale/software': typeof LocaleSoftwareRoute
   '/admin/about': typeof AdminAboutRoute
+  '/admin/apple-icon': typeof AdminAppleIconRoute
   '/admin/apps': typeof AdminAppsRoute
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
@@ -364,7 +385,7 @@ export interface FileRoutesByFullPath {
   '/admin/works': typeof AdminWorksRoute
   '/$locale/': typeof LocaleIndexRoute
   '/admin/': typeof AdminIndexRoute
-  '/$locale/blog/$slug': typeof LocaleBlogSlugRoute
+  '/$locale/blog/$slug': typeof LocaleBlogSlugRouteWithChildren
   '/$locale/films/$slug': typeof LocaleFilmsSlugRoute
   '/$locale/idols/$slug': typeof LocaleIdolsSlugRoute
   '/$locale/lab/$slug': typeof LocaleLabSlugRoute
@@ -383,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/$locale/secrets/': typeof LocaleSecretsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
   '/admin/posts/$slug/$locale/': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale/': typeof AdminSecretsSlugLocaleIndexRoute
@@ -396,11 +418,13 @@ export interface FileRoutesByTo {
   '/$locale/intro': typeof LocaleIntroRoute
   '/$locale/life': typeof LocaleLifeRoute
   '/$locale/moments': typeof LocaleMomentsRoute
+  '/$locale/opengraph-image': typeof LocaleOpengraphImageRoute
   '/$locale/resume': typeof LocaleResumeRoute
   '/$locale/rss.xml': typeof LocaleRssDotxmlRoute
   '/$locale/search.json': typeof LocaleSearchDotjsonRoute
   '/$locale/software': typeof LocaleSoftwareRoute
   '/admin/about': typeof AdminAboutRoute
+  '/admin/apple-icon': typeof AdminAppleIconRoute
   '/admin/apps': typeof AdminAppsRoute
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
@@ -417,7 +441,7 @@ export interface FileRoutesByTo {
   '/admin/works': typeof AdminWorksRoute
   '/$locale': typeof LocaleIndexRoute
   '/admin': typeof AdminIndexRoute
-  '/$locale/blog/$slug': typeof LocaleBlogSlugRoute
+  '/$locale/blog/$slug': typeof LocaleBlogSlugRouteWithChildren
   '/$locale/films/$slug': typeof LocaleFilmsSlugRoute
   '/$locale/idols/$slug': typeof LocaleIdolsSlugRoute
   '/$locale/lab/$slug': typeof LocaleLabSlugRoute
@@ -436,6 +460,7 @@ export interface FileRoutesByTo {
   '/$locale/secrets': typeof LocaleSecretsIndexRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/secrets': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
   '/admin/posts/$slug/$locale': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale': typeof AdminSecretsSlugLocaleIndexRoute
@@ -452,11 +477,13 @@ export interface FileRoutesById {
   '/$locale/intro': typeof LocaleIntroRoute
   '/$locale/life': typeof LocaleLifeRoute
   '/$locale/moments': typeof LocaleMomentsRoute
+  '/$locale/opengraph-image': typeof LocaleOpengraphImageRoute
   '/$locale/resume': typeof LocaleResumeRoute
   '/$locale/rss.xml': typeof LocaleRssDotxmlRoute
   '/$locale/search.json': typeof LocaleSearchDotjsonRoute
   '/$locale/software': typeof LocaleSoftwareRoute
   '/admin/about': typeof AdminAboutRoute
+  '/admin/apple-icon': typeof AdminAppleIconRoute
   '/admin/apps': typeof AdminAppsRoute
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
@@ -473,7 +500,7 @@ export interface FileRoutesById {
   '/admin/works': typeof AdminWorksRoute
   '/$locale/': typeof LocaleIndexRoute
   '/admin/': typeof AdminIndexRoute
-  '/$locale/blog/$slug': typeof LocaleBlogSlugRoute
+  '/$locale/blog/$slug': typeof LocaleBlogSlugRouteWithChildren
   '/$locale/films/$slug': typeof LocaleFilmsSlugRoute
   '/$locale/idols/$slug': typeof LocaleIdolsSlugRoute
   '/$locale/lab/$slug': typeof LocaleLabSlugRoute
@@ -492,6 +519,7 @@ export interface FileRoutesById {
   '/$locale/secrets/': typeof LocaleSecretsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
   '/admin/posts/$slug/$locale/': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale/': typeof AdminSecretsSlugLocaleIndexRoute
@@ -509,11 +537,13 @@ export interface FileRouteTypes {
     | '/$locale/intro'
     | '/$locale/life'
     | '/$locale/moments'
+    | '/$locale/opengraph-image'
     | '/$locale/resume'
     | '/$locale/rss.xml'
     | '/$locale/search.json'
     | '/$locale/software'
     | '/admin/about'
+    | '/admin/apple-icon'
     | '/admin/apps'
     | '/admin/chips'
     | '/admin/copy'
@@ -549,6 +579,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets/'
     | '/admin/posts/'
     | '/admin/secrets/'
+    | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/tags/$tag'
     | '/admin/posts/$slug/$locale/'
     | '/admin/secrets/$slug/$locale/'
@@ -562,11 +593,13 @@ export interface FileRouteTypes {
     | '/$locale/intro'
     | '/$locale/life'
     | '/$locale/moments'
+    | '/$locale/opengraph-image'
     | '/$locale/resume'
     | '/$locale/rss.xml'
     | '/$locale/search.json'
     | '/$locale/software'
     | '/admin/about'
+    | '/admin/apple-icon'
     | '/admin/apps'
     | '/admin/chips'
     | '/admin/copy'
@@ -602,6 +635,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets'
     | '/admin/posts'
     | '/admin/secrets'
+    | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/tags/$tag'
     | '/admin/posts/$slug/$locale'
     | '/admin/secrets/$slug/$locale'
@@ -617,11 +651,13 @@ export interface FileRouteTypes {
     | '/$locale/intro'
     | '/$locale/life'
     | '/$locale/moments'
+    | '/$locale/opengraph-image'
     | '/$locale/resume'
     | '/$locale/rss.xml'
     | '/$locale/search.json'
     | '/$locale/software'
     | '/admin/about'
+    | '/admin/apple-icon'
     | '/admin/apps'
     | '/admin/chips'
     | '/admin/copy'
@@ -657,6 +693,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets/'
     | '/admin/posts/'
     | '/admin/secrets/'
+    | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/tags/$tag'
     | '/admin/posts/$slug/$locale/'
     | '/admin/secrets/$slug/$locale/'
@@ -752,6 +789,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleMomentsRouteImport
       parentRoute: typeof LocaleRoute
     }
+    '/$locale/opengraph-image': {
+      id: '/$locale/opengraph-image'
+      path: '/opengraph-image'
+      fullPath: '/$locale/opengraph-image'
+      preLoaderRoute: typeof LocaleOpengraphImageRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/resume': {
       id: '/$locale/resume'
       path: '/resume'
@@ -792,6 +836,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/admin/about'
       preLoaderRoute: typeof AdminAboutRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/apple-icon': {
+      id: '/admin/apple-icon'
+      path: '/apple-icon'
+      fullPath: '/admin/apple-icon'
+      preLoaderRoute: typeof AdminAppleIconRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/apps': {
@@ -1025,6 +1076,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaCleanupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/blog/$slug/opengraph-image': {
+      id: '/$locale/blog/$slug/opengraph-image'
+      path: '/opengraph-image'
+      fullPath: '/$locale/blog/$slug/opengraph-image'
+      preLoaderRoute: typeof LocaleBlogSlugOpengraphImageRouteImport
+      parentRoute: typeof LocaleBlogSlugRoute
+    }
     '/$locale/blog/tags/$tag': {
       id: '/$locale/blog/tags/$tag'
       path: '/blog/tags/$tag'
@@ -1049,17 +1107,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface LocaleBlogSlugRouteChildren {
+  LocaleBlogSlugOpengraphImageRoute: typeof LocaleBlogSlugOpengraphImageRoute
+}
+
+const LocaleBlogSlugRouteChildren: LocaleBlogSlugRouteChildren = {
+  LocaleBlogSlugOpengraphImageRoute: LocaleBlogSlugOpengraphImageRoute,
+}
+
+const LocaleBlogSlugRouteWithChildren = LocaleBlogSlugRoute._addFileChildren(
+  LocaleBlogSlugRouteChildren,
+)
+
 interface LocaleRouteChildren {
   LocaleAboutRoute: typeof LocaleAboutRoute
   LocaleIntroRoute: typeof LocaleIntroRoute
   LocaleLifeRoute: typeof LocaleLifeRoute
   LocaleMomentsRoute: typeof LocaleMomentsRoute
+  LocaleOpengraphImageRoute: typeof LocaleOpengraphImageRoute
   LocaleResumeRoute: typeof LocaleResumeRoute
   LocaleRssDotxmlRoute: typeof LocaleRssDotxmlRoute
   LocaleSearchDotjsonRoute: typeof LocaleSearchDotjsonRoute
   LocaleSoftwareRoute: typeof LocaleSoftwareRoute
   LocaleIndexRoute: typeof LocaleIndexRoute
-  LocaleBlogSlugRoute: typeof LocaleBlogSlugRoute
+  LocaleBlogSlugRoute: typeof LocaleBlogSlugRouteWithChildren
   LocaleFilmsSlugRoute: typeof LocaleFilmsSlugRoute
   LocaleIdolsSlugRoute: typeof LocaleIdolsSlugRoute
   LocaleLabSlugRoute: typeof LocaleLabSlugRoute
@@ -1077,12 +1148,13 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleIntroRoute: LocaleIntroRoute,
   LocaleLifeRoute: LocaleLifeRoute,
   LocaleMomentsRoute: LocaleMomentsRoute,
+  LocaleOpengraphImageRoute: LocaleOpengraphImageRoute,
   LocaleResumeRoute: LocaleResumeRoute,
   LocaleRssDotxmlRoute: LocaleRssDotxmlRoute,
   LocaleSearchDotjsonRoute: LocaleSearchDotjsonRoute,
   LocaleSoftwareRoute: LocaleSoftwareRoute,
   LocaleIndexRoute: LocaleIndexRoute,
-  LocaleBlogSlugRoute: LocaleBlogSlugRoute,
+  LocaleBlogSlugRoute: LocaleBlogSlugRouteWithChildren,
   LocaleFilmsSlugRoute: LocaleFilmsSlugRoute,
   LocaleIdolsSlugRoute: LocaleIdolsSlugRoute,
   LocaleLabSlugRoute: LocaleLabSlugRoute,
@@ -1114,6 +1186,7 @@ const AdminPreviewRouteWithChildren = AdminPreviewRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAboutRoute: typeof AdminAboutRoute
+  AdminAppleIconRoute: typeof AdminAppleIconRoute
   AdminAppsRoute: typeof AdminAppsRoute
   AdminChipsRoute: typeof AdminChipsRoute
   AdminCopyRoute: typeof AdminCopyRoute
@@ -1140,6 +1213,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAboutRoute: AdminAboutRoute,
+  AdminAppleIconRoute: AdminAppleIconRoute,
   AdminAppsRoute: AdminAppsRoute,
   AdminChipsRoute: AdminChipsRoute,
   AdminCopyRoute: AdminCopyRoute,

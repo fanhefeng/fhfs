@@ -15,7 +15,7 @@ pnpm dev
 pnpm check
 pnpm build
 pnpm preview --port 4173
-pnpm smoke http://127.0.0.1:4173 --shared-admin
+pnpm smoke http://127.0.0.1:4173
 ```
 
 `pnpm assets` 从原始 `public/` 和内容哈希清单生成 `.generated/public/`，包括字体和 Draco 目录的哈希地址。构建前自动执行，不改写原始资源。
@@ -23,17 +23,17 @@ pnpm smoke http://127.0.0.1:4173 --shared-admin
 ## 数据与后台
 
 - 内容继续从原站的 Neon Postgres 读取，沿用 Drizzle schema；部署不创建数据库、不迁移或导入数据。
-- 峰言峰语的图片、视频和音频继续使用 `fhfs-media.fhfs.workers.dev`；无需复制媒体或上传密钥。
-- 默认 `ADMIN_MODE=shared`：`/admin` 使用原站管理入口。原后台保存会清除原站缓存，新站最多 30 秒读到改动，避免两套后台使原站缓存失效机制失配。
-- 已迁移的原生 TanStack 后台可在隔离开发环境设置 `ADMIN_MODE=local` 启用，另外配置 `AUTH_SECRET`、`ADMIN_PASSWORD_HASH`，需要上传时再配置 `MEDIA_UPLOAD_SECRET`。所有保存和删除继续逐次检查会话。共享生产库时优先使用默认共享后台。
-- 公开 Open Graph 图片继续调用原站图片生成端点；本地图片、字体、模型和音乐在新站部署。原素材许可保留在 `LICENSE` 和 `docs/CREDITS.md`。
+- 峰言峰语的图片、视频和音频继续使用 `fhfs-media.fhfs.workers.dev`；上传需要配置兼容现有媒体 Worker 的 `MEDIA_UPLOAD_SECRET`。
+- 应用、后台和部署独立于 `fhfs-site.vercel.app`。`/admin` 使用本部署的登录、编辑和预览页面；必须配置本应用的 `AUTH_SECRET`、`ADMIN_PASSWORD_HASH`，所有保存和删除继续逐次检查会话。
+- 本应用公开内容缓存最多保留 30 秒，仅保存已完成的数据；后台与授权预览绕过公开缓存。保存立即清除本部署的相关缓存，原站缓存由原站管理。
+- 公开 Open Graph 图片和后台图标由本 Worker 生成，字体通过本部署的静态资源绑定读取；图片、字体、模型和音乐在新站部署。原素材许可保留在 `LICENSE` 和 `docs/CREDITS.md`。
 
 ## 结构
 
 - `src/routes/`：TanStack 文件路由和服务端函数入口。
 - `src/app/`：页面视图和邻接的 `page.server.tsx` 数据加载器；不是 Next.js 路由目录。
 - `src/lib/server/content.ts`：公开内容读取层；参数化、带标签且最多缓存 30 秒。
-- `src/start.ts`：TanStack 请求中间件，负责安全头、共享后台和跨站写入保护。
+- `src/start.ts`：TanStack 请求中间件，负责安全头、缓存请求作用域和跨站写入保护。
 - `src/lib/client/gsap.ts`：浏览器动画入口。服务端通过 Vite 的环境解析使用惰性占位实现，不启动 Worker 全局计时器。
 - `env.ts` / `void.config.ts`：环境变量契约和 Void 部署配置。
 

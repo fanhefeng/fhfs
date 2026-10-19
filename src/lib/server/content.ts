@@ -34,11 +34,10 @@ import { isNavGroup, type NavGroup } from "@/lib/nav";
  *
  * Two things are deliberate here:
  *
- * **All of it is cached with tags.** Pages stay statically generated; the tags
- * a getter declares get collected into that page's ISR entry, so one
- * `updateTag("content")` from the admin invalidates the pages, the sitemap,
- * the feed and the OG images together. `revalidate: false` means an entry
- * lives until a tag kills it — no polling, no background recompute.
+ * **Public reads are cached with tags for at most 30 seconds.** A local save
+ * clears those tags immediately; the bounded lifetime also sees edits from
+ * another deployment. Admin and authenticated preview requests bypass this
+ * cache. Entries contain completed data, never another Worker's request I/O.
  *
  * **Nothing request-variable is captured from module scope.** `unstable_cache`
  * keys on a function's arguments but not on the variables it closes over, so
@@ -46,9 +45,8 @@ import { isNavGroup, type NavGroup } from "@/lib/nav";
  * arrive as a parameter, and does. What the getters do close over (`db`, the
  * column sets, the sort helpers) is constant for every entry by design.
  *
- * If this ever moves to Cache Components, it moves here and only here: each
- * `unstable_cache(fn, keys, opts)` becomes `'use cache'` + `cacheTag()`, and
- * no caller changes.
+ * The compatibility-shaped `unstable_cache` name keeps the getters together;
+ * its implementation is this deployment's Worker-local cache.
  */
 
 /** Cache tags. `content` is on everything — the admin's blunt instrument. */

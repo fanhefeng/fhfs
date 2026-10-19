@@ -10,6 +10,8 @@ import {
   type FormEvent,
 } from "react";
 import { unstable_rethrow } from "@/lib/navigation";
+import { useServerFn } from "@tanstack/react-start";
+import { useRouter } from "@tanstack/react-router";
 import type { ActionState } from "../actions/shared";
 
 type SaveAction = (prev: ActionState, form: FormData) => Promise<ActionState>;
@@ -36,8 +38,8 @@ const FAILED: ActionState = {
  * It throws. An action that *throws* — the database not answering is the one
  * that happens — takes the error to the boundary, and the boundary replaces
  * the editor. Caught here instead and turned into the same line beside the
- * button. `unstable_rethrow` lets Next's own signals through: a `redirect()`
- * inside an action reaches the client as a rejection too.
+ * button. `useServerFn` handles server redirects; other router signals pass
+ * through `unstable_rethrow`.
  *
  * The reset still happens where it was wanted: on `ok`. The inline "new" row
  * under a list goes blank for the next one, and an edit form picks up what
@@ -45,17 +47,21 @@ const FAILED: ActionState = {
  * defaults it resets to are the saved ones.
  */
 export function useSaveAction(action: SaveAction) {
+  const invoke = useServerFn(action);
+  const router = useRouter();
   const guarded = useCallback<SaveAction>(
     async (prev, form) => {
       try {
-        return await action(prev, form);
+        const result = await invoke(prev, form);
+        if (result?.ok) await router.invalidate();
+        return result ?? {};
       } catch (error) {
         unstable_rethrow(error);
         console.error(error);
         return FAILED;
       }
     },
-    [action],
+    [invoke, router],
   );
   const [state, dispatch, pending] = useActionState<ActionState, FormData>(guarded, {});
   const formRef = useRef<HTMLFormElement | null>(null);

@@ -34,6 +34,8 @@ export default defineConfig({
     alias: [
       { find: "@", replacement: fileURLToPath(new URL("./src", import.meta.url)) },
       { find: /^shiki$/, replacement: "shiki/bundle/web" },
+      // Workers require precompiled WASM modules, not runtime compilation of bytes.
+      ...(process.env.VITEST ? [] : [{ find: "shiki/wasm", replacement: "shiki/onig.wasm" }]),
     ],
   },
   lint: {

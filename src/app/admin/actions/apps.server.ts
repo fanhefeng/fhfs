@@ -49,7 +49,7 @@ export async function saveApp(_prev: ActionState, form: FormData): Promise<Actio
   // to be exactly two path segments and nothing that could escape them.
   const repo = str(form, "repo") || null;
   if (repo && !validGithubRepo(repo)) {
-    return { error: "仓库要写成 owner/name，比如 fanhefeng/fhfs-site。" };
+    return { error: "仓库要写成 owner/name，比如 fanhefeng/fhfs。" };
   }
 
   const hue = intField(form, "hue", "色相", null);

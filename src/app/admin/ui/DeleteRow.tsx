@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type Ref } from "react";
 import { useFormStatus } from "react-dom";
+import { useServerFn } from "@tanstack/react-start";
+import { useRouter } from "@tanstack/react-router";
 import { dangerButtonClass, ghostButtonClass, hintClass } from "../styles";
 
 /**
@@ -32,6 +34,8 @@ export function DeleteRow({
   const backOutRef = useRef<HTMLButtonElement>(null);
   const armRef = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
+  const invoke = useServerFn(action);
+  const router = useRouter();
 
   // Arming replaces the very button that had focus, and disarming replaces the
   // one that took it — either way focus would fall to <body>. It goes to the
@@ -47,7 +51,13 @@ export function DeleteRow({
   };
 
   return (
-    <form action={action} className="mt-8 border-t border-line pt-5">
+    <form
+      action={async (form) => {
+        await invoke(form);
+        await router.invalidate();
+      }}
+      className="mt-8 border-t border-line pt-5"
+    >
       {Object.entries(fields).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
