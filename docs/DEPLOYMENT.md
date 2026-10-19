@@ -43,6 +43,8 @@ CLOUDFLARE_WORKERS_SUBDOMAIN=fhfs pnpm run deploy
 
 首次发布显式指定账户已有的 `workers.dev` 子域 `fhfs`，供 Void 的就绪检查使用；成功发布后 Void 会缓存它。`void.config.ts` 中的 `workers_dev: true` 启用正式访问地址。
 
+当前 Worker 没有自定义域名路由，`workers.dev` 与版本预览均启用；配置显式保留 `routes: []`、`workers_dev: true` 和 `preview_urls: true`。更新 Secret 会产生新的 Worker 版本，显式配置可让 CI 在版本元数据变化后仍按现有访问设置安全发布。
+
 此前共享后台版本的生产环境仅配置了 `DATABASE_URL`。首次发布独立后台之前，必须补齐 `AUTH_SECRET` 和 `ADMIN_PASSWORD_HASH`；Void 会检查必需 Secret 是否存在，不会自动上传本地 `.env`。
 
 公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。`ADMIN_MODE` 已移除；后台始终留在本部署，不跳转到原站。分享图片和后台图标由本 Worker 生成，`ASSETS` 绑定提供本地字体。
