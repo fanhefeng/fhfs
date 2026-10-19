@@ -2,6 +2,8 @@
 
 `fhfs-site` 的 TanStack Start 版本。保留原站的中英双语、文章、软件、生活内容、33 个动效实验、3D 场景、音乐和主题切换；使用 React 19、TanStack Router、Tailwind CSS、Vite+ 和 Void。
 
+线上地址：[fhfs.fhfs.workers.dev](https://fhfs.fhfs.workers.dev)。通过 Void 官方 CLI 发布到 Cloudflare Workers，数据库和媒体服务与原站共享。
+
 ## 本地开发
 
 需要 Node 24 和 pnpm 11。Vite+ 管理开发、构建、Lint、格式和测试。

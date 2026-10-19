@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "fhf's — a personal magazine and private gallery: writing, software, motion studies, and a few rooms with their own records.",
-  "homepage": "",
+  "homepage": "https://fhfs.fhfs.workers.dev",
   "repository": "github:fanhefeng/fhfs",
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {

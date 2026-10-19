@@ -1,6 +1,6 @@
 # Void 部署
 
-新站部署目标是 Cloudflare 账户下的 Worker `fhfs`，预计默认地址为 `https://fhfs.fhfs.workers.dev`。当前上线状态以实际成功部署输出为准。
+新站已通过 Void 官方 CLI 发布到 Cloudflare Worker `fhfs`，线上地址为 [fhfs.fhfs.workers.dev](https://fhfs.fhfs.workers.dev)。2026-10-19 首次成功发布版本：`f8f8e4c8-a1f3-4bae-8cc6-2ceb2b8ea15a`。
 
 使用 `void` 的官方 Cloudflare 登录，不读取或提取其他 CLI 的认证令牌：
 
@@ -18,8 +18,12 @@ pnpm exec void connect --platform cloudflare
 ```sh
 pnpm exec void secret put DATABASE_URL
 pnpm exec void env check --remote
-pnpm deploy
+CLOUDFLARE_WORKERS_SUBDOMAIN=fhfs pnpm run deploy
 ```
+
+首次发布显式指定账户已有的 `workers.dev` 子域 `fhfs`，供 Void 的就绪检查使用；成功发布后 Void 会缓存它。`void.config.ts` 中的 `workers_dev: true` 启用正式访问地址。
+
+生产环境仅配置了 `DATABASE_URL` 这一个加密 Secret。默认共享原后台，登录、上传、GitHub 等密钥均无需复制。
 
 `SITE_URL` 可选；公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。生产 `ADMIN_MODE` 默认 `shared`，不要设置为 `local`。
 
@@ -42,6 +46,8 @@ pnpm smoke http://127.0.0.1:4173 --shared-admin
 ```
 
 Smoke 读取 sitemap 并检查所有公开页面，以及双语 RSS/搜索、404、后台鉴权、跨站请求、哈希资源和安全头。它不登录、不写数据库、不上传或删除媒体。
+
+2026-10-19 发布验证通过：`pnpm check` 的 411 项测试、生产构建，以及正式地址上的 120 个 sitemap 页面和上述接口检查。浏览器另验证了首页欢迎交互、页面内导航和语言切换。
 
 部署不运行数据库迁移、种子或导入脚本。`void info` 应显示没有需要创建的持久化资源。共享数据库的 schema 继续由 `fhfs-site` 管理。
 
