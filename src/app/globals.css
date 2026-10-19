@@ -1,0 +1,830 @@
+@import "tailwindcss";
+@import "./rounded.css";
+
+/* ---------------------------------------------------------------------------
+ * Gallery-editorial design system (Tailwind 4, CSS-first).
+ *
+ * Warm paper light theme is the default ("open gallery"); data-theme="dark"
+ * is the after-hours gallery. Glass is a *container* material (three tiers),
+ * aurora glow + 2.5% paper grain are the only atmosphere layers, amber is
+ * the single accent.
+ * ------------------------------------------------------------------------- */
+
+/* Tailwind's `dark:` variant follows the manual theme switch, not the OS —
+ * the inline script in layout.tsx resolves OS preference into data-theme. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* No built-in variant for this one — glass components use it to fall back
+ * to solid cards (see the .glass-* rules below for the non-utility path). */
+@custom-variant reduced-transparency (@media (prefers-reduced-transparency: reduce));
+
+/* ---------------------------------------------------------------------------
+ * Runtime tokens — light ("open") is :root, dark ("closed") overrides.
+ * Everything a component reads at runtime lives here; @theme only maps
+ * these into utility names.
+ * ------------------------------------------------------------------------- */
+:root {
+  /* What the browser draws for itself — scrollbars, form controls, the
+   * canvas before the first paint — follows this, not the tokens. Without
+   * it a closed gallery keeps a white scrollbar down its side. */
+  color-scheme: light;
+  --bg: #faf9f6;
+  --surface: #f2f0ea;
+  --surface-raised: #ffffff;
+  --fg: #1a1a1a;
+  /* Both tiers clear 4.5:1 on paper: tertiary carries dates, counts and
+   * captions at 11-12px, so hierarchy comes from size, not from fading out. */
+  --fg-secondary: rgba(26, 26, 26, 0.72);
+  --fg-tertiary: rgba(26, 26, 26, 0.62);
+  /* The one accent: amber. ≥4.5:1 on paper, used for link underlines,
+   * current-state markers and the lit lamp. */
+  --accent: #b45309;
+  --line: rgba(26, 26, 26, 0.08);
+
+  /* Aurora colors exist in both themes (glass needs something to refract);
+   * only the layer opacity changes per theme. */
+  --glow-warm: #ffb86b;
+  --glow-cool: #6e8bff;
+  --aurora-opacity: 0.1;
+
+  /* Warm paper needs warm shadows — cool grey shadows read dirty on it. */
+  --elev-card: 0 1px 2px rgba(120, 80, 40, 0.05), 0 8px 24px rgba(120, 80, 40, 0.08);
+  --elev-lift: 0 2px 6px rgba(120, 80, 40, 0.08), 0 18px 44px rgba(120, 80, 40, 0.13);
+  --sticker-shadow-color: rgba(120, 80, 40, 0.22);
+
+  /* Glass · three tiers (see .glass-thin / .glass-thick / .liquid-chip).
+   * The brighter border-top is the shared "lit from above" convention. */
+  --glass-thin-bg: rgba(255, 255, 255, 0.55);
+  --glass-thin-border: rgba(255, 255, 255, 0.65);
+  --glass-thin-top: rgba(255, 255, 255, 0.85);
+  --glass-thin-shadow: 0 8px 32px rgba(20, 20, 30, 0.08);
+  --glass-thick-bg: rgba(255, 255, 255, 0.72);
+  --glass-thick-border: rgba(255, 255, 255, 0.55);
+  --glass-thick-top: rgba(255, 255, 255, 0.8);
+  --glass-thick-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --glass-thick-shadow: 0 16px 48px rgba(20, 20, 30, 0.16);
+  --chip-bg: rgba(255, 255, 255, 0.15);
+  --chip-border: rgba(255, 255, 255, 0.55);
+  --chip-inset:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -8px 16px -8px rgba(255, 255, 255, 0.25);
+  --blur-thin: 12px;
+  --blur-thick: 20px;
+
+  /* Radii: chip / card / panel / full-capsule. Runtime names differ from
+   * the @theme keys (--radius-*) to avoid a self-referential theme value. */
+  --r-chip: 0.625rem;
+  --r-card: 1rem;
+  --r-panel: 1.5rem;
+
+  /* Code block canvas (see .prose-editorial pre). Follows --surface/--line,
+   * so both themes read from this one pair. */
+  --code-bg: var(--surface);
+  --code-border: var(--line);
+
+  /* Every role keeps its Latin face, then uses the same self-hosted Chinese
+   * family. Its unicode ranges exclude Latin, so dates, code and accent
+   * lettering keep their existing faces in both locales. */
+  --font-stack-cjk:
+    "FHFS Rounded SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC",
+    "Source Han Sans SC";
+  --font-stack-sans:
+    var(--font-nunito), var(--font-stack-cjk), ui-sans-serif, system-ui, sans-serif;
+  --font-stack-accent: var(--font-josefin), var(--font-stack-cjk), serif;
+  --font-stack-mono:
+    var(--font-geist-mono), var(--font-stack-cjk), ui-monospace, "SF Mono", SFMono-Regular, Menlo,
+    monospace;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e11;
+  --surface: #141417;
+  --surface-raised: #1a1a1f;
+  --fg: rgba(255, 255, 255, 0.92);
+  --fg-secondary: rgba(255, 255, 255, 0.68);
+  --fg-tertiary: rgba(255, 255, 255, 0.47);
+  /* The same amber, opened up two stops: #b45309 only reaches 3.8:1 against
+   * #0e0e11, which fails for the link and current-state text it carries. */
+  --accent: #d97706;
+  --line: rgba(255, 255, 255, 0.1);
+
+  /* The lamp is brighter after closing time. */
+  --aurora-opacity: 0.17;
+
+  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --elev-lift: 0 2px 6px rgba(0, 0, 0, 0.45), 0 18px 44px rgba(0, 0, 0, 0.5);
+  --sticker-shadow-color: rgba(0, 0, 0, 0.5);
+
+  --glass-thin-bg: rgba(20, 20, 25, 0.45);
+  --glass-thin-border: rgba(255, 255, 255, 0.1);
+  --glass-thin-top: rgba(255, 255, 255, 0.18);
+  --glass-thin-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --glass-thick-bg: rgba(16, 16, 20, 0.62);
+  --glass-thick-border: rgba(255, 255, 255, 0.12);
+  --glass-thick-top: rgba(255, 255, 255, 0.22);
+  --glass-thick-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-thick-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --chip-bg: rgba(255, 255, 255, 0.06);
+  --chip-border: rgba(255, 255, 255, 0.14);
+  --chip-inset: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Mobile GPUs pay dearly for large blur radii — drop both tiers. */
+@media (max-width: 767px) {
+  :root {
+    --blur-thin: 8px;
+    --blur-thick: 10px;
+  }
+}
+
+/* Registered so panel "materialize" can tween blur as a real length:
+ * backdrop-filter: blur(var(--panel-blur)) + GSAP tween 20px -> 0px.
+ * Only ever animated for entrance/exit instants, never continuously. */
+@property --panel-blur {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Theme map — utility names for the runtime tokens above.
+ * ------------------------------------------------------------------------- */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-fg: var(--fg);
+  --color-fg-secondary: var(--fg-secondary);
+  --color-fg-tertiary: var(--fg-tertiary);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
+
+  --font-sans: var(--font-stack-sans);
+  --font-display: var(--font-stack-sans);
+  --font-accent: var(--font-stack-accent);
+  --font-mono: var(--font-stack-mono);
+
+  /* Type scale. Latin display sizes carry negative tracking; the :lang()
+   * guard below zeroes it for Chinese, which never tracks negative. */
+  --text-display: clamp(2.5rem, 7vw, 6.5rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 650;
+  --text-display-sm: clamp(2rem, 4.5vw, 3.5rem);
+  --text-display-sm--line-height: 1.1;
+  --text-display-sm--letter-spacing: -0.025em;
+  --text-display-sm--font-weight: 600;
+  --text-title: clamp(1.5rem, 3vw, 2.25rem);
+  --text-title--line-height: 1.15;
+  --text-title--letter-spacing: -0.02em;
+  --text-title--font-weight: 600;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.35;
+  --text-heading--letter-spacing: -0.01em;
+  --text-heading--font-weight: 600;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.7;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.55;
+  /* Mono meta line: 11–12px uppercase, wide tracking. */
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1.5;
+  --text-meta--letter-spacing: 0.08em;
+  --tracking-meta: 0.08em;
+
+  --radius-chip: var(--r-chip);
+  --radius-card: var(--r-card);
+  --radius-panel: var(--r-panel);
+
+  --shadow-card: var(--elev-card);
+  --shadow-lift: var(--elev-lift);
+}
+
+/* Chinese display type never tracks negative (0 ~ +0.01em). :lang() reads
+ * the computed language, so an EN headline inside a zh page opts back into
+ * negative tracking simply by carrying lang="en". */
+:is(.text-display, .text-display-sm, .text-title, .text-heading):lang(zh),
+.prose-editorial :is(h1, h2, h3, h4):lang(zh) {
+  letter-spacing: 0.01em;
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------- */
+html {
+  /* Reserve the scrollbar gutter for good. Without it, locking the page
+     during the overture removes the scrollbar, ScrollTrigger measures the
+     pinned sections at the wider size, and the baked-in pin-spacer width
+     leaves the page scrollable sideways once the scrollbar returns. */
+  scrollbar-gutter: stable;
+  /* Belt and braces: clip (not hidden) keeps position: sticky working. */
+  overflow-x: clip;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  overflow-x: clip;
+  font-family: var(--font-stack-sans);
+  min-height: 100dvh;
+}
+
+/* Theme switch: ease surface colors only — never a global * transition.
+ * The 1.2s view-transition cross-fade rides on top when available; this
+ * ≥300ms fallback keeps non-supporting browsers free of brightness jumps. */
+body {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--fg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+/* The ring's 2px corner is a default for what has no corner of its own — an
+ * inline link, a bare button — so it sits in the base layer, under every
+ * `rounded-*` utility. Unlayered (where the outline stays, so nothing can
+ * switch it off by accident) it outranked them all: a round button went
+ * square the moment a keyboard reached it, and a pill lost its ends. */
+@layer base {
+  :focus-visible {
+    border-radius: 2px;
+  }
+}
+
+/* Press feedback baseline: feedback lands on pointer-down, everywhere.
+ * The standalone `scale` property is used on purpose — GSAP writes
+ * `transform`, so hover/entrance tweens and the press snap compose instead
+ * of clobbering each other. (No effect on non-replaced inline links.) */
+@layer base {
+  a,
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :where(a, button, [role="button"]) {
+    transition: scale 100ms ease-out;
+  }
+  :where(a, button, [role="button"]):active {
+    scale: 0.97;
+  }
+  /* A link inside a drawing scales about the drawing's corner, not its own
+   * middle (`transform-box: view-box`): pressed, it slid toward the top left —
+   * out from under the pointer, so the release missed it and no click came. */
+  :where(svg a):active {
+    scale: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Components
+ * ------------------------------------------------------------------------- */
+@layer components {
+  /* Glass · tier 1 — cards and HUDs. Needs aurora/imagery behind it;
+   * never place glass on a flat solid, never stack glass on glass. */
+  .glass-thin {
+    background-color: var(--glass-thin-bg);
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(160%);
+    backdrop-filter: blur(var(--blur-thin)) saturate(160%);
+    border: 1px solid var(--glass-thin-border);
+    border-top-color: var(--glass-thin-top);
+    box-shadow: var(--glass-thin-shadow);
+  }
+
+  /* Glass · tier 2 — expanded island, FullNav, panels. */
+  .glass-thick {
+    background-color: var(--glass-thick-bg);
+    -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(180%);
+    backdrop-filter: blur(var(--blur-thick)) saturate(180%);
+    border: 1px solid var(--glass-thick-border);
+    border-top-color: var(--glass-thick-top);
+    box-shadow: var(--glass-thick-inset), var(--glass-thick-shadow);
+  }
+
+  /* Glass · tier 3 — chips, capsules, small controls. High transparency,
+   * tiny blur, inner highlight: the low-cost liquid-glass look. */
+  .liquid-chip {
+    background-color: var(--chip-bg);
+    -webkit-backdrop-filter: blur(2px) saturate(160%);
+    backdrop-filter: blur(2px) saturate(160%);
+    border: 1px solid var(--chip-border);
+    border-radius: var(--r-chip);
+    box-shadow: var(--chip-inset);
+  }
+
+  /* Text sitting on glass: higher contrast, a step heavier, tracking up a
+   * hair — flat mid-grey text on glass is illegible over busy backdrops. */
+  .vibrancy {
+    color: color-mix(in srgb, var(--fg) 92%, transparent);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  /* ≥44px touch targets without inflating the visual: extend the hit area
+   * with a pseudo. The host just needs `position: relative` (included). */
+  .hit-ext {
+    position: relative;
+  }
+  .hit-ext::before {
+    content: "";
+    position: absolute;
+    inset: -0.625rem;
+  }
+}
+
+/* Accessibility fallbacks for every glass tier — outside @layer so they win
+ * over both the component rules and stray utility overrides. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-thin,
+  .glass-thick,
+  .liquid-chip {
+    background-color: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .glass-thin,
+  .glass-thick,
+  .liquid-chip {
+    background-color: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--fg-secondary);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Ambient layers (markup in fx/AuroraLayer and fx/GrainLayer)
+ * ------------------------------------------------------------------------- */
+
+/* Aurora: one warm + one cool glow drifting behind everything. Pure CSS
+ * gradients (no WebGL); blur is static, only transform animates, so the
+ * blurred blob rasterizes once and the 60–120s breath is compositor-only.
+ *
+ * Compositor-only is not the same as free, and that distinction was costing
+ * ~28% of a GPU process on an idle page. A continuous animation — any
+ * continuous animation, of any size — means the page never reaches a still
+ * frame, so the compositor keeps producing frames at the display's refresh
+ * rate (120 Hz here) and WindowServer keeps compositing them, forever. It was
+ * measured: replacing both blobs with a single animated 1×1px div cost exactly
+ * the same, and shrinking the blob, dropping the blur, or dropping the scale
+ * changed nothing. The bill is per *frame*, not per pixel.
+ *
+ * So the fix is to stop asking for frames rather than to make them cheaper:
+ * steps() quantises the drift to roughly one frame per second. Across a 30s
+ * keyframe segment each step moves the blob ~1.4px and scales it ~2.9px —
+ * both far under the 100px blur, so the breath still reads as continuous.
+ * .grain-layer has always done this (steps(8)) and is the reason it barely
+ * registered next to the aurora. Anything continuous added to this file will
+ * bring the idle cost straight back. */
+.aurora-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: clip;
+}
+.aurora-blob {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: var(--aurora-opacity);
+  /* The home page's grove fades this out while its canvas is live
+   * (approach.css.ts, body[data-grove-live]). */
+  transition: opacity 0.6s ease-out;
+  will-change: transform;
+}
+.aurora-blob--warm {
+  width: clamp(340px, 56vw, 760px);
+  left: -12%;
+  top: -18%;
+  background: radial-gradient(circle at 35% 35%, var(--glow-warm), transparent 70%);
+  animation: aurora-a 90s steps(30) infinite;
+}
+.aurora-blob--cool {
+  width: clamp(300px, 48vw, 640px);
+  right: -10%;
+  top: 4%;
+  background: radial-gradient(circle at 60% 40%, var(--glow-cool), transparent 70%);
+  animation: aurora-b 120s steps(30) infinite;
+}
+@keyframes aurora-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(6%, -4%, 0) scale(1.12);
+  }
+  66% {
+    transform: translate3d(-5%, 6%, 0) scale(0.94);
+  }
+}
+@keyframes aurora-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  40% {
+    transform: translate3d(-7%, 5%, 0) scale(1.1);
+  }
+  70% {
+    transform: translate3d(4%, -6%, 0) scale(0.95);
+  }
+}
+
+/* The intro's scroll hint, stepped for the reason the aurora above is stepped.
+ * Tailwind's `animate-pulse` is a continuous ease, and a continuous ease is a
+ * standing request for frames at the display's refresh rate — here on top of a
+ * 3D canvas that is otherwise completely idle, which put the parked intro
+ * stage at roughly a third of a GPU process all by itself. It also never
+ * stopped once scrolled past: the opening frame fades out on opacity, so the
+ * line stayed in the DOM, invisible, still animating.
+ *
+ * 16 steps over 2s moves opacity by at most ~0.06 at a time on a 1px line —
+ * there is nothing there to see stepping.
+ *
+ * Stepping alone still leaves 8 frames a second, and every one of those
+ * recomposites the whole page — including the 2.7 MP canvas underneath, which
+ * measured 8% of a GPU process for one 1px line. Promoting the line to its own
+ * layer does not help: the cost is the page-level composite each frame asks
+ * for, not the repaint. So the breath is also finite. Eight rounds is about
+ * sixteen seconds; a visitor who has not scrolled by then is not going to be
+ * persuaded by a line, and the page can fall completely still. The last
+ * keyframe is opacity 1, so it settles fully visible rather than mid-fade.
+ *
+ * Narrative.tsx removes the class outright once the opening frame is behind
+ * us — the frame fades out on opacity, so without that the line would go on
+ * breathing where nobody can see it. */
+.pulse-stepped {
+  animation: pulse-stepped 2s steps(16) 8;
+}
+@keyframes pulse-stepped {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Paper grain: 2.5% turbulence noise above the glass layers (anti-banding).
+ * Oversized so the barely-there drift never exposes an edge. */
+.grain-layer {
+  position: fixed;
+  inset: -100%;
+  width: 300%;
+  height: 300%;
+  pointer-events: none;
+  z-index: 90;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  animation: grain-drift 6s steps(8) infinite;
+}
+@keyframes grain-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-1.5%, 1%);
+  }
+  50% {
+    transform: translate(1%, -1.5%);
+  }
+  75% {
+    transform: translate(-1%, -1%);
+  }
+}
+
+/* The site serves one full-motion version to everyone (DESIGN.md §1.5) — and
+ * this is the whole of the CSS exception. These three are the only animations
+ * here that repeat over a large area with nothing to stop them: the aurora and
+ * the grain never end at all, which is exactly the case WCAG 2.2.2 wants a stop
+ * mechanism for, and reduce-motion is the only stop signal a page gets. The
+ * glow, the paper and the scroll hint all stay; they simply hold still.
+ * Everything else on the site is a one-shot entrance and is not gated — the
+ * one exception being the three waiting rings (the two admin buttons and the
+ * workbench's loader), which also spin with nothing to stop them but are
+ * gated where they are written, with `motion-reduce:` utilities, because they
+ * are Tailwind's animation rather than one of ours.
+ *
+ * Last in the section on purpose: these selectors carry no more specificity
+ * than the three rules above, so an earlier block would lose the cascade to
+ * `.grain-layer` and `.pulse-stepped` and stop only the aurora. (Verified in a
+ * browser — it did exactly that.)
+ *
+ * (`prefers-reduced-data` sat here before and did nothing — MDN is plain that
+ * it "is not supported by any user agent". Save-Data is handled where the
+ * megabytes are: `prefersSaveData()` skips both 3D scenes.) */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob,
+  .grain-layer,
+  .pulse-stepped {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Theme cross-fade — the "lights on" ritual.
+ * LightSwitch marks the root with data-vt="theme", wraps the swap in
+ * document.startViewTransition, and the snapshots cross-fade over 1.2s.
+ * Route/locale transitions keep the default UA timing.
+ * ------------------------------------------------------------------------- */
+:root[data-vt="theme"]::view-transition-old(root),
+:root[data-vt="theme"]::view-transition-new(root) {
+  animation-duration: 1.2s;
+  animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+}
+
+/* ---------------------------------------------------------------------------
+ * Editorial prose for MDX
+ * ------------------------------------------------------------------------- */
+.prose-editorial {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  max-width: 68ch;
+  /* Chrome shows the I-beam only on a line's own glyph box — 23px of the
+   * 28.9px line here — and the arrow in the leading and between paragraphs,
+   * so a pointer crossing the column changed shape twice a line (measured:
+   * 16 times down these eight lines, the same on a bare page). The column
+   * asks for one cursor instead; a link still takes the hand from the UA
+   * sheet. */
+  cursor: text;
+}
+/* …and a picture is not text. */
+.prose-editorial :is(img, video) {
+  cursor: auto;
+}
+.prose-editorial :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  margin: 2.4em 0 0.7em;
+  /* Anchor jumps must clear the fixed island + its blur scrim. */
+  scroll-margin-top: 7rem;
+}
+/* The article page supplies its own header spacing — the body starts flush. */
+.prose-editorial > :first-child {
+  margin-top: 0;
+}
+/* rehype-autolink-headings (behavior: "wrap") puts an <a> around every
+ * heading. It is a permalink, not a reference: it must not inherit the amber
+ * underline meant for links inside prose. */
+.prose-editorial :is(h1, h2, h3, h4) > a,
+.prose-editorial :is(h1, h2, h3, h4) > a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+.prose-editorial h2 {
+  font-size: 1.4375rem;
+}
+.prose-editorial h3 {
+  font-size: 1.1875rem;
+}
+.prose-editorial p {
+  margin: 1.15em 0;
+}
+/* Links: ink text with an amber underline; hover commits to amber. */
+.prose-editorial a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+.prose-editorial a:hover {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
+}
+/* After hours the amber needs a little warm light mixed in to stay legible. */
+:root[data-theme="dark"] .prose-editorial a:hover {
+  color: color-mix(in srgb, var(--accent) 55%, var(--glow-warm) 45%);
+  text-decoration-color: color-mix(in srgb, var(--accent) 55%, var(--glow-warm) 45%);
+}
+/* Pull quotes go to the accent face — the editorial voice change. Upright:
+ * the face carries the shift, in either script. */
+.prose-editorial blockquote {
+  font-family: var(--font-stack-accent);
+  font-size: 1.2em;
+  line-height: 1.6;
+  color: var(--fg-secondary);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  padding-left: 1.25rem;
+  margin: 1.8em 0;
+}
+/* Both accent faces have a real 300 axis. Keep the established Josefin
+ * lettering; Chinese now follows that weight in the shared rounded family.
+ * Unlayered, so the 400 here beats the 600 a `text-title` carries. */
+.accent-light {
+  font-weight: 400;
+  font-variation-settings: "wght" 300;
+}
+.prose-editorial ul,
+.prose-editorial ol {
+  padding-left: 1.5rem;
+  margin: 1.1em 0;
+}
+/* Child selectors on purpose: a plain `ol li` would out-specify `li` and
+ * number the bullets of a ul nested inside an ordered list. */
+.prose-editorial li {
+  margin: 0.35em 0;
+}
+.prose-editorial ul > li {
+  list-style: disc;
+}
+.prose-editorial ol > li {
+  list-style: decimal;
+}
+.prose-editorial li::marker {
+  color: var(--fg-tertiary);
+}
+.prose-editorial img {
+  max-width: 100%;
+  border-radius: var(--r-card);
+}
+.prose-editorial figcaption {
+  font-family: var(--font-stack-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--fg-tertiary);
+  margin-top: 0.6em;
+}
+.prose-editorial hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 2.5em auto;
+  width: 40%;
+}
+.prose-editorial table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  margin: 1.4em 0;
+}
+.prose-editorial :is(th, td) {
+  border-bottom: 1px solid var(--line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose-editorial th {
+  font-weight: 600;
+}
+.prose-editorial :not(pre) > code {
+  font-family: var(--font-stack-mono);
+  font-size: 0.875em;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.15em 0.4em;
+}
+/* Code blocks (rehype-pretty-code, keepBackground: false — the canvas is
+ * ours). Dual-theme token colors follow the documented pattern: with
+ * `theme: { light, dark }` every token carries `color: var(--shiki-light)`
+ * plus a `--shiki-dark` custom property, and we flip which one applies. */
+.prose-editorial pre {
+  font-family: var(--font-stack-mono);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  background: var(--code-bg);
+  border: 1px solid var(--code-border);
+  border-radius: var(--r-card);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.6em 0;
+}
+.prose-editorial code[data-theme*=" "],
+.prose-editorial code[data-theme*=" "] span {
+  color: var(--shiki-light);
+}
+:root[data-theme="dark"] .prose-editorial code[data-theme*=" "],
+:root[data-theme="dark"] .prose-editorial code[data-theme*=" "] span {
+  color: var(--shiki-dark);
+}
+/* Single-dark-theme output (e.g. tokyo-night alone): tokens are tuned for a
+ * dark canvas, so in the light theme the block becomes a dark terminal card
+ * instead of showing dim tokens on paper. */
+:root:not([data-theme="dark"]) .prose-editorial pre:has(> code:not([data-theme*=" "])) {
+  background: #1a1b26;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ---------------------------------------------------------------------------
+ * Print: only the page's <main> goes on paper.
+ *
+ * Everything else the layout mounts beside it — the island, the footer, the
+ * glow and grain, the route curtain, the overture, the music box — is either
+ * chrome or a fixed overlay, and a fixed overlay prints on *every* page.
+ * That used to happen: the opacity reset below (needed because GSAP
+ * entrance tweens leave below-the-fold content at inline opacity 0 until
+ * scrolled to, and paper never scrolls) also resurrected every overlay GSAP
+ * had hidden the same way, and the résumé came out under a grey veil with
+ * the loader's wordmark in the middle of each sheet. So the reset is scoped
+ * to <main>, and nothing outside it is printed at all.
+ *
+ * The rest is what makes /resume's print button an export: the tokens go
+ * to ink on white in either theme (the dark selector has to be named, or it
+ * out-specifies the light one) and the type steps down to résumé sizes.
+ * The size rules are unlayered, so they win over the layered utilities they
+ * override without any `!important`.
+ * ------------------------------------------------------------------------- */
+@media print {
+  body > :not(main):not(:has(main)) {
+    display: none !important;
+  }
+
+  main [style*="opacity"],
+  main [style*="visibility"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm 15mm;
+  }
+
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --fg: #111111;
+    --fg-secondary: #333333;
+    --fg-tertiary: #555555;
+    --accent: #8a4a10;
+    --line: #d4d4d4;
+  }
+
+  [data-resume] .text-display-sm {
+    font-size: 22pt;
+  }
+  [data-resume] .text-title {
+    font-size: 13pt;
+  }
+  [data-resume] .text-heading {
+    font-size: 12pt;
+  }
+  [data-resume] .text-body {
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+  [data-resume] .text-caption {
+    font-size: 9pt;
+    line-height: 1.45;
+  }
+  [data-resume] .text-meta {
+    font-size: 7.5pt;
+  }
+  [data-resume] a {
+    color: inherit;
+    text-decoration: none;
+  }
+  [data-resume] :is(h2, h3, h4) {
+    break-after: avoid;
+  }
+  /* A paragraph never leaves one line stranded at the foot or head of a
+     sheet — a résumé is read fast, and a widow reads as a typo. */
+  [data-resume] :is(p, li, dd) {
+    orphans: 3;
+    widows: 3;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * /admin — the one animation the workbench uses
+ *
+ * Panels that appear under a control (the Select listbox, the mobile section
+ * drawer) come up with it rather than blinking into place. It is a one-shot
+ * entrance on an element that has just mounted, so there is nothing to pause:
+ * §1.5's "no reduced-motion tiers" applies, and this is not one of the five
+ * exceptions. GSAP stays out of /admin entirely — the editor loads none of the
+ * front-end's animation rig, and a 140ms keyframe needs none of it.
+ * ------------------------------------------------------------------------- */
+@keyframes admin-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

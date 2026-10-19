@@ -1,0 +1,545 @@
+import { sql } from "drizzle-orm";
+import type { MomentMedia } from "../lib/moments";
+import type { FilmFacts, FilmLine, FilmRatio, FilmStill } from "../lib/films";
+import type { IdolMilestone, IdolPhoto } from "../lib/idols";
+import type { TrackId } from "../lib/tracks";
+import {
+  boolean,
+  check,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  unique,
+} from "drizzle-orm/pg-core";
+
+/**
+ * The content database. Two ways of saying "bilingual" live here on purpose:
+ *
+ *  - Long prose (posts, about) is stored one row per locale, keyed by
+ *    `(slug, locale)`. A slug may exist in only one language — the read layer
+ *    falls back to the other and flags it, which is the behaviour the site has
+ *    always had.
+ *  - Short fields (titles, taglines, blurbs) are a single `{ zh, en }` jsonb
+ *    column, matching the shape the YAML files already used.
+ *
+ * Anything that is a *visual* parameter — sticker angles, hues, animation
+ * timings — deliberately stays in code. Only content lives here.
+ */
+
+export const localeEnum = pgEnum("locale", ["zh", "en"]);
+export const appCategoryEnum = pgEnum("app_category", ["desktop", "tool", "game", "website"]);
+export const chipToneEnum = pgEnum("chip_tone", ["paper", "ink", "accent"]);
+export const secretKindEnum = pgEnum("secret_kind", ["essay", "podcast"]);
+
+/** Upload leases, not content. A save retains its files in the same SQL statement. */
+export const mediaUploads = pgTable(
+  "media_uploads",
+  {
+    id: text().primaryKey(),
+    batch: text().notNull(),
+    path: text().notNull().unique(),
+    size: integer().notNull(),
+    contentType: text("content_type").notNull(),
+    state: text()
+      .$type<"uploading" | "ready" | "retained" | "deleting" | "deleted" | "expired">()
+      .notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    discardedAt: timestamp("discarded_at", { withTimezone: true }),
+  },
+  (t) => [index("media_uploads_batch").on(t.batch), index("media_uploads_state").on(t.state)],
+);
+
+/** Every bilingual short field is this shape — the old `localeSchema`. */
+export type Localized = { zh: string; en: string };
+
+/** A bilingual list of lines: paragraphs, bullets, one item per string. */
+export type LocalizedLines = { zh: string[]; en: string[] };
+
+/** One row of the résumé's skills table: a heading and what falls under it. */
+export type SkillGroup = { name: string; items: string };
+
+/** A project inside a job on the résumé. `period` is freeform text or absent,
+ *  for the same reason `resume_experiences.period` is. */
+export type ResumeProject = {
+  title: string;
+  period: string | null;
+  bullets: string[];
+};
+
+const localized = (name?: string) =>
+  name ? jsonb(name).$type<Localized>() : jsonb().$type<Localized>();
+
+/** The empty value of every bilingual list column added after the table
+ *  existed — a default so the migration can fill the rows already there. */
+const EMPTY_LINES = sql`'{"zh":[],"en":[]}'::jsonb`;
+
+// ---------------------------------------------------------------------------
+// Long prose
+// ---------------------------------------------------------------------------
+
+/**
+ * `bodyMd` is what the author typed; `bodyHtml` is what the page renders.
+ * Both are kept: the editor needs the source, `readingMinutes()` counts the
+ * source, and a change of rendering pipeline has to be able to regenerate the
+ * HTML from something.
+ */
+export const posts = pgTable(
+  "posts",
+  {
+    id: serial().primaryKey(),
+    slug: text().notNull(),
+    locale: localeEnum().notNull(),
+    title: text().notNull(),
+    // Stored as a calendar day. The read layer widens it back to the ISO
+    // string the sort comparator and <time> elements expect.
+    date: date({ mode: "string" }).notNull(),
+    summary: text().notNull(),
+    // Tags are per-locale strings, not translations of each other: the Chinese
+    // post carries 手札, the English one carries notes. A tag entity table
+    // would change the /blog/tags/[tag] URLs, so they stay an array.
+    tags: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'`),
+    draft: boolean().notNull().default(false),
+    bodyMd: text("body_md").notNull(),
+    bodyHtml: text("body_html").notNull(),
+    readingMinutes: integer("reading_minutes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("posts_slug_locale").on(t.slug, t.locale)],
+);
+
+export const abouts = pgTable("abouts", {
+  locale: localeEnum().primaryKey(),
+  title: text().notNull(),
+  bodyMd: text("body_md").notNull(),
+  bodyHtml: text("body_html").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * 《不能说的秘密》— the essays and podcast episodes that are not the tech
+ * notes on /blog. Same shape as `posts` on purpose (one row per locale, keyed
+ * by `(slug, locale)`, the read layer falling back across languages), plus
+ * what an episode needs: its `kind`, the audio it plays and how long it runs.
+ * An essay leaves `audio` null; a podcast may still carry a body — its notes.
+ */
+export const secrets = pgTable(
+  "secrets",
+  {
+    id: serial().primaryKey(),
+    slug: text().notNull(),
+    locale: localeEnum().notNull(),
+    kind: secretKindEnum().notNull().default("essay"),
+    title: text().notNull(),
+    date: date({ mode: "string" }).notNull(),
+    summary: text().notNull(),
+    /** The episode's audio file or stream, as a full URL or a site path. */
+    audio: text(),
+    /** The episode's length in minutes, when known. Essays leave it null. */
+    duration: integer(),
+    draft: boolean().notNull().default(false),
+    bodyMd: text("body_md").notNull(),
+    bodyHtml: text("body_html").notNull(),
+    readingMinutes: integer("reading_minutes").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique("secrets_slug_locale").on(t.slug, t.locale)],
+);
+
+/**
+ * 《多的是你不知道的事》— the board of short posts, the way a QQ 空间 kept
+ * them: a few lines, a timestamp, nothing else asked of it. Written in one
+ * language, on purpose: these are lines said in the moment, not copy to
+ * translate, so the page chrome is bilingual and the lines are what they are.
+ *
+ * The first 242 came over from the 一言 app (`source` = "yiyan"), where they
+ * sat in two notebooks — `collection` keeps the notebook's name. `original`
+ * and `attribution` are that app's own distinction: a line of one's own, or a
+ * line worth keeping and who said it. Another 336 came from posts kept on
+ * another app, with the pictures, videos and voice notes under them; they
+ * carry no `source` or `collection`, and are keyed by the second they were
+ * posted, the way a line written in the admin is (`m-20200118-232807`).
+ */
+export const moments = pgTable("moments", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  content: text().notNull(),
+  // When it was said — an instant, not a day: a board like this shows the hour.
+  postedAt: timestamp("posted_at", { withTimezone: true }).notNull(),
+  collection: text(),
+  original: boolean().notNull().default(true),
+  /** Who said it, for a line that is not the author's own. */
+  attribution: text(),
+  /** Where the line came from: "yiyan" for the 一言 import, null for the rest. */
+  source: text(),
+  /** An optional one-word mood — the board's equivalent of a tag. */
+  mood: text(),
+  /**
+   * The pictures, voice notes and videos under the line, in order — see
+   * `MomentMedia`. Empty for a line that is only words, which most are; a
+   * line may also be only this, with `content` empty. The second import is
+   * where nearly all of these came from.
+   */
+  media: jsonb()
+    .$type<MomentMedia[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  draft: boolean().notNull().default(false),
+  /** Held at the top of the board whatever its date. The home page's card
+   *  ignores it: that one is always the newest line. */
+  pinned: boolean().notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// Structured content
+// ---------------------------------------------------------------------------
+
+/**
+ * A life numbered like software releases. `sort` ascends newest-first (5.1 is
+ * 1, 1.0 is 10) — the same convention the YAML files used.
+ *
+ * The CHECK enforces what the old YAML could only ask for in a comment: an
+ * entry states a real date, or it labels the gap. It never invents one.
+ */
+export const timelineEntries = pgTable(
+  "timeline_entries",
+  {
+    id: serial().primaryKey(),
+    key: text().notNull().unique(),
+    version: text().notNull(),
+    date: date({ mode: "string" }),
+    dateLabel: localized("date_label"),
+    title: localized().notNull(),
+    note: localized().notNull(),
+    sort: integer().notNull(),
+  },
+  (t) => [
+    check("timeline_has_date_or_label", sql`${t.date} IS NOT NULL OR ${t.dateLabel} IS NOT NULL`),
+  ],
+);
+
+/**
+ * `accent` folds in what used to be `APP_ACCENT` on the portfolio page, and
+ * `hue` folds in the `HUES` index-modulo on the software page — two separate
+ * palettes that gave the same app two different colours. One column now.
+ */
+export const apps = pgTable("apps", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  name: text().notNull(),
+  tagline: localized().notNull(),
+  description: localized().notNull(),
+  category: appCategoryEnum().notNull(),
+  website: text().notNull(),
+  // "owner/name" on GitHub. The version shown beside an app is read from
+  // this repo's latest release at render time (src/lib/server/github.ts), so a new
+  // release updates the site without anyone retyping a number here.
+  repo: text(),
+  platforms: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  accent: text(),
+  hue: integer(),
+  sort: integer().notNull().default(0),
+});
+
+export const works = pgTable("works", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  title: localized().notNull(),
+  description: localized().notNull(),
+  year: integer().notNull(),
+  cover: text(),
+  url: text(),
+  tags: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  // Stored for the same reason apps carry one: a colour derived from list
+  // position repaints the whole wall the moment anything is reordered.
+  accent: text(),
+  sort: integer().notNull().default(0),
+});
+
+// ---------------------------------------------------------------------------
+// The rooms with a page per row
+// ---------------------------------------------------------------------------
+
+/**
+ * The films room: a row per film, `/films/<key>`. A page is the synopsis (the
+ * facts, then the story, a paragraph per line), the film's own lines, and the
+ * wall of stills with a caption each (`FilmStill`) — nothing in between; the
+ * section labels, shared by every film, stay in the catalogue under `films`.
+ * `track` is the record the room puts on at its door (`lib/tracks`), or null
+ * for none; `cover` names the still on the index card. Came over from code
+ * with its three films on 2026-09-29; the lede, each section's own heading
+ * and the parts went on 2026-10-02 (DESIGN-LOG), so there is no column left
+ * for an opinion to be written in.
+ */
+export const films = pgTable("films", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  title: localized().notNull(),
+  /** The index card's line, and the page's description: what the film is. */
+  subtitle: localized().notNull(),
+  /** The title in the other script — the original, on the English page. */
+  latin: localized().notNull(),
+  year: text().notNull(),
+  track: text().$type<TrackId>(),
+  accent: text(),
+  /** The frame every print on the wall is cut to (`FilmRatio`). */
+  ratio: text().$type<FilmRatio>().notNull(),
+  cover: text(),
+  facts: jsonb().$type<FilmFacts>().notNull(),
+  story: jsonb().$type<LocalizedLines>().notNull().default(EMPTY_LINES),
+  lines: jsonb()
+    .$type<FilmLine[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  stills: jsonb()
+    .$type<FilmStill[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  /** The rights line at the foot — whose stills these are. */
+  credit: localized().notNull(),
+  /** Being hung: only the admin's preview shows it (`app/admin/preview`). */
+  draft: boolean().notNull().default(false),
+  sort: integer().notNull().default(0),
+});
+
+/**
+ * The idols wall: a row per idol, `/idols/<key>`. The name and the numbers,
+ * the photographs with their provenance (`IdolPhoto`), the milestones. The
+ * statue on Kobe's page is code, not a column — see `lib/idols`.
+ */
+export const idols = pgTable("idols", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  name: localized().notNull(),
+  latin: localized().notNull(),
+  kicker: localized().notNull(),
+  /** Printed as written, in both languages: `1978 – 2020`. */
+  years: text().notNull(),
+  /** The shirt numbers, or whatever stands for them: `8 · 24`. */
+  numbers: text().notNull(),
+  lede: localized().notNull(),
+  accent: text(),
+  cover: text(),
+  galleryKicker: localized("gallery_kicker").notNull(),
+  galleryTitle: localized("gallery_title").notNull(),
+  galleryLede: localized("gallery_lede").notNull(),
+  photos: jsonb()
+    .$type<IdolPhoto[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  timelineKicker: localized("timeline_kicker").notNull(),
+  timelineTitle: localized("timeline_title").notNull(),
+  timeline: jsonb()
+    .$type<IdolMilestone[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  credit: localized().notNull(),
+  draft: boolean().notNull().default(false),
+  sort: integer().notNull().default(0),
+});
+
+/**
+ * The /intro résumé, one row per sticker. The spatial half — direction, size,
+ * rotation, distance — stays in `src/lib/intro/stickers.ts`, because those
+ * numbers were hand-calibrated against one head model and mean nothing to an
+ * editor. `key` is the join.
+ *
+ * `stickerLabel`/`stickerIcon` are stored but not yet consumed: the 3D scene
+ * still reads label and icon from `INTRO_STICKERS`, and the admin form labels
+ * the two fields accordingly. Wire the scene to these columns before treating
+ * them as the source of truth.
+ */
+export const introNodes = pgTable("intro_nodes", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  kicker: localized().notNull(),
+  title: localized().notNull(),
+  period: localized(),
+  body: localized().notNull(),
+  bullets: jsonb().$type<{ zh: string[]; en: string[] }>().notNull(),
+  // Latin on purpose: CJK turns to mush at sticker texture resolution.
+  stickerLabel: text("sticker_label").notNull(),
+  stickerIcon: text("sticker_icon").notNull(),
+  sort: integer().notNull().default(0),
+});
+
+/**
+ * The /resume page apart from the jobs: who this is, one line of what they
+ * do, the summary and its bullet points, the skills table, open-source work
+ * and education, and how to reach them. A singleton — `key` is always "main"
+ * — kept as a keyed row rather than a locale-keyed pair because every field
+ * here is a short bilingual pair or list, not long prose.
+ *
+ * Bullets and skill items may carry `**strong**` and `` `code` `` inline —
+ * the one bit of markup the page honours (src/lib/resume.ts). Nothing is
+ * rendered as HTML.
+ */
+export const resumeProfiles = pgTable("resume_profiles", {
+  key: text().primaryKey(),
+  name: localized().notNull(),
+  tagline: localized().notNull(),
+  /**
+   * The prose of the page — "Who", "What I have built", "How I work" — each
+   * a heading with its paragraphs, in the order they appear, rendered ahead
+   * of everything else. Reuses the ResumeProject shape (title + lines,
+   * `period` unused) so the admin textarea speaks the one grammar it already
+   * has for a heading with lines under it.
+   */
+  sections: jsonb()
+    .$type<{ zh: ResumeProject[]; en: ResumeProject[] }>()
+    .notNull()
+    .default(EMPTY_LINES),
+  /** Summary paragraphs. */
+  intro: jsonb().$type<LocalizedLines>().notNull(),
+  /** Bullets under the summary — the claims with numbers in them. */
+  highlights: jsonb().$type<LocalizedLines>().notNull().default(EMPTY_LINES),
+  skills: jsonb().$type<{ zh: SkillGroup[]; en: SkillGroup[] }>().notNull().default(EMPTY_LINES),
+  /** Open source and side projects, one bullet each. */
+  projects: jsonb().$type<LocalizedLines>().notNull().default(EMPTY_LINES),
+  /** One line per degree. */
+  education: jsonb().$type<LocalizedLines>().notNull().default(EMPTY_LINES),
+  email: text(),
+  github: text(),
+  /** A links page (Linktree or the like), as a full URL. */
+  website: text(),
+  location: localized(),
+  /** One line beside the contact details — an aside in the author's voice
+   *  ("offers welcome"), kept out of the summary so it can change alone. */
+  note: localized(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * One row per stretch of the road, read by /resume and drawn as a line on
+ * /about. Since 2026-10-04 a row is a city rather than an employer —
+ * `company` holds the place, `role` one line of what the work was — and
+ * `sort` runs oldest first, the way a journey is told. `period` is freeform
+ * bilingual text ("2025 – 至今" / "2025 – Present") rather than date columns
+ * — the same discipline as the timeline: state what is true, never invent a
+ * date.
+ *
+ * `bullets` are the row's own points; `projects` groups further points under
+ * a named project. Both are empty on the short résumé and only /resume would
+ * show them.
+ */
+export const resumeExperiences = pgTable("resume_experiences", {
+  id: serial().primaryKey(),
+  key: text().notNull().unique(),
+  company: localized().notNull(),
+  role: localized().notNull(),
+  period: localized().notNull(),
+  url: text(),
+  /** One line under the heading — what the team or company is. */
+  summary: localized(),
+  bullets: jsonb().$type<LocalizedLines>().notNull(),
+  projects: jsonb()
+    .$type<{ zh: ResumeProject[]; en: ResumeProject[] }>()
+    .notNull()
+    .default(EMPTY_LINES),
+  sort: integer().notNull().default(0),
+});
+
+/**
+ * The sticker wall. `label` is bilingual but the two sides are often identical
+ * — proper nouns like TypeScript read the same in both languages.
+ */
+export const chips = pgTable("chips", {
+  id: serial().primaryKey(),
+  label: localized().notNull(),
+  tone: chipToneEnum().notNull().default("paper"),
+  sort: integer().notNull().default(0),
+});
+
+/**
+ * One nav table replacing four drifted copies (Header, Footer, FullNav and
+ * sitemap each kept their own list — /intro only ever reached the sitemap,
+ * home only ever reached FullNav). `surfaces` says where a link shows up.
+ */
+export const navItems = pgTable("nav_items", {
+  id: serial().primaryKey(),
+  href: text().notNull(),
+  // Still points at a `nav.<key>` label in the message catalogue.
+  labelKey: text("label_key").notNull(),
+  surfaces: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'`),
+  sort: integer().notNull().default(0),
+  // Which wing of the site the link belongs to — `issue` / `rooms` / `me`
+  // (`src/lib/nav.ts`), or null for a row on its own. The footer clusters by
+  // it, the full-screen menu hangs a group's rows under its door, and /life
+  // lists the rooms. Column named `nav_group`: GROUP is a reserved word.
+  group: text("nav_group"),
+});
+
+/**
+ * The site's copy, where it differs from the files.
+ *
+ * `messages/*.json` holds every line and stays the default; a row here is an
+ * override merged over it in `src/i18n/request.ts`, so an empty table means
+ * the site reads exactly as the files say. Only edited lines get a row, which
+ * is what lets the admin's "clear the field" mean *restore the default*.
+ *
+ * Both columns are nullable, and null means "this language is not overridden".
+ * A headline rewritten in Chinese must not pin the English line to whatever
+ * the file happened to say that day — the two languages are edited, and given
+ * up, one at a time. A row with both columns null carries nothing and is
+ * deleted instead (`src/app/admin/actions/copy.ts`).
+ */
+export const copyBlocks = pgTable("copy_blocks", {
+  key: text().primaryKey(),
+  zh: text(),
+  en: text(),
+});
+
+/*
+ * There is deliberately no `site_settings` table.
+ *
+ * It existed briefly and read to nobody: `src/config/site.ts` stayed the real
+ * source while a copy of it sat here, which is the exact duplication this
+ * whole migration was meant to end — and the worse kind, because the stale
+ * copy looked authoritative enough to edit.
+ *
+ * The split that settles it: content goes in the database, deployment config
+ * stays in code. `site.url` decides canonical URLs, hreflang, OG image
+ * addresses and the sitemap's domain; it belongs to the environment a build
+ * runs in, not to a row someone can retype. The rest — title, description,
+ * the signature, the GitHub link — changes about once a year, and buying it an
+ * editor would have meant threading async through forty-odd call sites, five
+ * client components and every `generateMetadata` on the site.
+ */
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
+/** Login throttling. An in-memory counter would not survive serverless. */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: serial().primaryKey(),
+    ip: text().notNull(),
+    at: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  // Every login counts this address's rows inside the window; without the
+  // index that is a full scan of a table that only ever grows between logins.
+  (t) => [index("login_attempts_ip_at").on(t.ip, t.at)],
+);

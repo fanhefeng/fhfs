@@ -1,0 +1,522 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { gsap, useGSAP, EASE } from "@/lib/client/gsap";
+import { lockScroll, unlockScroll } from "@/lib/client/scrollLock";
+import { announceOvertureDone, markOvertureSeen } from "@/lib/client/overture";
+import { SPLASH_INIT_SCRIPT, SPLASH_SEEN_KEY, splashDebug, splashDue } from "@/lib/client/splash";
+import { NeonSignArt, RING, score } from "@/components/neon/NeonSignArt";
+import { useBrickWall, wireNeonSign } from "@/components/neon/sign";
+import { WALL_CSS } from "@/components/neon/wall";
+
+type Props = {
+  /** The dialog's accessible name: what the sign says. */
+  label: string;
+  welcome: string;
+  /** The switch's one name. `aria-pressed` says whether the sign is lit; a
+   *  label that flipped too was read as "switch the sign off, pressed". */
+  sign: string;
+  enter: string;
+  enterHint: string;
+};
+
+type Phase = "pending" | "up" | "done";
+
+/** Timeline landmarks of the way in (s). */
+const LIGHTS_AT = 0.4;
+const IRIS_AT = 0.3;
+const IRIS_FOR = 0.45;
+const DONE_AT = 0.8;
+const PUSH_AT = 0.75;
+const PUSH_FOR = 1.0;
+
+/**
+ * The front door: welcome to fhf's.
+ *
+ * The neon over the door of Seb's, re-lettered, on a brick wall the size of
+ * the viewport — the first thing a reader landing on the cover sees, once
+ * per session. The sign lights up by itself and asks for the music; the sign
+ * is the switch for both (`lib/client/jukebox` — the player is behind the wall, in
+ * the layout, so the tune follows the reader inside). The way in is through
+ * the ring: the letters go dark, the ring holds, the paper of the cover
+ * shows through it as an iris opens, and the wall pushes past the reader
+ * with the ring growing around them until the tube has left the corners of
+ * the screen. The masthead rises behind it on the overture's done event —
+ * this door stands in for the opening ritual on the cover.
+ *
+ * Mechanics: the "due" decision is made before first paint by an inline
+ * script (`lib/client/splash`), so a returning reader never sees the wall flash and
+ * a reader arriving by client navigation never sees it at all; scroll is
+ * locked under the lenis contract while the door is up; the way in is the
+ * button, Enter/Space/Escape, a wheel or a swipe once the sign holds; the
+ * push is one transform on a masked layer — the hole tracks the ring
+ * because the mask lives in the layer's own coordinates and scales with it.
+ */
+export function NeonSplash({ label, welcome, sign, enter, enterHint }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const wallRef = useRef<HTMLCanvasElement>(null);
+  const spillRef = useRef<HTMLDivElement>(null);
+  const welcomeRef = useRef<HTMLParagraphElement>(null);
+  const footRef = useRef<HTMLDivElement>(null);
+  const switchRef = useRef<HTMLButtonElement>(null);
+  const enterRef = useRef<HTMLButtonElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const [phase, setPhase] = useState<Phase>("pending");
+  const [powered, setPowered] = useState(false);
+  const poweredRef = useRef(false);
+  /** Set by the choreography; the buttons call them. */
+  const toggleRef = useRef<(() => void) | null>(null);
+  const stutterRef = useRef<(() => void) | null>(null);
+  const enterRefFn = useRef<(() => void) | null>(null);
+
+  /* ---- the wall ---- */
+  useBrickWall(stageRef, wallRef, switchRef, phase === "up");
+
+  /* ---- the choreography ---- */
+  useGSAP(
+    (_ctx, contextSafe) => {
+      const root = rootRef.current;
+      const stage = stageRef.current;
+      const svg = svgRef.current;
+      const spill = spillRef.current;
+      const welcomeEl = welcomeRef.current;
+      const foot = footRef.current;
+      const sign = switchRef.current;
+      const enterBtn = enterRef.current;
+      if (
+        !root ||
+        !stage ||
+        !svg ||
+        !spill ||
+        !welcomeEl ||
+        !foot ||
+        !sign ||
+        !enterBtn ||
+        !contextSafe
+      ) {
+        return;
+      }
+
+      // Not owed: a returning reader, a client navigation, blocked storage.
+      if (!splashDue()) {
+        setPhase("done");
+        return;
+      }
+      setPhase("up");
+      const debug = splashDebug();
+      // The door is a modal, so focus starts inside it — on the dialog itself,
+      // which a screen reader announces by its name (the sign), rather than on
+      // a control: the switch is not the first thing to do here, and the way
+      // in is still dark. Tab moves on to the switch; the trap below keeps it
+      // on the wall. The dialog is not a control, so it draws no ring.
+      root.focus({ preventScroll: true });
+
+      lockScroll();
+      let locked = true;
+      const unlock = () => {
+        if (!locked) return;
+        locked = false;
+        unlockScroll({ refresh: true });
+      };
+
+      let entering = false;
+      const neon = wireNeonSign({
+        svg,
+        spill,
+        sign,
+        stage,
+        welcome: [welcomeEl, foot],
+        welcomeStagger: 0.25,
+        poweredRef,
+        setPowered,
+        held: () => entering,
+        // The wall is the whole viewport.
+        pointer: (e) => ({
+          nx: e.clientX / window.innerWidth - 0.5,
+          ny: e.clientY / window.innerHeight - 0.5,
+        }),
+      });
+      const { seg, letters, main } = neon;
+      const ring = seg("ring");
+      const bar = seg("bar");
+      const note = seg("note");
+      toggleRef.current = contextSafe(neon.toggle);
+      stutterRef.current = contextSafe(neon.stutter);
+
+      // Initial states, set in JS so the SSR markup stays a finished, dark wall.
+      gsap.set([welcomeEl, foot], { autoAlpha: 0 });
+      // A beat of dark wall, then the transformer warms up.
+      const lightsCall = gsap.delayedCall(LIGHTS_AT, neon.powerOn);
+
+      /* ---- the way in ---- */
+      let exit: gsap.core.Timeline | null = null;
+      const finish = () => {
+        unlock();
+        document.removeEventListener("focusin", onFocusIn);
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchstart", onTouchStart);
+        window.removeEventListener("touchmove", onTouchMove);
+        document.documentElement.dataset.splash = "seen";
+        if (!debug) {
+          try {
+            sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
+          } catch {
+            /* Showing the door again beats crashing the page. */
+          }
+          // The opening ritual is not owed after the door: the masthead and
+          // the lamp both read this key.
+          markOvertureSeen();
+        }
+        setPhase("done");
+      };
+
+      const goIn = () => {
+        if (entering) return;
+        entering = true;
+        lightsCall.kill();
+        neon.freeze();
+
+        // The door lights to let the reader through, whatever the switch says.
+        gsap.set([ring, note], { opacity: 1 });
+
+        // The ring, where it hangs right now (parallax included).
+        const box = svg.getBoundingClientRect();
+        const cx = box.left + box.width * RING.cx;
+        const cy = box.top + box.height * RING.cy;
+        const rIn = box.width * RING.inner;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const far = Math.max(
+          Math.hypot(cx, cy),
+          Math.hypot(vw - cx, cy),
+          Math.hypot(cx, vh - cy),
+          Math.hypot(vw - cx, vh - cy),
+        );
+        // Far enough that the tube's inner edge has cleared the last corner.
+        const S = (far / rIn) * 1.06 + 0.1;
+
+        stage.style.transformOrigin = `${cx}px ${cy}px`;
+        stage.style.setProperty("--ns-cx", `${cx}px`);
+        stage.style.setProperty("--ns-cy", `${cy}px`);
+        stage.style.setProperty("--ns-hole", "0px");
+        stage.classList.add("is-opening");
+
+        const p = { u: 0, s: 1 };
+        const apply = () => {
+          stage.style.setProperty("--ns-hole", `${(rIn * p.u).toFixed(1)}px`);
+          stage.style.transform = `scale(${p.s.toFixed(4)})`;
+        };
+
+        const tl = gsap.timeline({ onComplete: finish });
+        exit = tl;
+        tl.to([welcomeEl, foot], { autoAlpha: 0, duration: 0.25, ease: EASE.exit }, 0);
+        // The letters and the bar lose power; the ring and the note hold the door.
+        letters.forEach((l, i) =>
+          score(tl, l, 0.05 + i * 0.04, [
+            [0.04, 0],
+            [0.03, 0.5],
+            [0.04, 0],
+          ]),
+        );
+        score(tl, bar, 0.12, [
+          [0.05, 0],
+          [0.04, 0.6],
+          [0.04, 0],
+        ]);
+        tl.to(spill, { opacity: 0.5, duration: 0.35, ease: EASE.linear }, 0.1);
+        // The iris: paper shows through the ring.
+        tl.to(p, { u: 1, duration: IRIS_FOR, ease: EASE.travel, onUpdate: apply }, IRIS_AT);
+        // Relay: the masthead starts rising as the ring begins to grow.
+        tl.add(announceOvertureDone, DONE_AT);
+        // The push: through the door, the ring growing around the reader.
+        tl.to(p, { s: S, duration: PUSH_FOR, ease: EASE.exit, onUpdate: apply }, PUSH_AT);
+      };
+      enterRefFn.current = contextSafe(goIn);
+
+      // The wall is opaque, so anything focusable behind it would take an
+      // invisible focus ring — and Enter would activate an unseen link.
+      const onFocusIn = (e: FocusEvent) => {
+        const target = e.target;
+        if (target instanceof Node && !root.contains(target))
+          enterBtn.focus({ preventScroll: true });
+      };
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.target === sign && (e.key === "Enter" || e.key === " ")) return;
+        if (e.target === enterBtn && (e.key === "Enter" || e.key === " ")) return;
+        if (["Enter", " ", "Escape", "ArrowDown", "PageDown"].includes(e.key)) {
+          e.preventDefault();
+          goIn();
+        }
+      };
+      // A wheel or a swipe down is the same wish, once the sign holds.
+      const ready = () => poweredRef.current && !main.isActive();
+      const onWheel = (e: WheelEvent) => {
+        if (e.deltaY > 20 && ready()) goIn();
+      };
+      let touchY: number | null = null;
+      const onTouchStart = (e: TouchEvent) => {
+        touchY = e.touches[0]?.clientY ?? null;
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        const y = e.touches[0]?.clientY;
+        if (touchY !== null && y !== undefined && touchY - y > 48 && ready()) goIn();
+      };
+      document.addEventListener("focusin", onFocusIn);
+      window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("wheel", onWheel, { passive: true });
+      window.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+
+      return () => {
+        lightsCall.kill();
+        neon.kill();
+        exit?.kill();
+        toggleRef.current = null;
+        stutterRef.current = null;
+        enterRefFn.current = null;
+        document.removeEventListener("focusin", onFocusIn);
+        window.removeEventListener("keydown", onKeyDown);
+        window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchstart", onTouchStart);
+        window.removeEventListener("touchmove", onTouchMove);
+        // Restore scroll even if we unmount mid-way (a locale switch).
+        unlock();
+        // The lights belong to this run: a re-run (dev's double mount)
+        // starts dark again, or its call would find the switch already
+        // thrown and never light the sign.
+        poweredRef.current = false;
+        setPowered(false);
+      };
+    },
+    { scope: rootRef },
+  );
+
+  if (phase === "done") return null;
+
+  return (
+    <>
+      {/* The pre-paint decision, as raw HTML: see ThemeInitScript for why a
+          script goes through a wrapper element rather than a React <script>. */}
+      <div
+        hidden
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: `<script>${SPLASH_INIT_SCRIPT}</script>` }}
+      />
+      <div
+        ref={rootRef}
+        className="ns"
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        tabIndex={-1}
+      >
+        <style href="home-neon-splash" precedence="medium">
+          {WALL_CSS + CSS}
+        </style>
+        <div ref={stageRef} className="nb-stage ns-stage">
+          <canvas ref={wallRef} className="nb-wall" aria-hidden="true" />
+          <div ref={spillRef} className="nb-spill" aria-hidden="true" />
+
+          <div className="ns-room">
+            <div className="ns-body">
+              <p ref={welcomeRef} className="ns-welcome">
+                {welcome}
+              </p>
+              <button
+                ref={switchRef}
+                type="button"
+                className="ns-switch"
+                aria-pressed={powered}
+                aria-label={sign}
+                onClick={() => toggleRef.current?.()}
+                onPointerEnter={() => stutterRef.current?.()}
+              >
+                <NeonSignArt id="ns" svgRef={svgRef} className="ns-sign" />
+              </button>
+            </div>
+
+            <div ref={footRef} className="ns-foot">
+              <button
+                ref={enterRef}
+                type="button"
+                className="ns-enter"
+                onClick={() => enterRefFn.current?.()}
+              >
+                <span>{enter}</span>
+                <span className="ns-enter-arrow" aria-hidden="true">
+                  →
+                </span>
+              </button>
+              <p className="ns-enter-hint">{enterHint}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+const CSS = `
+/* Decided before first paint: a returning reader never sees the wall, and a
+   reader without scripting is not shut behind a door that cannot open. */
+html[data-splash="seen"] .ns,
+html:not([data-js]) .ns { display: none; }
+
+/* The wall is fixed to the viewport, and the viewport stops where the
+   scrollbar's gutter starts (scrollbar-gutter: stable, globals.css). On a
+   classic-scrollbar system that left a strip of paper down the wall's right
+   edge. The gutter is painted by the root, so while the wall is up the root is
+   the mortar's colour. */
+html[data-js][data-splash="due"] { background-color: #0a0a0f; }
+
+.ns {
+  position: fixed;
+  inset: 0;
+  z-index: 96;
+  color: #f3f1ea;
+}
+/* Focused on open so a screen reader starts inside the door; the wall is not
+   something to press, so it wears no focus ring. */
+.ns:focus { outline: none; }
+.ns-stage {
+  position: absolute;
+  inset: 0;
+  border: 0;
+}
+/* The way in: a hole in the wall where the ring is, in the wall's own
+   coordinates so the one transform carries it. */
+.ns-stage.is-opening {
+  will-change: transform;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--ns-cx, 50%) var(--ns-cy, 55%),
+    transparent var(--ns-hole, 0px),
+    #000 calc(var(--ns-hole, 0px) + 1px)
+  );
+  mask-image: radial-gradient(
+    circle at var(--ns-cx, 50%) var(--ns-cy, 55%),
+    transparent var(--ns-hole, 0px),
+    #000 calc(var(--ns-hole, 0px) + 1px)
+  );
+}
+
+.ns-room {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+.ns-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.6vh, 1rem);
+  padding: clamp(2rem, 6vh, 4rem) 1.5rem 0.25rem;
+}
+
+/* The channel letters over the sign: warm, lit from inside, a little haze. */
+.ns-welcome {
+  margin: 0;
+  padding-left: 0.34em;
+  font-family: var(--font-stack-accent);
+  font-size: clamp(1.05rem, 2.6vw, 1.7rem);
+  font-weight: 400;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: #f6eedf;
+  text-shadow:
+    0 0 10px rgba(255, 236, 210, 0.55),
+    0 0 30px rgba(255, 222, 184, 0.25);
+}
+
+.ns-switch {
+  appearance: none;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  line-height: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+.ns-switch:focus-visible {
+  outline: 2px solid rgba(180, 200, 255, 0.85);
+  outline-offset: 14px;
+}
+.ns-switch:active { transform: none; }
+
+.ns-sign {
+  display: block;
+  width: min(52vh, 82vw, 520px);
+  aspect-ratio: 1;
+  height: auto;
+  overflow: visible;
+}
+
+.ns-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.5rem max(clamp(1.5rem, 5vh, 3rem), env(safe-area-inset-bottom));
+}
+
+/* The way in: one warm control, in the letters' light. */
+.ns-enter {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.7rem 1.4rem;
+  border: 1px solid rgba(246, 238, 223, 0.32);
+  border-radius: 999px;
+  background: rgba(10, 10, 15, 0.35);
+  font-family: var(--font-stack-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #f6eedf;
+  text-shadow: 0 0 12px rgba(255, 236, 210, 0.35);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
+}
+.ns-enter:hover,
+.ns-enter:focus-visible {
+  border-color: rgba(246, 238, 223, 0.7);
+  box-shadow: 0 0 24px rgba(255, 222, 184, 0.16);
+  background: rgba(10, 10, 15, 0.5);
+}
+.ns-enter:focus-visible {
+  outline: 2px solid rgba(180, 200, 255, 0.85);
+  outline-offset: 4px;
+}
+.ns-enter:active { transform: scale(0.97); }
+.ns-enter-arrow {
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ns-enter:hover .ns-enter-arrow { transform: translateX(3px); }
+
+.ns-enter-hint {
+  margin: 0;
+  font-family: var(--font-stack-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(243, 241, 234, 0.38);
+}
+
+@media (max-height: 640px) {
+  .ns-enter-hint { display: none; }
+}
+`;

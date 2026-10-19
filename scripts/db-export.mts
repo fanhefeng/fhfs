@@ -1,0 +1,209 @@
+/**
+ * Writes the whole database out to `backup/`, so the content keeps a
+ * plain-text life outside Postgres.
+ *
+ * This matters more than a normal backup would. Moving content into a
+ * database traded away the two things files gave for free: a diff and a
+ * history. Exporting into the repo hands both back — `git log backup/` is a
+ * record of what the site has said, and a restore needs nothing but
+ * `db:import`.
+ *
+ * Two shapes, on purpose:
+ *   backup/db.json      every table, complete, and what db:import reads
+ *   backup/posts/*.md   the prose again as markdown with frontmatter, so a
+ *                       diff on an article reads like a diff on an article
+ *   backup/about.*.md   the about page's prose, outside posts/ so a post
+ *                       slugged "about" can never collide with it
+ *
+ * db:import reads only db.json — the markdown copies exist for the diff.
+ *
+ * Drafts stay out. The repository is public, and so is the `db-snapshots`
+ * branch the nightly workflow commits this to: a draft exported here would
+ * be readable on GitHub the same night, which is exactly what marking it a
+ * draft was meant to prevent. A draft therefore lives only in the database
+ * (and Neon's own history) until it is published — and since db:import only
+ * upserts posts, secrets, moments, films and idols, restoring a backup never
+ * deletes one.
+ *
+ *   pnpm db:export
+ */
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { asc, eq, inArray } from "drizzle-orm";
+import { stringify as toYaml } from "yaml";
+import * as schema from "../src/db/schema";
+import { connect } from "./connect.mjs";
+import { uploadIds } from "../src/lib/mediaUploads";
+
+const db = connect();
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const OUT = path.join(ROOT, "backup");
+/**
+ * The snapshot is built next door and moved into place. `backup/` is the
+ * committed copy of the database, and emptying it before the first write means
+ * a connection that drops halfway leaves a half-written backup where a whole
+ * one used to be — recoverable from git, but only if someone notices.
+ */
+const STAGE = path.join(ROOT, ".backup.staging");
+
+/**
+ * Every ordering below is total, not just sorted.
+ *
+ * `sort` and `slug` repeat — two rows per slug, one per language — and a
+ * partial ordering leaves the tie to the planner, which is free to answer
+ * differently each time. That turns an unchanged database into a file that
+ * keeps rewriting itself, and a diff that cries wolf is a diff nobody reads.
+ */
+const data = {
+  posts: await db
+    .select()
+    .from(schema.posts)
+    .where(eq(schema.posts.draft, false))
+    .orderBy(asc(schema.posts.slug), asc(schema.posts.locale)),
+  abouts: await db.select().from(schema.abouts).orderBy(asc(schema.abouts.locale)),
+  secrets: await db
+    .select()
+    .from(schema.secrets)
+    .where(eq(schema.secrets.draft, false))
+    .orderBy(asc(schema.secrets.slug), asc(schema.secrets.locale)),
+  moments: await db
+    .select()
+    .from(schema.moments)
+    .where(eq(schema.moments.draft, false))
+    .orderBy(asc(schema.moments.postedAt), asc(schema.moments.key)),
+  timelineEntries: await db
+    .select()
+    .from(schema.timelineEntries)
+    .orderBy(asc(schema.timelineEntries.sort), asc(schema.timelineEntries.key)),
+  apps: await db.select().from(schema.apps).orderBy(asc(schema.apps.sort), asc(schema.apps.key)),
+  works: await db
+    .select()
+    .from(schema.works)
+    .orderBy(asc(schema.works.sort), asc(schema.works.key)),
+  films: await db
+    .select()
+    .from(schema.films)
+    .where(eq(schema.films.draft, false))
+    .orderBy(asc(schema.films.sort), asc(schema.films.key)),
+  idols: await db
+    .select()
+    .from(schema.idols)
+    .where(eq(schema.idols.draft, false))
+    .orderBy(asc(schema.idols.sort), asc(schema.idols.key)),
+  introNodes: await db
+    .select()
+    .from(schema.introNodes)
+    .orderBy(asc(schema.introNodes.sort), asc(schema.introNodes.key)),
+  resumeProfiles: await db
+    .select()
+    .from(schema.resumeProfiles)
+    .orderBy(asc(schema.resumeProfiles.key)),
+  resumeExperiences: await db
+    .select()
+    .from(schema.resumeExperiences)
+    .orderBy(asc(schema.resumeExperiences.sort), asc(schema.resumeExperiences.key)),
+  chips: await db.select().from(schema.chips).orderBy(asc(schema.chips.sort), asc(schema.chips.id)),
+  navItems: await db
+    .select()
+    .from(schema.navItems)
+    .orderBy(asc(schema.navItems.sort), asc(schema.navItems.href)),
+  copyBlocks: await db.select().from(schema.copyBlocks).orderBy(asc(schema.copyBlocks.key)),
+  mediaUploads: [] as (typeof schema.mediaUploads.$inferSelect)[],
+};
+
+// Export only leases for URLs already present in this public snapshot.
+// Temporary uploads and files belonging solely to drafts stay private.
+const publicUploadIds = uploadIds(data);
+if (publicUploadIds.length)
+  data.mediaUploads = await db
+    .select()
+    .from(schema.mediaUploads)
+    .where(inArray(schema.mediaUploads.id, publicUploadIds))
+    .orderBy(asc(schema.mediaUploads.id));
+
+// Serial ids and timestamps are restatements of the data, not part of it —
+// leaving them out keeps the diff to what someone actually changed.
+const strip = <T extends Record<string, unknown>>(rows: T[]) =>
+  rows.map(({ id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...rest }) => rest);
+
+await rm(STAGE, { recursive: true, force: true });
+await mkdir(path.join(STAGE, "posts"), { recursive: true });
+
+try {
+  await writeFile(
+    path.join(STAGE, "db.json"),
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(data).map(([table, rows]) => [
+          table,
+          table === "mediaUploads"
+            ? (rows as typeof data.mediaUploads).map(
+                ({ createdAt: _createdAt, discardedAt: _discardedAt, ...row }) => ({
+                  ...row,
+                  state: "retained",
+                }),
+              )
+            : strip(rows as any),
+        ]),
+      ),
+      null,
+      2,
+    ) + "\n",
+  );
+
+  /** The article again, as the file it used to be. */
+  for (const post of data.posts) {
+    const frontmatter = toYaml({
+      title: post.title,
+      date: post.date,
+      tags: post.tags,
+      summary: post.summary,
+    });
+    await writeFile(
+      path.join(STAGE, "posts", `${post.slug}.${post.locale}.md`),
+      `---\n${frontmatter}---\n\n${post.bodyMd}`,
+    );
+  }
+
+  /** The secrets likewise, in their own folder — a slug shared with a post
+   *  must not overwrite it. */
+  await mkdir(path.join(STAGE, "secrets"), { recursive: true });
+  for (const secret of data.secrets) {
+    const frontmatter = toYaml({
+      title: secret.title,
+      kind: secret.kind,
+      date: secret.date,
+      summary: secret.summary,
+      ...(secret.audio ? { audio: secret.audio } : {}),
+      ...(secret.duration != null ? { duration: secret.duration } : {}),
+    });
+    await writeFile(
+      path.join(STAGE, "secrets", `${secret.slug}.${secret.locale}.md`),
+      `---\n${frontmatter}---\n\n${secret.bodyMd}`,
+    );
+  }
+
+  for (const about of data.abouts) {
+    const frontmatter = toYaml({ title: about.title });
+    await writeFile(
+      path.join(STAGE, `about.${about.locale}.md`),
+      `---\n${frontmatter}---\n\n${about.bodyMd}`,
+    );
+  }
+} catch (error) {
+  await rm(STAGE, { recursive: true, force: true });
+  throw error;
+}
+
+// Every write landed: the old backup goes, and the staged one takes its name.
+// Outside the guard above on purpose — the moment `backup/` is gone the
+// staged copy is the only copy there is, and a rename that fails must leave
+// it standing rather than be swept up as a failed write.
+await rm(OUT, { recursive: true, force: true });
+await rename(STAGE, OUT);
+
+const counts = Object.entries(data).map(
+  ([table, rows]) => `${table} ${(rows as unknown[]).length}`,
+);
+console.log(`backup/ written — ${counts.join(", ")} (drafts left out)`);

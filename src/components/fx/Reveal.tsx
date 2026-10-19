@@ -1,0 +1,92 @@
+"use client";
+
+import { useRef } from "react";
+import type { ReactNode, Ref } from "react";
+import { gsap, useGSAP, EASE } from "@/lib/client/gsap";
+
+type Props = {
+  children: ReactNode;
+  /** Wrapper element — keep it semantic (section/ul/…), default div. */
+  as?: "div" | "section" | "span" | "ul" | "ol" | "li" | "header" | "footer" | "aside";
+  className?: string;
+  /**
+   * When set, the wrapper's direct children animate in sequence with this
+   * gap (seconds) instead of the wrapper moving as one block.
+   */
+  stagger?: number;
+  /** An explicit role — `role="list"` on a `ul`/`ol` whose bullets are
+   *  styled away, which WebKit would otherwise stop announcing as a list. */
+  role?: string;
+};
+
+/**
+ * The site-wide entrance values (DESIGN.md §1.5), exported for the places
+ * that cannot use the component — nested targets, matchMedia gates — yet
+ * must stay on the same motion grammar.
+ *
+ * `opacity`, and deliberately not `autoAlpha`. The extra thing autoAlpha does
+ * is `visibility: hidden`, and what has not entered yet is everything below
+ * the fold: hidden that way it left the tab order, the accessibility tree and
+ * find-in-page — a keyboard went from the first screen straight to the
+ * footer, and since nothing had scrolled, nothing was ever revealed for it.
+ * Transparent content can still take the focus, the browser scrolls to what
+ * is focused, and the scroll is what plays the entrance.
+ */
+export const REVEAL_VARS = {
+  y: 24,
+  opacity: 0,
+  duration: 0.6,
+  ease: EASE.soft,
+} as const;
+
+/** Where the entrance fires: once, when the trigger's top clears 85%. */
+export const REVEAL_START = "top 85%";
+
+/**
+ * How many children of a staggered list take their turn. The list enters on
+ * one trigger — its own top — so the delays run on down rows nobody has
+ * reached yet: a year of seventy-eight moments at 0.05s kept its last entry
+ * invisible for four seconds after the reader had jumped to it. The first
+ * dozen are the ones a screen can hold, and they keep the cascade; the rest
+ * arrive together on the dozen's heels.
+ */
+const STAGGER_TURNS = 12;
+
+/**
+ * The one scroll entrance of the site: y:24 / opacity:0 → 0.6s power2.out,
+ * fired once at "top 85%". Content is always in the DOM (SSR/SEO safe) —
+ * GSAP hides it only on the client just before the from-tween runs.
+ */
+export function Reveal({ children, as = "div", className, stagger, role }: Props) {
+  const ref = useRef<HTMLElement>(null);
+  // Pinned to one concrete tag rather than ElementType: @react-three/fiber
+  // merges every three.js element into the global JSX.IntrinsicElements, so
+  // the props of an open-ended element union intersect down to `never` and
+  // even `children` stops type-checking. Every tag `as` allows is a plain
+  // HTML element, so the props are interchangeable and only the ref needs
+  // restating.
+  const Tag = as as "div";
+
+  useGSAP(
+    () => {
+      const el = ref.current;
+      if (!el) return;
+      const targets: gsap.TweenTarget = stagger != null ? Array.from(el.children) : el;
+      gsap.from(targets, {
+        ...REVEAL_VARS,
+        stagger: stagger != null ? (i: number) => Math.min(i, STAGGER_TURNS) * stagger : 0,
+        // Leave no inline residue once landed, so hover tweens and Flip
+        // reads elsewhere see clean elements.
+        clearProps: "transform,opacity,visibility",
+        scrollTrigger: { trigger: el, start: REVEAL_START, once: true },
+      });
+    },
+    { scope: ref },
+  );
+
+  return (
+    <Tag ref={ref as Ref<HTMLDivElement>} className={className} role={role}>
+      {children}
+    </Tag>
+  );
+}

@@ -1,0 +1,33 @@
+import { isNavGroup } from "@/lib/nav";
+import { AdminChrome } from "../AdminChrome";
+import { NavForm } from "./NavForm";
+import { Note } from "../ui/Note";
+
+export default function NavPage({
+  data,
+}: {
+  data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
+}) {
+  const { rows } = data;
+
+  return (
+    <AdminChrome title="导航" section="/admin/nav">
+      <Note>
+        <p>
+          一条链接可以同时出现在好几个地方。文案 key 指向 <code>messages</code> 里的
+          <code> nav.&lt;key&gt;</code>——那些界面标签不在数据库里，加新条目要先在两个 JSON
+          里补上对应的词，语言文件里没有的 key 存不进去。清空路径即删除。
+        </p>
+        <p>
+          分组决定页脚把它放进哪一栏、全屏菜单里归在哪个入口下（入口 =
+          同组里勾了顶栏的那一行），以及是否出现在 <code>/life</code>{" "}
+          的目录里：新的生活类栏目选「生活」，勾 页脚 / 全屏菜单 /
+          sitemap，放在这一组的末尾即可，顶栏不用动。
+        </p>
+      </Note>
+      <NavForm
+        items={rows.map((row) => ({ ...row, group: isNavGroup(row.group) ? row.group : null }))}
+      />
+    </AdminChrome>
+  );
+}

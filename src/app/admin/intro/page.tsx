@@ -1,0 +1,61 @@
+import { AdminChrome } from "../AdminChrome";
+import { RecordList } from "../ui/RecordList";
+import { deleteIntroNode, saveIntroNode } from "../actions/intro";
+import type { Field, RecordData } from "../ui/RecordForm";
+import { Note } from "../ui/Note";
+
+const FIELDS: Field[] = [
+  { name: "key", label: "key", kind: "text", readOnly: true },
+  { name: "kicker", label: "小标题", kind: "localized" },
+  { name: "title", label: "标题", kind: "localized" },
+  { name: "period", label: "时间段（可空）", kind: "localized" },
+  { name: "body", label: "正文", kind: "localizedArea", rows: 4 },
+  { name: "bullets", label: "要点", kind: "lines", hint: "一行一条，空行忽略。" },
+  // 贴花贴图目前仍读代码里的 INTRO_STICKERS —— 这两个字段存进库但页面
+  // 还没消费它们，等渲染端接上前先如实标注。
+  { name: "stickerLabel", label: "贴纸文字（暂未生效）", kind: "text" },
+  { name: "stickerIcon", label: "贴纸 emoji（暂未生效）", kind: "text" },
+  { name: "sort", label: "排序", kind: "number" },
+];
+export default function IntroPage({
+  data,
+}: {
+  data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
+}) {
+  const { rows } = data;
+
+  const blank: RecordData = {
+    key: "",
+    kicker: { zh: "", en: "" },
+    title: { zh: "", en: "" },
+    period: { zh: "", en: "" },
+    body: { zh: "", en: "" },
+    bullets: { zh: [], en: [] },
+    stickerLabel: "",
+    stickerIcon: "",
+    sort: (rows.at(-1)?.sort ?? -1) + 1,
+  };
+  return (
+    <AdminChrome title="简历节点" section="/admin/intro">
+      <Note>
+        每条对应 <code>/intro</code> 上头像的一张贴纸，靠 key 关联。贴纸的位置、
+        大小、角度是手工标定的 3D 参数，留在代码里（<code>lib/intro/stickers.ts</code>）——
+        这里改的是文字。key 在那边没有对应贴纸的话，这条不会被访问到。
+      </Note>
+      <RecordList
+        action={saveIntroNode}
+        deleteAction={deleteIntroNode}
+        fields={FIELDS}
+        rows={rows.map((row) => ({
+          id: row.key,
+          label: `${row.stickerIcon}  ${row.title.zh}`,
+          meta: row.stickerLabel,
+          data: row,
+        }))}
+        blank={blank}
+        blankLabel="新节点"
+        unit="个"
+      />
+    </AdminChrome>
+  );
+}

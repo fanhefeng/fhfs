@@ -1,0 +1,316 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vite-plus/test";
+
+/**
+ * The rules in AGENTS.md that break silently: a page that still renders, a
+ * save that still succeeds. Each is checked against the source here, because
+ * nothing at runtime would ever say so.
+ */
+
+const src = fileURLToPath(new URL("../../", import.meta.url));
+const rel = (file: string) => path.relative(src, file).split(path.sep).join("/");
+
+function sourceFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const name of readdirSync(dir)) {
+    const file = path.join(dir, name);
+    if (statSync(file).isDirectory()) {
+      if (name !== "__tests__") out.push(...sourceFiles(file));
+    } else if (/\.tsx?$/.test(name)) out.push(file);
+  }
+  return out;
+}
+
+const files = sourceFiles(src).map((file) => ({
+  file: rel(file),
+  text: readFileSync(file, "utf8"),
+}));
+
+/** Top-level declarations of a module: split where a line starts a new one. */
+function declarations(text: string): string[] {
+  return text.split(
+    /^(?=(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|const|let|class)\s)/m,
+  );
+}
+
+/** The body of a function declaration, comments removed. */
+function body(declaration: string): string {
+  const signatureEnd = declaration.search(/\)\s*(?::[^{]+)?\{\s*$/m);
+  return declaration
+    .slice(declaration.indexOf("{", signatureEnd))
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+}
+
+describe("public pages", () => {
+  // Without it a page under an unknown segment renders anyway, in no language
+  // the site has. The layout checks the segment by hand, as pageLocale does.
+  it("all start from pageLocale(params)", () => {
+    const pages = files.filter(({ file }) =>
+      /^app\/\[locale\]\/.*(page|layout)\.server\.tsx$/.test(file),
+    );
+    expect(pages.length).toBeGreaterThan(10);
+    expect(
+      pages
+        .filter(({ text }) => !/await pageLocale\(|\bhasLocale\(routing\.locales/.test(text))
+        .map(({ file }) => file),
+    ).toEqual([]);
+  });
+
+  // Deprecated by next-intl in favour of next/root-params (i18n/request.ts).
+  it("never hand the locale to next-intl by hand", () => {
+    expect(
+      files
+        .filter(({ text }) => /\bsetRequestLocale\s*\(|\{\s*requestLocale\b/.test(text))
+        .map(({ file }) => file),
+    ).toEqual([]);
+  });
+});
+
+describe("the database", () => {
+  // An uncached read renders correctly and then ignores every later edit.
+  // /admin reads the tables directly on purpose: the workbench shows what is
+  // stored, not what the cache says. The login throttle is a write path.
+  it("is imported only by the read layer, the admin and the login throttle", () => {
+    const allowed = /^(lib\/server\/content\.ts|lib\/server\/auth\/throttle\.ts|app\/admin\/|db\/)/;
+    const importsDb = /from\s+"(@\/db|(\.\.?\/)+db)(\/[^"]*)?"/;
+    const strays = files
+      .filter(({ file, text }) => !allowed.test(file) && importsDb.test(text))
+      // Types and the schema's own enums carry no connection.
+      .filter(({ text }) =>
+        /import\s+(?!type\b)[^;]*from\s+"(@\/db|(\.\.?\/)+db)(\/index)?"/.test(text),
+      );
+    expect(strays.map(({ file }) => file)).toEqual([]);
+  });
+
+  it("is read in content.ts only from inside unstable_cache", () => {
+    const content = files.find(({ file }) => file === "lib/server/content.ts");
+    expect(content).toBeDefined();
+    const uncached = declarations(content!.text)
+      .filter((d) => /\bdb\s*\.\s*(select|query|execute|batch|\$count)/.test(d))
+      .filter((d) => !/^(?:export\s+)?const\s+\w+\s*=\s*unstable_cache\(/.test(d))
+      .map((d) => d.split("\n")[0]);
+    expect(uncached).toEqual([]);
+  });
+
+  it("is never cached with a revalidate window in content.ts", () => {
+    const content = files.find(({ file }) => file === "lib/server/content.ts")!;
+    expect(content.text.match(/revalidate:\s*\d+/g) ?? []).toEqual([]);
+  });
+});
+
+describe("admin server actions", () => {
+  it("checks the upload lease session and Origin before reading its payload", () => {
+    const route = files.find(({ file }) => file === "app/admin/media/uploads/route.ts")!;
+    const post = declarations(route.text).find((d) =>
+      /^export\s+async\s+function\s+POST\b/.test(d),
+    )!;
+    const implementation = body(post);
+    expect(implementation.slice(1).trim().split(";")[0]).toContain("adminSession()");
+    expect(implementation.indexOf('request.headers.get("origin")')).toBeGreaterThan(0);
+    expect(implementation.indexOf('request.headers.get("origin")')).toBeLessThan(
+      implementation.indexOf("request.json()"),
+    );
+  });
+  const actionFiles = files.filter(
+    ({ file, text: _text }) =>
+      file.startsWith("app/admin/") &&
+      !file.startsWith("app/admin/login/") &&
+      file.endsWith(".server.ts") &&
+      file.includes("/actions/"),
+  );
+  const actions = actionFiles.flatMap(({ file, text }) =>
+    declarations(text)
+      .filter((d) => /^export\s+async\s+function\s/.test(d))
+      .map((d) => ({ name: `${file}: ${d.match(/function\s+(\w+)/)![1]}`, body: body(d) })),
+  );
+
+  it("are found", () => {
+    expect(actions.length).toBeGreaterThan(15);
+  });
+
+  // The proxy's check is optimistic; this is the authorization boundary.
+  it("all check the session before anything else", () => {
+    const late = actions.filter(({ body }) => {
+      const first = body.slice(1).trim().split(";")[0]!;
+      return !/\b(requireAdmin|adminSession)\(\)/.test(first);
+    });
+    expect(late.map(({ name }) => name)).toEqual([]);
+  });
+
+  // updateTag, through invalidate(): a save that skips it succeeds and
+  // changes nothing anyone can see.
+  it("all invalidate what they wrote", () => {
+    expect(
+      actions.filter(({ body }) => !/\binvalidate\(/.test(body)).map(({ name }) => name),
+    ).toEqual([]);
+  });
+
+  // …and last: a write after it lands in a cache that has already been told
+  // nothing changed. After the call, all an action may do is hand back its
+  // result or leave for another page.
+  it("invalidate after the last write, then only return or redirect", () => {
+    const late = actions.filter(({ body }) => {
+      const call = body.lastIndexOf("invalidate(");
+      if (call === -1) return false;
+      const rest = body.slice(body.indexOf(";", call) + 1).replace(/\}\s*$/, "");
+      return rest
+        .split(";")
+        .map((statement) => statement.trim())
+        .filter(Boolean)
+        .some((statement) => !/^(?:if\s*\([^)]*\)\s*)?(?:return\b|redirect\()/.test(statement));
+    });
+    expect(late.map(({ name }) => name)).toEqual([]);
+  });
+
+  it("never reach for revalidateTag, which serves the saver the stale copy", () => {
+    expect(
+      actionFiles.filter(({ text }) => /\brevalidateTag\s*\(/.test(text)).map(({ file }) => file),
+    ).toEqual([]);
+  });
+});
+
+describe("admin save forms", () => {
+  // React resets a <form action={fn}> when fn returns — an error included —
+  // and these forms are uncontrolled, so the reset is the unsaved text. The
+  // form still works and the error still shows; only the article is gone.
+  it("submit through useSaveAction, never useActionState directly", () => {
+    const direct = files.filter(
+      ({ file, text }) =>
+        file.startsWith("app/admin/") &&
+        !file.startsWith("app/admin/login/") &&
+        file !== "app/admin/ui/useSaveAction.ts" &&
+        /\buseActionState\b/.test(text),
+    );
+    expect(direct.map(({ file }) => file)).toEqual([]);
+  });
+
+  // Checked form by form rather than by counting calls: a new editor that
+  // wires its <form> some other way is named here. The exceptions hold
+  // nothing typed worth keeping — a delete, the logout, the password box.
+  it("each one, every form in the admin but the three that hold no text", () => {
+    const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+    const forms = files.filter(
+      ({ file, text }) => file.startsWith("app/admin/") && /<form\b/.test(code(text)),
+    );
+    expect(forms.length).toBeGreaterThan(10);
+    expect(
+      forms
+        .filter(({ text }) => !/\buseSaveAction\(/.test(text))
+        .map(({ file }) => file)
+        .sort(),
+    ).toEqual([
+      "app/admin/AdminSidebar.tsx",
+      "app/admin/login/LoginForm.tsx",
+      "app/admin/ui/DeleteRow.tsx",
+    ]);
+  });
+});
+
+describe("Flip animations", () => {
+  // Reverting a flip that has *finished* puts back the inline styles its
+  // entrance tweens recorded mid-flight: /software went A → B → all and kept
+  // one of B's cards in the grid, hidden and displaced, with no error. What
+  // replaces the revert is `captureGrid` in src/lib/client/flipGrid.ts.
+  it("are never played in a useGSAP that reverts on update", () => {
+    const flips = files.filter(({ text }) => /\b(Flip\.from|playGrid)\(/.test(text));
+    expect(flips.length).toBeGreaterThan(2);
+    const reverted = flips.filter(({ text }) => /revertOnUpdate:\s*true/.test(text));
+    expect(reverted.map(({ file }) => file)).toEqual([]);
+  });
+});
+
+describe("eases", () => {
+  // An ease written as a string still animates — it just stops being the
+  // site's motion language, one call site at a time, and nothing says so.
+  // Every curve is a named token in src/lib/client/gsap.ts's EASE table.
+  it("come from the EASE table, never as a string at the call site", () => {
+    const literal = /\bease\w*\s*[:=]\s*["'`]/;
+    const offenders = files
+      .filter(({ file }) => file !== "lib/client/gsap.ts")
+      .flatMap(({ file, text }) =>
+        text
+          // Comments may name a curve; blank them, keeping the line count.
+          .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ""))
+          .split("\n")
+          .map((line, i) => ({ line: line.replace(/\/\/.*$/, ""), at: `${file}:${i + 1}` }))
+          .filter(({ line }) => literal.test(line))
+          .map(({ at }) => at),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("the accent face", () => {
+  const accentClasses = files.flatMap(({ file, text }) =>
+    [...text.matchAll(/["'`][^"'`]*\bfont-accent\b[^"'`]*["'`]/g)].map(([classes]) => ({
+      file,
+      classes,
+    })),
+  );
+
+  // Josefin Sans is set light or regular (src/app/fonts.ts). The title,
+  // heading and display sizes carry a weight of their own, and an accent line
+  // set at one of them comes out semi-bold — it still renders, just as a
+  // heavier face than the line beside it, with no warning anywhere.
+  it("is set at its own weight wherever a size would make it bold", () => {
+    const weighted = /\btext-(?:title|heading|display(?:-sm)?)\b/;
+    const offenders = accentClasses
+      .filter(
+        ({ classes }) =>
+          weighted.test(classes) && !/\b(?:font-normal|accent-light)\b/.test(classes),
+      )
+      .map(({ file, classes }) => `${file}: ${classes}`);
+    expect(offenders).toEqual([]);
+  });
+
+  // No italic is loaded for it, so an `italic` beside it is a slant the
+  // browser shears on by itself.
+  it("is never set italic", () => {
+    const offenders = accentClasses
+      .filter(({ classes }) => /\bitalic\b/.test(classes))
+      .map(({ file, classes }) => `${file}: ${classes}`);
+    expect(offenders).toEqual([]);
+  });
+
+  // It was `font-serif` until 2026-10-03. Tailwind ships a `font-serif` of
+  // its own (ui-serif, Georgia), so a class left behind would not fail — it
+  // would quietly set the system serif.
+  it("is not reached through Tailwind's font-serif", () => {
+    const offenders = files
+      .filter(({ text }) => /\bfont-serif\b/.test(text))
+      .map(({ file }) => file);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("fonts", () => {
+  it("uses one Chinese family behind the existing Latin faces in every role", () => {
+    const css = readFileSync(path.join(src, "app/globals.css"), "utf8");
+    expect(css).toContain('@import "./rounded.css"');
+    expect(css).not.toContain('@import "./yozai.css"');
+    const cjk = /--font-stack-cjk:([^;]+);/.exec(css)?.[1];
+    expect(cjk?.trim().startsWith('"FHFS Rounded SC"')).toBe(true);
+    for (const [role, latin] of [
+      ["sans", "nunito"],
+      ["accent", "josefin"],
+      ["mono", "geist-mono"],
+    ]) {
+      const stack = new RegExp(`--font-stack-${role}:([^;]+);`).exec(css)?.[1];
+      expect(stack?.trim().startsWith(`var(--font-${latin}), var(--font-stack-cjk)`)).toBe(true);
+    }
+    const admin = readFileSync(path.join(src, "app/admin/admin.module.css"), "utf8");
+    // The admin's UI metadata stays in Nunito; technical fields stay in Geist Mono.
+    expect(admin).toContain("--font-stack-mono: var(--font-stack-sans)");
+    expect(admin).toMatch(/var\(--font-geist-mono\), var\(--font-stack-cjk\)/);
+  });
+
+  it("never require a font provider during builds or OG regeneration", () => {
+    const externalFonts = files.filter(({ text }) =>
+      /next\/font\/google|fonts\.(?:googleapis|gstatic)\.com/.test(text),
+    );
+    expect(externalFonts.map(({ file }) => file)).toEqual([]);
+  });
+});

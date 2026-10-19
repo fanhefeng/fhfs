@@ -1,0 +1,254 @@
+"use client";
+
+import { useRef } from "react";
+import { gsap, useGSAP, ScrollTrigger, EASE } from "@/lib/client/gsap";
+import { REVEAL_START, REVEAL_VARS } from "@/components/fx/Reveal";
+
+/** One row of the list. The page localizes before handing it over. */
+export type ChangelogEntry = {
+  id: string;
+  /** The mono line over the title: the years on /about, `fhf 5.1` in the lab. */
+  label: string;
+  /** Four-digit year for the rail, or a dash when there is none. */
+  year: string;
+  /**
+   * The exact day the node's bubble shows — ISO, or the localized placeholder
+   * when the real date is unknown — and the node button's accessible name
+   * ("Released 2026-07-31"). A row without one gets a plain dot.
+   */
+  date?: { text: string; aria: string };
+  title: string;
+  /** One sentence under the title. May be empty. */
+  note: string;
+};
+
+type Props = {
+  entries: ChangelogEntry[];
+  title: string;
+  ariaLabel: string;
+  className?: string;
+};
+
+/**
+ * A list of dated rows beside a rail of years: a mono line, a title and one
+ * sentence per glass card. Two pages hand it rows — /about the career, a row
+ * per city, oldest first (`resume_experiences`); the lab's changelog study a
+ * life numbered like software, newest first (`timeline_entries`). The rail
+ * shows at every width: on a phone it used to be the part that vanished.
+ *
+ * Two pieces of motion, both of them wayfinding rather than decoration:
+ * - the year rail is a single window onto a stack of years that snaps as
+ *   entries pass the rail itself (Family-style number roll), so the year
+ *   always belongs to the row it stands beside;
+ * - each node that has an exact date pops it in a tooltip on hover/focus,
+ *   entering on `back.out` and leaving on the reversed ease at 2.2x.
+ */
+export function Changelog({ entries, title, ariaLabel, className }: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+
+  /* Collapse consecutive duplicate years into one rail row, and remember
+   * which row every entry points at. */
+  const rows: string[] = [];
+  const rowOfEntry: number[] = [];
+  for (const entry of entries) {
+    if (rows.length === 0 || rows[rows.length - 1] !== entry.year) {
+      rows.push(entry.year);
+    }
+    rowOfEntry.push(rows.length - 1);
+  }
+
+  useGSAP(
+    () => {
+      const root = rootRef.current;
+      const strip = stripRef.current;
+      if (!root) return;
+
+      const items = gsap.utils.toArray<HTMLElement>("[data-entry]", root);
+
+      /* --- year rail ------------------------------------------------------
+       * One ScrollTrigger per entry; whichever entry the rail stands beside
+       * decides the year. The line is the middle of the rail where it sticks,
+       * read off its own `top` — not the middle of the viewport: a list
+       * shorter than half a screen is read well below the rail, and a year
+       * that followed the reader's eye stood beside a card from another one. */
+      if (strip && rows.length > 1) {
+        const rail = strip.parentElement;
+        const line = () =>
+          rail ? (parseFloat(getComputedStyle(rail).top) || 0) + rail.offsetHeight / 2 : 0;
+        const rowHeight = (strip.firstElementChild as HTMLElement | null)?.offsetHeight;
+        let current = 0;
+        const snapTo = (row: number) => {
+          if (row === current || !rowHeight) return;
+          current = row;
+          gsap.to(strip, {
+            y: -row * rowHeight,
+            duration: 0.5,
+            ease: EASE.default,
+            overwrite: "auto",
+          });
+        };
+        items.forEach((el, i) => {
+          ScrollTrigger.create({
+            trigger: el,
+            start: () => `top ${line()}px`,
+            end: () => `bottom ${line()}px`,
+            onToggle: (self) => {
+              if (self.isActive) snapTo(rowOfEntry[i] ?? 0);
+            },
+          });
+        });
+      }
+
+      /* --- card entrance + node tooltips ----------------------------------
+       * Inlined rather than wrapped in <Reveal>: the targets are nested <li>s
+       * that share this GSAP scope with the per-entry ScrollTriggers above. */
+      gsap.from(items, {
+        ...REVEAL_VARS,
+        stagger: 0.06,
+        clearProps: "transform,opacity,visibility",
+        scrollTrigger: { trigger: root, start: REVEAL_START, once: true },
+      });
+
+      const teardown: Array<() => void> = [];
+      for (const el of items) {
+        const node = el.querySelector<HTMLElement>("[data-node]");
+        const tip = el.querySelector<HTMLElement>("[data-tip]");
+        if (!node || !tip) continue;
+
+        // Grows out of the node itself; anchored left so a narrow phone
+        // never pushes the bubble off the edge of the screen.
+        gsap.set(tip, { autoAlpha: 0, y: 6, scale: 0.9, transformOrigin: "0% 100%" });
+        const pop = gsap.to(tip, {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.45,
+          // Arrive with a little overshoot, leave on the reversed ease.
+          ease: EASE.bubble,
+          easeReverse: EASE.exit,
+          paused: true,
+        });
+
+        const show = () => pop.timeScale(1).play();
+        const hide = () => pop.timeScale(2.2).reverse();
+
+        node.addEventListener("pointerenter", show);
+        node.addEventListener("focus", show);
+        node.addEventListener("click", show);
+        node.addEventListener("pointerleave", hide);
+        node.addEventListener("blur", hide);
+        teardown.push(() => {
+          node.removeEventListener("pointerenter", show);
+          node.removeEventListener("focus", show);
+          node.removeEventListener("click", show);
+          node.removeEventListener("pointerleave", hide);
+          node.removeEventListener("blur", hide);
+          pop.kill();
+        });
+      }
+
+      return () => {
+        for (const off of teardown) off();
+      };
+    },
+    // revertOnUpdate: without it the teardown above is deferred to unmount, so
+    // a change in entry count would stack a second trigger, tween and listener
+    // set on every node.
+    { scope: rootRef, dependencies: [entries.length], revertOnUpdate: true },
+  );
+
+  return (
+    <section className={className} aria-labelledby="changelog-title">
+      <h2
+        id="changelog-title"
+        className="mb-8 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
+      >
+        {title}
+      </h2>
+
+      <div ref={rootRef} className="flex gap-6">
+        {/* Year rail — a one-row window onto a stack of years. */}
+        {/* Four mono digits are 2.4em wide: 57.6px at 1.5rem, 76.8px at 2rem.
+            The window has to clear that, or the year's last digit is cut. */}
+        <div aria-hidden="true" className="w-16 shrink-0 sm:w-20">
+          <div className="sticky top-28 h-10 overflow-hidden">
+            <div ref={stripRef} className="will-change-transform">
+              {rows.map((year, i) => (
+                <div
+                  key={`${year}-${i}`}
+                  className="h-10 font-mono text-[1.5rem] leading-10 text-fg-tertiary [font-variant-numeric:tabular-nums] sm:text-[2rem]"
+                >
+                  {year}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <ol
+          aria-label={ariaLabel}
+          className="relative min-w-0 flex-1 space-y-5 before:absolute before:bottom-6 before:left-[7px] before:top-6 before:w-px before:bg-line before:content-['']"
+        >
+          {entries.map((entry) => (
+            <li key={entry.id} data-entry className="relative pl-8">
+              {/* Node + date tooltip. The button carries the date as its
+                  accessible name, so the bubble itself stays decorative.
+                  hit-ext's default -10px inset would leave this 14px dot at
+                  34px, so the pseudo is widened to clear 44px. A row with no
+                  exact date has nothing to pop, so its node is only a dot. */}
+              {entry.date ? (
+                <button
+                  type="button"
+                  data-node
+                  aria-label={entry.date.aria}
+                  className="hit-ext absolute left-0 top-7 z-10 h-3.5 w-3.5 rounded-full border border-line bg-surface-raised shadow-card [&::before]:-inset-[15px]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-[3px] rounded-full bg-accent"
+                  />
+                  <span
+                    data-tip
+                    aria-hidden="true"
+                    className="pointer-events-none absolute bottom-full left-0 mb-2 whitespace-nowrap rounded-chip bg-fg px-2.5 py-1 font-mono text-[11px] tracking-meta text-bg shadow-card [font-variant-numeric:tabular-nums]"
+                  >
+                    {entry.date.text}
+                  </span>
+                </button>
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-7 z-10 h-3.5 w-3.5 rounded-full border border-line bg-surface-raised shadow-card"
+                >
+                  <span className="absolute inset-[3px] rounded-full bg-accent" />
+                </span>
+              )}
+
+              <article className="glass-thin rounded-card px-5 py-5 sm:px-6">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="font-mono text-[0.9375rem] tracking-[0.04em] text-accent [font-variant-numeric:tabular-nums]">
+                    {entry.label}
+                  </span>
+                  {/* A phone has no hover to pop the bubble with, so small
+                      screens read the date here. */}
+                  {entry.date && (
+                    <span className="font-mono text-meta tracking-meta text-fg-tertiary [font-variant-numeric:tabular-nums] sm:hidden">
+                      {entry.date.text}
+                    </span>
+                  )}
+                </div>
+                <h3 className="vibrancy mt-2 text-heading">{entry.title}</h3>
+                {entry.note && (
+                  <p className="mt-1.5 text-caption leading-relaxed text-fg-secondary">
+                    {entry.note}
+                  </p>
+                )}
+              </article>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}

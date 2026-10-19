@@ -1,0 +1,33 @@
+/**
+ * Site-wide constants. Change `signName` to put your own name on the masthead.
+ */
+export const site = {
+  /** The wordmark on the masthead / dynamic-island logo badge. Lowercase on
+   *  purpose — the editorial identity sets the name quiet and small, and the
+   *  changelog (/lab/changelog) numbers releases as `fhf 1.0 → 5.x`. */
+  signName: "fhf",
+  title: { zh: "fhf's", en: "fhf's" },
+  description: {
+    zh: "fhf 的个人网站。喜欢音乐、游戏、电影；这里放着文章、自研软件和动效实验。",
+    en: "The personal site of fhf, who likes music, games and films: essays, self-built software and motion studies.",
+  },
+  /** Production origin, for canonical URLs, hreflang, the sitemap, RSS and
+   *  the OG images. Read from the deployment (src/lib/siteUrl.ts), so binding
+   *  a domain moves all of them with no edit here; only server code reads it
+   *  — in the browser it is the fallback, which nothing there looks at. */
+  url: import.meta.env.VITE_SITE_URL || "https://fhfs.fhfs.workers.dev",
+  author: "fhf",
+  /** Where the author is: the zone the footer clock keeps, and the one every
+   *  page formats dates in — so a prerender on a UTC build machine prints the
+   *  same day and month a render at home would. */
+  timeZone: "Asia/Shanghai",
+  /** This site's own repository — every lab study links its source there
+   *  (`components/lab/entries.ts`, `sourceUrl`). */
+  repo: "https://github.com/fanhefeng/fhfs",
+  social: {
+    github: "https://github.com/fanhefeng",
+    /** Revealed under the tear-off sticker in the footer, listed on /resume
+     *  and in the home page's contact row. */
+    email: "fanhefeng901121@gmail.com",
+  },
+} as const;

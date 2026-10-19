@@ -1,0 +1,63 @@
+# Copy to .env.local, or pull the real values: `vercel env pull .env.local`.
+# The rules each value must meet are in src/config/env.ts; a production build or
+# server refuses to start when one fails. env.test.ts keeps this file and that
+# list naming the same variables.
+
+# Neon Postgres, the pooled connection string. Required at build time too:
+# pages are prerendered from the database.
+DATABASE_URL=
+
+# Optional. Neon's direct (unpooled) string; the scripts under scripts/ and
+# drizzle-kit prefer it when set.
+DATABASE_URL_UNPOOLED=
+
+# Both printed by `pnpm admin:password`. The hash is `salt:hash` from scrypt;
+# the password itself is stored nowhere.
+AUTH_SECRET=
+ADMIN_PASSWORD_HASH=
+
+# Optional. The production origin for canonical URLs, the sitemap and RSS, e.g.
+# https://example.com. On Vercel it is read from the project's production
+# domain by itself; set this only to override that, or when hosting elsewhere.
+SITE_URL=
+
+# Optional. Dedicated upload signing secret, shared with the media Worker.
+MEDIA_UPLOAD_SECRET=
+
+# Optional. Lifts the release lookups' rate limit; the cloud monitor workflow
+# supplies its own short-lived Actions token with actions:read and contents:read.
+GITHUB_TOKEN=
+
+# Optional. The same dedicated random secret configured on each app repo's
+# GitHub webhook. Enables immediate refresh at /api/github/webhook; without
+# it, the site still checks GitHub hourly. See docs/GITHUB-SYNC.md.
+GITHUB_WEBHOOK_SECRET=
+
+# Optional, cloud monitoring only. Store the ping URL as a GitHub Actions Secret,
+# never in code or logs. MONITOR_FLAGS is supplied from repository variables.
+HEALTHCHECKS_PING_URL=
+MONITOR_FLAGS=
+
+# Optional, only for pnpm backup:private. This direct connection uses a
+# separate read-only role that can read drafts and migration metadata.
+BACKUP_DATABASE_URL=
+# Optional, only for backup:private restore-database. A separate recovery project,
+# database fhfs_restore_drill, role backup_restore and manually provisioned guard.
+BACKUP_RESTORE_DATABASE_URL=
+RESTIC_REPOSITORY=
+# Keep a copy in your password manager, outside the backup storage account.
+RESTIC_PASSWORD=
+# Preferred locally instead of RESTIC_PASSWORD; protect the file with chmod 600.
+RESTIC_PASSWORD_FILE=
+
+# Optional, only for pnpm e2e:prepare / pnpm e2e. A separate Neon test project
+# initialized from public fixtures. The test role may write only there.
+TEST_DATABASE_URL=
+# Usually unset. pnpm e2e supplies localhost:3100; e2e:public defaults to :3000.
+# Local HTTPS with an explicit port is accepted for WebKit production-CSP checks.
+E2E_BASE_URL=
+# Usually unset. pnpm e2e supplies true to isolate its build under .e2e/next.
+# Do not enable this in a production deployment.
+E2E_BUILD=
+# Usually unset. pnpm e2e uses a disposable local KV emulator, never cloud storage.
+E2E_MEDIA_ORIGIN=
