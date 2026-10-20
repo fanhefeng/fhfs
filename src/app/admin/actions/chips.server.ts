@@ -1,3 +1,4 @@
+import { auditedBatch } from "../backup";
 import { db } from "@/db";
 
 import * as schema from "@/db/schema";
@@ -37,7 +38,10 @@ export async function saveChips(_prev: ActionState, form: FormData): Promise<Act
   // so a failed insert cannot leave the table empty. Same contract as
   // scripts/db-import.mts.
   const wipe = db.delete(schema.chips);
-  await db.batch(rows.length ? [wipe, db.insert(schema.chips).values(rows)] : [wipe]);
+  await auditedBatch(
+    schema.chips,
+    rows.length ? [wipe, db.insert(schema.chips).values(rows)] : [wipe],
+  );
 
   invalidate(TAGS.chips);
   return { ok: true };

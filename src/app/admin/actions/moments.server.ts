@@ -1,3 +1,4 @@
+import { auditedExecute } from "../backup";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -112,6 +113,9 @@ export async function deleteMoment(form: FormData): Promise<void> {
   await requireAdmin();
   const key = str(form, "key");
   if (!key) return;
-  await db.delete(schema.moments).where(eq(schema.moments.key, key));
+  await auditedExecute(
+    schema.moments,
+    db.delete(schema.moments).where(eq(schema.moments.key, key)),
+  );
   invalidate(TAGS.moments);
 }

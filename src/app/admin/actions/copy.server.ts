@@ -1,3 +1,4 @@
+import { auditedBatch, auditedExecute } from "../backup";
 import { inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 
@@ -89,7 +90,7 @@ export async function saveCopy(_prev: ActionState, form: FormData): Promise<Acti
       : []),
   ];
   const [first, ...rest] = writes;
-  if (first) await db.batch([first, ...rest]);
+  if (first) await auditedBatch(schema.copyBlocks, [first, ...rest]);
 
   invalidate(TAGS.copy);
   return { ok: true };
@@ -111,7 +112,10 @@ export async function deleteOrphanCopy(_form: FormData): Promise<void> {
   const orphans = rows.map((row) => row.key).filter((key) => !(key in zh));
 
   if (orphans.length) {
-    await db.delete(schema.copyBlocks).where(inArray(schema.copyBlocks.key, orphans));
+    await auditedExecute(
+      schema.copyBlocks,
+      db.delete(schema.copyBlocks).where(inArray(schema.copyBlocks.key, orphans)),
+    );
   }
   invalidate(TAGS.copy);
 }
