@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -35,7 +36,8 @@ const targets = [
     range: [565197, 569329],
     esm: true,
     original: "71158f42362fa0290ad17d1aceaf6551509c86714f6624ac1d6f6deb5fbd27e7",
-    patched: "9eb0cb520e6e2ae556b2a669191c67996bec844b9db83e1f72c48462f599105e",
+    previousPatched: "9eb0cb520e6e2ae556b2a669191c67996bec844b9db83e1f72c48462f599105e",
+    patched: "4241a394ffcf6bec54d61ae023a5012f9c633554842bced73e8dbeedbe511f74",
   },
 ];
 
@@ -45,6 +47,21 @@ const digest = (text) => createHash("sha256").update(text).digest("hex");
 const prefix =
   'import { createRequire as fhfsCreateRequire } from "node:module";\n' +
   "const fhfsUndiciRequire = fhfsCreateRequire(import.meta.url);\n";
+
+function insertImports(source) {
+  // A shebang is valid only on the first line, including in imported ESM chunks.
+  const start = source.startsWith("#!") ? source.indexOf("\n") + 1 : 0;
+  return source.slice(0, start) + prefix + source.slice(start);
+}
+
+function checkSyntax(source, target) {
+  const checked = spawnSync(
+    process.execPath,
+    ["--check", "--input-type", target.esm ? "module" : "commonjs"],
+    { input: source, encoding: "utf8" },
+  );
+  assert.equal(checked.status, 0, `${target.name} security patch is invalid: ${checked.stderr}`);
+}
 
 export function checkBundledUndici({ repair = false } = {}) {
   for (const target of targets) {
@@ -59,22 +76,27 @@ export function checkBundledUndici({ repair = false } = {}) {
     assert.equal(dependency("undici/package.json").version, "7.30.1");
     const file = join(dirname(manifest), target.file);
     const source = readFileSync(file, "utf8");
-    if (digest(source) === target.patched) continue;
-    assert.equal(
-      digest(source),
-      target.original,
+    const current = digest(source);
+    if (current === target.patched) {
+      checkSyntax(source, target);
+      continue;
+    }
+    assert.ok(
+      current === target.original || current === target.previousPatched,
       `Unexpected ${target.name} bundle; reinstall and review`,
     );
     assert.ok(repair, `${target.name} still bundles old Undici; run pnpm install`);
     const replacement = target.esm
       ? '() => fhfsUndiciRequire("undici")'
       : '() => require("undici")';
-    const patched =
-      (target.esm ? prefix : "") +
-      source.slice(0, target.range[0]) +
-      replacement +
-      source.slice(target.range[1]);
+    // Repair the known earlier installation without accepting unknown content.
+    const rewritten =
+      current === target.previousPatched
+        ? source.slice(prefix.length)
+        : source.slice(0, target.range[0]) + replacement + source.slice(target.range[1]);
+    const patched = target.esm ? insertImports(rewritten) : rewritten;
     assert.equal(digest(patched), target.patched, `Invalid ${target.name} security patch`);
+    checkSyntax(patched, target);
     // Replace the file so pnpm hardlinks cannot modify a shared package store.
     const temporary = `${file}.fhfs-${process.pid}`;
     try {
