@@ -85,3 +85,35 @@ Smoke 读取 sitemap 并检查所有公开页面，以及双语 RSS/搜索、本
 部署不运行数据库迁移、种子或导入脚本。`void info` 应显示没有需要创建的持久化资源。共享数据库的 schema 继续由 `fhfs-site` 管理。
 
 GitHub Actions 在 main 检查通过后自动发布。排障时可在 Actions 页面重跑工作流，或使用 `pnpm run deploy:cloudflare` 手动发布。
+
+## 运行时安全基线（2026-10-22）
+
+本地与 CI 都读取 `.node-version` 的 Node.js 24.22.1，`engines.node` 和 pnpm 的
+`engineStrict` 拒绝更旧版本。安装准备、检查、资源生成、预览和发布入口还会运行
+`scripts/check-runtime.mjs`，核对实际进程版本以及 Brotli 解码补丁标记。
+Node 的 Brotli 版本字符串在回补补丁后仍是 1.2.0，不能只看该字符串判断是否修复。
+`pnpm check:worker-runtime` 还会用相同兼容配置启动隔离的 workerd，并通过本机
+固定数据验证 Brotli 解码和 zlib 函数被禁用、gzip 仍可解码；它同时用于检查与资源生成，
+因此本地开发、构建和发布都会执行。该验证不访问生产服务，也不写数据库。
+
+Void 更新到 1.2.1；锁文件中的 Undici 统一为 7.30.1，Miniflare 为
+5.20261019.1-beta，Wrangler 为 4.151.3，workerd 为 1.20261022.1。
+Undici 是工具链独立安装的依赖，升级 Node 不会替换它。CI 在安装后运行完整
+`pnpm audit --audit-level low`，同时保留这些经官方公告核对的版本约束。
+Wrangler、Cloudflare Vite 插件和 cf CLI 还内嵌了旧 Undici。安装时的
+`scripts/patch-bundled-undici.mjs` 将这些副本的入口改为加载外部 7.30.1，
+`packageExtensions` 确保该依赖可解析。修复按完整文件 SHA-256 和精确版本校验，
+未知内容或版本会拒绝执行；检查、开发与发布也会验证修复确实存在。仅设置 overrides
+不会修复内嵌副本，因此升级这些包时必须先核对上游是否仍内嵌旧版本并更新此修复。
+
+截至本次检查，最新 workerd 的公开构建配置仍引用未包含
+`google/brotli@0ed4268` 解码修复的 Brotli 1.2.0。因此本应用显式设置
+`no_brotli_content_encoding` 和 `no_nodejs_zlib`，关闭未使用的 Brotli 编解码入口与
+Node zlib 模块；这两项开关随本地预览和正式 Worker 一起生效。该措施不代表
+Cloudflare 平台的底层库已经修复。只有确认上游构建包含补丁并完成回归验证后，
+才能移除开关。共享媒体 Worker 的独立部署不由本应用配置覆盖。
+
+依据：[Node.js 安全发布](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)、
+[Undici 安全公告](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c)、
+[workerd 构建依赖](https://github.com/cloudflare/workerd/blob/v1.20261022.1/build/deps/gen/deps.MODULE.bazel)、
+[Cloudflare 兼容开关](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)。
