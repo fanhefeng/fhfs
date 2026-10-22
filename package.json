@@ -9,18 +9,20 @@
   "scripts": {
     "dev": "pnpm assets && vp dev --host 127.0.0.1",
     "build": "pnpm assets && vp build",
-    "preview": "vp preview --host 127.0.0.1",
+    "preview": "pnpm check:runtime && vp preview --host 127.0.0.1",
+    "check:runtime": "node scripts/check-runtime.mjs",
+    "check:worker-runtime": "pnpm check:runtime && node scripts/check-worker-runtime.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "vp lint",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "test": "vp test run",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "check": "pnpm check:worker-runtime && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "deploy": "pnpm assets && void deploy --platform cloudflare",
     "deploy:cloudflare": "pnpm assets && void deploy --platform cloudflare",
-    "assets": "node scripts/prepare-assets.mjs && tsx scripts/prepare-share-images.ts",
-    "prepare": "void prepare",
-    "smoke": "node scripts/smoke.mjs"
+    "assets": "pnpm check:worker-runtime && node scripts/prepare-assets.mjs && tsx scripts/prepare-share-images.ts",
+    "prepare": "pnpm check:runtime && node scripts/patch-bundled-undici.mjs && void prepare",
+    "smoke": "pnpm check:runtime && node scripts/smoke.mjs"
   },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "3.5.21",
@@ -67,12 +69,13 @@
     "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "void": "^1.1.11",
+    "void": "^1.2.1",
     "yaml": "^2.9.1"
   },
   "packageManager": "pnpm@11.20.0",
   "engines": {
-    "node": "24.x"
+    "node": "^24.22.1",
+    "pnpm": ">=11.20.0 <12"
   },
   "type": "module"
 }

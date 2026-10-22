@@ -8,7 +8,9 @@ export default defineConfig({
     preview_urls: true,
     routes: [],
     compatibility_date: "2026-10-19",
-    compatibility_flags: ["nodejs_compat"],
+    // The current workerd still bundles Brotli without the decoder security fix.
+    // This app uses neither API; keep them disabled until upstream ships a fix.
+    compatibility_flags: ["nodejs_compat", "no_nodejs_zlib", "no_brotli_content_encoding"],
     assets: { binding: "ASSETS" },
   },
 });

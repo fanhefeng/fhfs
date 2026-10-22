@@ -1,3 +1,5 @@
+# Reject runtimes below the patched Node.js version in package.json.
+engineStrict: true
 # Every dependency with an install script has to get a verdict here, or pnpm 11
 # fails the install outright (ERR_PNPM_IGNORED_BUILDS) instead of warning. It
 # never came up locally because this machine's global pnpm config carries
@@ -15,9 +17,15 @@ allowBuilds:
   better-sqlite3: false
   unrs-resolver: false
 # sharp < 0.35.5 bundles a vulnerable librsvg (GHSA-wq5f-xc86-pv6w).
-# Keep the override within Next's compatible 0.35 release line.
+# Keep the override within the compatible 0.35 release line.
 overrides:
   sharp: "^0.35.5"
+  # Cloudflare packages still pin Undici before the October security fixes.
+  undici: "7.30.1"
+  # Keep the local Workers runtime and its development/deployment hosts current.
+  workerd: "1.20261022.1"
+  miniflare: "5.20261019.1-beta"
+  wrangler: "4.151.3"
   # drizzle-kit's legacy TS loader still pins vulnerable esbuild 0.18.
   # Reuse the patched version drizzle-kit itself already uses (GHSA-67mh-4wv8-2f99).
   "@esbuild-kit/core-utils>esbuild": "0.25.12"
@@ -39,5 +47,28 @@ peerDependencyRules:
   allowedVersions:
     vite: "*"
     vitest: "*"
+packageExtensions:
+  "wrangler@4.151.3":
+    dependencies:
+      undici: "7.30.1"
+  "@cloudflare/vite-plugin@1.64.0":
+    dependencies:
+      undici: "7.30.1"
+  "cf@1.0.0-beta.18":
+    dependencies:
+      undici: "7.30.1"
 patchedDependencies:
   "@react-three/fiber@9.8.1": patches/@react-three__fiber@9.8.1.patch
+minimumReleaseAgeExclude:
+  - "@cloudflare/workerd-darwin-64@1.20261022.1"
+  - "@cloudflare/workerd-darwin-arm64@1.20261022.1"
+  - "@cloudflare/workerd-linux-64@1.20261022.1"
+  - "@cloudflare/workerd-linux-arm64@1.20261022.1"
+  - "@cloudflare/workerd-windows-64@1.20261022.1"
+  - "@void/deploy-cloudflare@1.2.1"
+  - "@void/deploy-core@1.2.1"
+  - "@void/edge@1.2.1"
+  - "@void/isr@1.2.1"
+  - "@void/platform@1.2.1"
+  - void@1.2.1
+  - workerd@1.20261022.1
