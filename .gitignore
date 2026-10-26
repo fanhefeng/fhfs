@@ -13,3 +13,4 @@ test-results/
 .generated/
 .void-wrangler.jsonc
 .pnpm-store/
+.e2e/

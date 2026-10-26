@@ -76,3 +76,19 @@ jobs:
       - name: Verify public pages and native backend authentication
         if: steps.revision.outputs.deploy == 'true'
         run: pnpm smoke https://fhfs.fhfs.workers.dev
+      - name: Publish the independent public uptime worker
+        if: steps.revision.outputs.deploy == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          pnpm exec wrangler secret list --config ops/uptime/wrangler.jsonc |
+            node --input-type=module -e '
+              let input = "";
+              for await (const part of process.stdin) input += part;
+              if (!JSON.parse(input).some((s) => s.name === "HEALTHCHECKS_PING_URL"))
+                throw new Error("Configure the dedicated uptime Worker watchdog secret first");
+            '
+          pnpm run deploy:monitor
+      - name: Verify public uptime probes
+        if: steps.revision.outputs.deploy == 'true'
+        run: pnpm uptime

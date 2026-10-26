@@ -12,5 +12,10 @@ export default defineConfig({
     // This app uses neither API; keep them disabled until upstream ships a fix.
     compatibility_flags: ["nodejs_compat", "no_nodejs_zlib", "no_brotli_content_encoding"],
     assets: { binding: "ASSETS" },
+    observability: {
+      enabled: true,
+      head_sampling_rate: 1,
+      logs: { enabled: true, invocation_logs: true, persist: true },
+    },
   },
 });

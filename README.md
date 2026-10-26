@@ -39,6 +39,8 @@ pnpm smoke http://127.0.0.1:4173
 
 原设计、字体、内容恢复和媒体服务的文档保留在 `docs/`，其中 Next.js / Vercel 描述适用于原 `fhfs-site`；新站以本文和 `docs/DEPLOYMENT.md` 为准。
 
+新站的独立公网巡检、Healthchecks 告警、Cloudflare 运行日志与隔离后台验证见 [docs/OPERATIONS.md](docs/OPERATIONS.md)。共享数据备份继续由原有工作流负责。
+
 ## 部署
 
 GitHub `main` 分支推送后，Actions 先运行检查、测试与构建，通过后使用 Void 官方 CLI 更新现有 Cloudflare Worker，并执行线上 smoke。PR 只检查，不发布。详细说明见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。手动发布使用 `pnpm run deploy:cloudflare`。
