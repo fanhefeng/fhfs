@@ -1,5 +1,8 @@
 # 云端巡检与独立告警
 
+> 本页描述原 `fhfs-site` 的共享数据备份巡检。`fhfs` 的独立公网探活与告警、
+> Worker 运行日志和后台隔离验证见 [OPERATIONS.md](OPERATIONS.md)。
+
 GitHub Actions 的 `monitor.yml` 执行只读巡检，Healthchecks.io 独立监测信号缺失。
 不依赖本机、Codex、网站进程或生产数据库写权限。
 

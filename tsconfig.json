@@ -17,6 +17,17 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "void.config.ts", "env.ts", ".void/env.d.ts"],
+  "include": [
+    "src",
+    "ops",
+    "scripts/e2e.mts",
+    "scripts/uptime.mts",
+    "tests/e2e",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "void.config.ts",
+    "env.ts",
+    ".void/env.d.ts"
+  ],
   "exclude": ["node_modules", "dist", "src/lib/__tests__"]
 }

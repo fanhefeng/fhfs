@@ -22,7 +22,10 @@
     "deploy:cloudflare": "pnpm assets && void deploy --platform cloudflare",
     "assets": "pnpm check:worker-runtime && node scripts/prepare-assets.mjs && tsx scripts/prepare-share-images.ts",
     "prepare": "pnpm check:runtime && node scripts/patch-bundled-undici.mjs && void prepare",
-    "smoke": "pnpm check:runtime && node scripts/smoke.mjs"
+    "smoke": "pnpm check:runtime && node scripts/smoke.mjs",
+    "uptime": "pnpm check:runtime && tsx scripts/uptime.mts",
+    "deploy:monitor": "pnpm check:worker-runtime && wrangler deploy --config ops/uptime/wrangler.jsonc",
+    "e2e": "pnpm check:runtime && tsx scripts/e2e.mts"
   },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "3.5.21",
@@ -70,6 +73,7 @@
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "void": "^1.2.1",
+    "wrangler": "4.151.3",
     "yaml": "^2.9.1"
   },
   "packageManager": "pnpm@11.20.0",

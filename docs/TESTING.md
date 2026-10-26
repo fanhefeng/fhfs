@@ -1,5 +1,9 @@
 # 验证与关键流程
 
+> 本页保留的是原 `fhfs-site` 的 Next.js 验证记录与操作。新站 `fhfs` 使用
+> `pnpm check`、`pnpm build`、`pnpm smoke` 与新的隔离 `pnpm e2e`；当前步骤见
+> [OPERATIONS.md](OPERATIONS.md)，不要在本仓库执行下面的 Next.js 构建或导入命令。
+
 `pnpm check` 是类型、lint、格式、单元测试和覆盖率下限的门禁。覆盖率只统计
 `vite.config.ts` 明确选中的有测试的辅助模块，不代表 React 组件、数据库、页面或整个项目覆盖率。
 
