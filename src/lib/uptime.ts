@@ -103,7 +103,9 @@ export async function checkPublicSite(fetcher: Fetcher = fetch): Promise<ProbeRe
             ok =
               response.headers.get("content-type")?.includes("text/html") === true &&
               (probe.kind === "login" ? /name="password"/.test(body) : body.includes("<main")) &&
-              !/s:"error"|The page could not be loaded|Error 1102/.test(body);
+              !/s:"error"|The page could not be loaded|This page failed to load|Error 1102/.test(
+                body,
+              );
           }
         }
         return { label: probe.label, status, ok, ...(!ok && { reason: "content" as const }) };

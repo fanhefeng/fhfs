@@ -39,6 +39,13 @@ describe("public uptime", () => {
     }
   });
   it.each([
+    [
+      "root error boundary",
+      () =>
+        new Response("<main>This page failed to load</main>", {
+          headers: { "content-type": "text/html" },
+        }),
+    ],
     ["HTTP failure", () => new Response("unavailable", { status: 503 })],
     [
       "error inside a 200 page",
