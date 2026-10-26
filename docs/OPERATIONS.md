@@ -30,7 +30,9 @@ pnpm run deploy:monitor # 使用固定 Wrangler 部署现有巡检 Worker
 ```
 
 首次启用必须先创建独立检查并配置 Secret，再验证自然定时上报。
-后续 main 发布在应用 smoke 成功后更新巡检 Worker，先检查其 Secret 名称存在。
+应用的 CI 凭据不能访问巡检 Worker。main 发布只更新应用，随后执行 smoke 和八项探活。
+巡检代码变化时，通过已授权的本机 Wrangler 独立执行 `pnpm run deploy:monitor`，
+再确认自然调度和 Healthchecks 收到信号。应用发布不携带巡检 Secret，也不重发巡检 Worker。
 应用正式地址不承担巡检触发接口；巡检 Worker 没有公开路由。
 Cloudflare Cron 配置首次传播可能需要 15 分钟。
 
