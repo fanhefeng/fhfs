@@ -16,6 +16,7 @@ catalogs:
 overrides:
   sharp: ^0.35.5
   undici: 7.30.1
+  '@cloudflare/config>zod': 4.6.7
   workerd: 1.20261022.1
   miniflare: 5.20261019.1-beta
   wrangler: 4.151.3
@@ -4301,9 +4302,6 @@ packages:
     resolution: {integrity: sha512-XrBh9ZiQK5mJVRxZBAvD6LwRyAYrK3MFtH3+onyuxFL5hFD44EC3QOmIC1FjTj6H2MMwq46/NAI+NZxLZPZgxg==}
     engines: {node: '>=14.18.0'}
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
-
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -4524,7 +4522,7 @@ snapshots:
 
   '@cloudflare/config@0.27.0':
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 
@@ -8148,8 +8146,6 @@ snapshots:
     dependencies:
       '@yuku-toolchain/types': 0.19.0
       yuku-core: 0.19.0
-
-  zod@4.6.5: {}
 
   zod@4.6.7: {}
 

@@ -100,10 +100,12 @@ export async function checkPublicSite(fetcher: Fetcher = fetch): Promise<ProbeRe
               response.headers.get("content-type")?.includes("application/json") === true &&
               Array.isArray(JSON.parse(body));
           } else {
+            // The complete English error catalogue is serialized on healthy pages.
+            // Match rendered error headings, not phrases anywhere in that payload.
             ok =
               response.headers.get("content-type")?.includes("text/html") === true &&
               (probe.kind === "login" ? /name="password"/.test(body) : body.includes("<main")) &&
-              !/s:"error"|The page could not be loaded|This page failed to load|Error 1102/.test(
+              !/s:"error"|<(?:h1|title)\b[^>]*>\s*(?:The page could not be loaded|This page failed to load|Error 1102)/.test(
                 body,
               );
           }
@@ -130,6 +132,7 @@ export class UptimeReportError extends Error {
   constructor(
     readonly reason: "network" | "http" | "ignored",
     readonly status: number | null,
+    readonly detail?: "redirect" | "quota" | "encoding" | "stream" | "transport",
   ) {
     super("Uptime watchdog did not acknowledge the report");
   }
@@ -150,14 +153,25 @@ export async function reportUptime(
   try {
     response = await fetcher(ping + (ok ? "" : "/fail"), {
       method: "POST",
-      redirect: "error",
+      // Workers reject redirect: "error"; inspect manual responses instead.
+      redirect: "manual",
       signal: AbortSignal.timeout(10_000),
       headers: { "Content-Type": "text/plain" },
       body: `fhfs public uptime: ${ok ? "success" : "failure"}\n${summary}`,
     });
     acknowledgement = new TextDecoder().decode(await boundedBody(response)).trim();
-  } catch {
-    throw new UptimeReportError("network", null);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    const detail = /redirect/i.test(message)
+      ? "redirect"
+      : /subrequest|limit exceeded/i.test(message)
+        ? "quota"
+        : /decompress|encoding/i.test(message)
+          ? "encoding"
+          : /stream|reader/i.test(message)
+            ? "stream"
+            : "transport";
+    throw new UptimeReportError("network", null, detail);
   }
   if (response.status !== 200) throw new UptimeReportError("http", response.status);
   if (acknowledgement !== "OK") throw new UptimeReportError("ignored", response.status);

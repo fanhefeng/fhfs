@@ -42,7 +42,7 @@ describe("public uptime", () => {
     [
       "root error boundary",
       () =>
-        new Response("<main>This page failed to load</main>", {
+        new Response("<main><h1>This page failed to load</h1></main>", {
           headers: { "content-type": "text/html" },
         }),
     ],
@@ -65,6 +65,27 @@ describe("public uptime", () => {
     const results = await checkPublicSite(fakeFetch(handler));
     expect(results.every((r) => !r.ok)).toBe(true);
     expect(JSON.stringify(results)).not.toMatch(/private|unavailable|challenge/);
+  });
+  it("accepts healthy pages that serialize the English error catalogue", async () => {
+    const results = await checkPublicSite(
+      fakeFetch((input) =>
+        String(input).endsWith("/en")
+          ? new Response(
+              '<main>Welcome</main><script>{"errorTitle":"This page failed to load"}</script>',
+              { headers: { "content-type": "text/html" } },
+            )
+          : healthy(input),
+      ),
+    );
+    expect(results.every((r) => r.ok)).toBe(true);
+  });
+  it("uses the Workers-supported manual redirect policy for reports", async () => {
+    const results = await checkPublicSite(fakeFetch());
+    const reporter = vi.fn(async (_input: RequestInfo | URL, options?: RequestInit) => {
+      if (options?.redirect !== "manual") throw new TypeError("Unsupported redirect policy");
+      return new Response("OK");
+    }) as unknown as typeof fetch;
+    expect(await reportUptime(ping, results, reporter)).toBe(true);
   });
   it("refuses an admin redirect to the other deployment", async () => {
     const results = await checkPublicSite(

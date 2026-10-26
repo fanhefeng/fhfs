@@ -22,6 +22,7 @@ export default {
             phase: "watchdog",
             reason: error.reason,
             status: error.status,
+            detail: error.detail,
           }),
         );
       throw error;
