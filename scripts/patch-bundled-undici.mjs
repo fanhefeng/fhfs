@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,11 +73,14 @@ function checkSyntax(source, target) {
 
 export function checkBundledUndici({ repair = false } = {}) {
   for (const target of targets) {
-    const manifest = voidRequire.resolve
+    const installedManifest = voidRequire.resolve
       .paths(target.name)
       .map((path) => join(path, target.name, "package.json"))
       .find(existsSync);
-    assert.ok(manifest, `Missing ${target.name}; run pnpm install`);
+    assert.ok(installedManifest, `Missing ${target.name}; run pnpm install`);
+    // Direct dependencies can be pnpm symlinks: resolve their private dependency
+    // tree from the actual package, rather than the root node_modules alias.
+    const manifest = realpathSync(installedManifest);
     const pkg = JSON.parse(readFileSync(manifest, "utf8"));
     assert.equal(pkg.version, target.version, `Review the bundled Undici fix for ${target.name}`);
     const dependency = createRequire(manifest);

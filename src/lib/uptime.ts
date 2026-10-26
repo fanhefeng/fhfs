@@ -126,6 +126,15 @@ export function validUptimePing(value: string | undefined): value is string {
   return /^https:\/\/hc-ping\.com\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(value ?? "");
 }
 
+export class UptimeReportError extends Error {
+  constructor(
+    readonly reason: "network" | "http" | "ignored",
+    readonly status: number | null,
+  ) {
+    super("Uptime watchdog did not acknowledge the report");
+  }
+}
+
 export async function reportUptime(
   ping: string | undefined,
   results: ProbeResult[],
@@ -136,17 +145,21 @@ export async function reportUptime(
   const summary = results
     .map((r) => `${r.label}: ${r.ok ? "ok" : `${r.reason} ${r.status ?? "timeout"}`}`)
     .join("\n");
+  let response: Response;
+  let acknowledgement: string;
   try {
-    const response = await fetcher(ping + (ok ? "" : "/fail"), {
+    response = await fetcher(ping + (ok ? "" : "/fail"), {
       method: "POST",
       redirect: "error",
       signal: AbortSignal.timeout(10_000),
       headers: { "Content-Type": "text/plain" },
       body: `fhfs public uptime: ${ok ? "success" : "failure"}\n${summary}`,
     });
-    if (response.status !== 200 || (await response.text()).trim() !== "OK") throw new Error();
+    acknowledgement = new TextDecoder().decode(await boundedBody(response)).trim();
   } catch {
-    throw new Error("Uptime watchdog did not acknowledge the report");
+    throw new UptimeReportError("network", null);
   }
+  if (response.status !== 200) throw new UptimeReportError("http", response.status);
+  if (acknowledgement !== "OK") throw new UptimeReportError("ignored", response.status);
   return ok;
 }
