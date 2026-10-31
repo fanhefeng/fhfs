@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { unstable_cache, updateTag, SHARED_CONTENT_TTL_SECONDS } from "@/lib/server/cache";
+import { withContentCacheBypass } from "@/lib/server/cacheScope";
 
 afterEach(() => vi.useRealTimers());
 describe("content shared with fhfs-site", () => {
@@ -30,6 +31,68 @@ describe("content shared with fhfs-site", () => {
 });
 
 describe("Worker request boundaries", () => {
+  it("shares concurrent reads only within one request, including common search translations", async () => {
+    const read = vi.fn(async () => 7);
+    const cached = unstable_cache(read, ["same-request"]);
+    expect(
+      await withContentCacheBypass(false, () => Promise.all([cached(), cached(), cached()])),
+    ).toEqual([7, 7, 7]);
+    expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not share I/O between two request scopes or deduplicate admin reads", async () => {
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const read = vi.fn(async () => {
+      await pending;
+      return 1;
+    });
+    const cached = unstable_cache(read, ["separate-scopes"]);
+    const first = withContentCacheBypass(false, cached);
+    const second = withContentCacheBypass(false, cached);
+    expect(read).toHaveBeenCalledTimes(2);
+    finish();
+    await Promise.all([first, second]);
+    await withContentCacheBypass(true, () => Promise.all([cached(), cached()]));
+    expect(read).toHaveBeenCalledTimes(4);
+  });
+
+  it("clears failed in-flight reads so the same request can recover", async () => {
+    const read = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(2);
+    const cached = unstable_cache(read, ["pending-recovery"]);
+    await withContentCacheBypass(false, async () => {
+      await expect(Promise.all([cached(), cached()])).rejects.toThrow("offline");
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(await cached()).toBe(2);
+    });
+  });
+
+  it("does not reuse an in-flight read after invalidation in the same request", async () => {
+    let finish!: (value: number) => void;
+    const read = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<number>((resolve) => {
+            finish = resolve;
+          }),
+      )
+      .mockResolvedValue(2);
+    const cached = unstable_cache(read, ["same-request-invalidation"], {
+      tags: ["same-request-invalidation"],
+    });
+    await withContentCacheBypass(false, async () => {
+      const old = cached();
+      updateTag("same-request-invalidation");
+      expect(await cached()).toBe(2);
+      finish(1);
+      expect(await old).toBe(1);
+    });
+    expect(await cached()).toBe(2);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
   it("never shares a pending read between requests", async () => {
     vi.useFakeTimers();
     const resolvers: Array<(value: number) => void> = [];

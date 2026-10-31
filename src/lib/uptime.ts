@@ -1,3 +1,5 @@
+import { readResponseBytes, withinDeadline } from "./deadline";
+
 /** Public, read-only checks. No database, session or upload credentials are used. */
 const SITE = "https://fhfs.fhfs.workers.dev";
 const MEDIA = "https://fhfs-media.fhfs.workers.dev";
@@ -7,7 +9,9 @@ export type ProbeResult = {
   label: string;
   ok: boolean;
   status: number | null;
-  reason?: "http" | "content" | "network";
+  reason?: "http" | "content" | "connection" | "body" | "timeout";
+  phase?: "response" | "body" | "validation";
+  elapsedMs?: number;
 };
 export const PUBLIC_PROBES: readonly Probe[] = [
   { label: "zh page", url: `${SITE}/zh`, kind: "page" },
@@ -28,96 +32,96 @@ export const PUBLIC_PROBES: readonly Probe[] = [
   },
 ];
 
-async function boundedBody(response: Response): Promise<Uint8Array> {
-  const reader = response.body?.getReader();
-  if (!reader) return new Uint8Array();
-  const parts: Uint8Array[] = [];
-  let size = 0;
-  try {
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.byteLength;
-      if (size > 512 * 1024) throw new Error("Response too large");
-      parts.push(value);
-    }
-  } finally {
-    await reader.cancel();
-  }
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const part of parts) {
-    bytes.set(part, offset);
-    offset += part.byteLength;
-  }
-  return bytes;
+function boundedBody(response: Response, signal?: AbortSignal): Promise<Uint8Array> {
+  return readResponseBytes(response, signal, 512 * 1024);
 }
 
 export async function checkPublicSite(fetcher: Fetcher = fetch): Promise<ProbeResult[]> {
   return Promise.all(
     PUBLIC_PROBES.map(async (probe): Promise<ProbeResult> => {
       let status: number | null = null;
+      const progress: { phase: "response" | "body" | "validation" } = { phase: "response" };
+      const started = performance.now();
       try {
-        const response = await fetcher(probe.url, {
-          redirect: "manual",
-          signal: AbortSignal.timeout(20_000),
-          headers: {
-            "User-Agent": "fhfs-uptime/1.0",
-            "Cache-Control": "no-cache",
-            ...(probe.kind === "media" ? { Range: "bytes=0-63" } : {}),
-          },
-        });
-        status = response.status;
-        if (probe.kind === "auth") {
-          await response.body?.cancel();
-          const location = response.headers.get("location");
-          const login = location ? new URL(location, SITE) : null;
-          const ok =
-            [302, 303, 307, 308].includes(status) &&
-            login?.origin === SITE &&
-            login.pathname === "/admin/login";
-          return { label: probe.label, status, ok, ...(!ok && { reason: "content" as const }) };
-        }
-        if (status !== (probe.kind === "media" ? 206 : 200)) {
-          await response.body?.cancel();
-          return { label: probe.label, status, ok: false, reason: "http" };
-        }
-        const bytes = await boundedBody(response);
-        let ok: boolean;
-        if (probe.kind === "media") {
-          ok =
-            bytes.length === 64 &&
-            /^bytes 0-63\/[1-9]\d*$/.test(response.headers.get("content-range") ?? "") &&
-            (probe.label === "media image"
-              ? response.headers.get("content-type")?.startsWith("image/") === true &&
-                bytes[0] === 0xff &&
-                bytes[1] === 0xd8
-              : response.headers.get("content-type")?.startsWith("audio/") === true);
-        } else {
-          const body = new TextDecoder().decode(bytes);
-          if (probe.kind === "search") {
-            ok =
-              response.headers.get("content-type")?.includes("application/json") === true &&
-              Array.isArray(JSON.parse(body));
-          } else {
-            // The complete English error catalogue is serialized on healthy pages.
-            // Match rendered error headings, not phrases anywhere in that payload.
-            ok =
-              response.headers.get("content-type")?.includes("text/html") === true &&
-              (probe.kind === "login" ? /name="password"/.test(body) : body.includes("<main")) &&
-              !/s:"error"|<(?:h1|title)\b[^>]*>\s*(?:The page could not be loaded|This page failed to load|Error 1102)/.test(
-                body,
-              );
+        const result = await withinDeadline(async (signal): Promise<ProbeResult> => {
+          const response = await fetcher(probe.url, {
+            redirect: "manual",
+            signal,
+            headers: {
+              "User-Agent": "fhfs-uptime/1.0",
+              "Cache-Control": "no-cache",
+              ...(probe.kind === "media" ? { Range: "bytes=0-63" } : {}),
+            },
+          });
+          status = response.status;
+          if (probe.kind === "auth") {
+            progress.phase = "validation";
+            await response.body?.cancel();
+            const location = response.headers.get("location");
+            const login = location ? new URL(location, SITE) : null;
+            const ok =
+              [302, 303, 307, 308].includes(status) &&
+              login?.origin === SITE &&
+              login.pathname === "/admin/login";
+            return { label: probe.label, status, ok, ...(!ok && { reason: "content" as const }) };
           }
-        }
-        return { label: probe.label, status, ok, ...(!ok && { reason: "content" as const }) };
-      } catch {
+          if (status !== (probe.kind === "media" ? 206 : 200)) {
+            await response.body?.cancel();
+            return { label: probe.label, status, ok: false, reason: "http" };
+          }
+          progress.phase = "body";
+          const bytes = await boundedBody(response, signal);
+          progress.phase = "validation";
+          let ok: boolean;
+          if (probe.kind === "media") {
+            ok =
+              bytes.length === 64 &&
+              /^bytes 0-63\/[1-9]\d*$/.test(response.headers.get("content-range") ?? "") &&
+              (probe.label === "media image"
+                ? response.headers.get("content-type")?.startsWith("image/") === true &&
+                  bytes[0] === 0xff &&
+                  bytes[1] === 0xd8
+                : response.headers.get("content-type")?.startsWith("audio/") === true);
+          } else {
+            const body = new TextDecoder().decode(bytes);
+            if (probe.kind === "search") {
+              ok =
+                response.headers.get("content-type")?.includes("application/json") === true &&
+                Array.isArray(JSON.parse(body));
+            } else {
+              // The complete English error catalogue is serialized on healthy pages.
+              // Match rendered error headings, not phrases anywhere in that payload.
+              ok =
+                response.headers.get("content-type")?.includes("text/html") === true &&
+                (probe.kind === "login" ? /name="password"/.test(body) : body.includes("<main")) &&
+                !/s:"error"|<(?:h1|title)\b[^>]*>\s*(?:The page could not be loaded|This page failed to load|Error 1102)/.test(
+                  body,
+                );
+            }
+          }
+          return { label: probe.label, status, ok, ...(!ok && { reason: "content" as const }) };
+        }, started + 20_000);
+        return {
+          ...result,
+          elapsedMs: Math.round(performance.now() - started),
+          ...(!result.ok && { phase: progress.phase }),
+        };
+      } catch (error) {
         // Exception messages and response bodies can contain private data.
         return {
           label: probe.label,
           status,
           ok: false,
-          reason: status === null ? "network" : "content",
+          elapsedMs: Math.round(performance.now() - started),
+          phase: progress.phase,
+          reason:
+            error instanceof DOMException && error.name === "TimeoutError"
+              ? "timeout"
+              : progress.phase === "validation"
+                ? "content"
+                : status === null
+                  ? "connection"
+                  : "body",
         };
       }
     }),
@@ -146,7 +150,9 @@ export async function reportUptime(
   if (!validUptimePing(ping)) throw new Error("Uptime watchdog is not configured");
   const ok = results.length === PUBLIC_PROBES.length && results.every((result) => result.ok);
   const summary = results
-    .map((r) => `${r.label}: ${r.ok ? "ok" : `${r.reason} ${r.status ?? "timeout"}`}`)
+    .map(
+      (r) => `${r.label}: ${r.ok ? "ok" : `${r.reason}${r.status === null ? "" : ` ${r.status}`}`}`,
+    )
     .join("\n");
   let response: Response;
   let acknowledgement: string;

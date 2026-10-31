@@ -71,6 +71,7 @@ export const TAGS = {
 const cacheOptions = (...tags: string[]) => ({
   tags: [TAGS.content, ...tags],
   revalidate: false as const,
+  publicRead: true,
 });
 
 // ---------------------------------------------------------------------------
@@ -848,8 +849,9 @@ const loadCopyOverrides = unstable_cache(
 export async function getCopyOverrides(locale: Locale): Promise<Record<string, unknown>> {
   try {
     return await loadCopyOverrides(locale);
-  } catch (error) {
-    console.error("copy overrides unavailable, using message catalogue", error);
+  } catch {
+    // The public read boundary records only safe diagnostics, never SQL or parameters.
+    console.warn("copy overrides unavailable, using message catalogue");
     return {};
   }
 }

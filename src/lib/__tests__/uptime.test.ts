@@ -27,6 +27,66 @@ const fakeFetch = (handler = healthy) =>
   vi.fn(async (input: RequestInfo | URL) => handler(input)) as unknown as typeof fetch;
 
 describe("public uptime", () => {
+  it("distinguishes a deadline, a connection failure and malformed content without private details", async () => {
+    const connection = await checkPublicSite(
+      fakeFetch(() => {
+        throw new Error("PRIVATE-CONNECTION");
+      }),
+    );
+    expect(connection.every((result) => result.reason === "connection")).toBe(true);
+    const malformed = await checkPublicSite(
+      fakeFetch((input) =>
+        String(input).endsWith("search.json")
+          ? new Response("PRIVATE-BAD-JSON", { headers: { "content-type": "application/json" } })
+          : healthy(input),
+      ),
+    );
+    expect(malformed.find((result) => result.label === "en content")).toMatchObject({
+      reason: "content",
+      status: 200,
+      phase: "validation",
+    });
+    expect(JSON.stringify([connection, malformed])).not.toMatch(/PRIVATE/);
+  });
+
+  it("enforces the same 20 second deadline on hung connections and stalled bodies", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+    try {
+      const signals: AbortSignal[] = [];
+      const fetcher = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        signals.push(init!.signal!);
+        return String(input).endsWith("search.json")
+          ? new Response(new ReadableStream({ start() {} }))
+          : new Promise<Response>(() => {});
+      }) as unknown as typeof fetch;
+      const result = checkPublicSite(fetcher);
+      await vi.advanceTimersByTimeAsync(20_000);
+      const results = await result;
+      expect(
+        results.every((entry) => entry.reason === "timeout" && entry.elapsedMs === 20_000),
+      ).toBe(true);
+      expect(results.find((entry) => entry.label === "en content")).toMatchObject({
+        status: 200,
+        phase: "body",
+      });
+      expect(signals.every((signal) => signal.aborted)).toBe(true);
+      expect(fetcher).toHaveBeenCalledTimes(8);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not call a connection failure a timeout in watchdog reports", async () => {
+    const reporter = vi.fn(async () => new Response("OK")) as unknown as typeof fetch;
+    await reportUptime(
+      ping,
+      [{ label: "en page", ok: false, reason: "connection", status: null }],
+      reporter,
+    );
+    expect(vi.mocked(reporter).mock.calls[0]![1]!.body).toContain("en page: connection");
+    expect(vi.mocked(reporter).mock.calls[0]![1]!.body).not.toContain("timeout");
+  });
   it("checks both languages, native authentication and real media ranges without credentials", async () => {
     const fetcher = fakeFetch();
     const results = await checkPublicSite(fetcher);
