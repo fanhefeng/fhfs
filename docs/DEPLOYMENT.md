@@ -119,3 +119,18 @@ Cloudflare 平台的底层库已经修复。只有确认上游构建包含补丁
 [Undici 安全公告](https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c)、
 [workerd 构建依赖](https://github.com/cloudflare/workerd/blob/v1.20261022.1/build/deps/gen/deps.MODULE.bazel)、
 [Cloudflare 兼容开关](https://developers.cloudflare.com/workers/configuration/compatibility-flags/)。
+
+## 2026-11-02 发布前依赖修复
+
+Seroval 固定到 1.6.11，覆盖正则表达式和 TypedArray 序列化的两项安全修复；
+Void 的 minimatch 固定到 11.0.1，保持原有命名导出接口。
+分享图构建改为直接调用 Satori 0.33.5 与 Resvg 2.6.2，删除内嵌旧 Satori 的
+`cf-workers-og`；只覆盖它声明的依赖不能替换其发布包里的旧代码。
+Satori 的 fflate 固定到同一 0.7 系列的修复版本 0.7.5。
+这些图片仍在 Node 构建阶段使用仓库字体生成，Worker 请求只读取静态 PNG。
+
+依据：[Seroval TypedArray](https://github.com/lxsmnsyc/seroval/security/advisories/GHSA-f86p-h4j2-7qgj)、
+[Seroval RegExp](https://github.com/advisories/GHSA-9wx9-5pv9-3349)、
+[Satori](https://github.com/advisories/GHSA-wx4j-mvgx-mqwp)、
+[minimatch](https://github.com/advisories/GHSA-g3hv-75wg-m249)、
+[fflate](https://github.com/advisories/GHSA-px8p-9vwx-vf98)。
