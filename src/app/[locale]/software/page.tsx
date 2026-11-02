@@ -1,5 +1,6 @@
 import { SoftwareGallery } from "@/components/software/SoftwareGallery";
 import { toSoftwareApp } from "@/components/software/appMeta";
+import { appGithubRepo } from "@/lib/githubData";
 import { useTranslations } from "use-intl";
 
 export default function SoftwarePage({
@@ -10,7 +11,7 @@ export default function SoftwarePage({
   const { locale, rows, github } = data;
   const t = useTranslations("software");
   const apps = rows.map((app, i) =>
-    toSoftwareApp(app, i, locale, app.repo ? github.get(app.repo) : undefined),
+    toSoftwareApp(app, i, locale, github.get(appGithubRepo(app) ?? "")),
   );
   return (
     <main id="main" className="mx-auto w-full max-w-[1040px] flex-1 px-6 pb-24 pt-16 sm:pt-20">

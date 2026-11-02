@@ -26,7 +26,7 @@ const FIELDS: Field[] = [
     label: "GitHub 仓库（owner/name）",
     kind: "text",
     placeholder: "fanhefeng/fhfs",
-    hint: "同步公开仓库的版本、发布日期、下载文件和 Star / Fork；配置 Webhook 后更新即刷新，否则每小时检查。留空不接入 GitHub。",
+    hint: "同步公开仓库的 Star / Fork、主要语言、代码更新时间、版本和下载文件。留空时自动识别上面的 GitHub 网址；其他网址需填写 owner/name。公开读取最多缓存 30 秒。",
     group: "去处",
   },
   { name: "platforms", label: "平台（逗号分隔）", kind: "text", group: "样子与排序" },

@@ -24,9 +24,9 @@ export default function ResumePage({
             state where there is nothing else on the page to leave by. */}
         <Link
           href="/about"
-          className={`${metaLabel} hit-ext inline-flex min-h-11 items-center hover:text-accent`}
+          className={`${metaLabel} hit-ext inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent`}
         >
-          ← {t("backToAbout")}
+          {t("backToAbout")}
         </Link>
         <p className={`${metaLabel} mt-4`}>{t("title")}</p>
         <p className="mt-6 text-body text-fg-secondary">{t("empty")}</p>
@@ -69,9 +69,9 @@ export default function ResumePage({
               no back. */}
           <Link
             href="/about"
-            className={`${metaLabel} hit-ext inline-flex min-h-11 items-center hover:text-accent print:hidden`}
+            className={`${metaLabel} hit-ext inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent print:hidden`}
           >
-            ← {t("backToAbout")}
+            {t("backToAbout")}
           </Link>
           <div className="mt-4 flex items-start justify-between gap-6">
             <p className={metaLabel}>{t("title")}</p>
@@ -276,8 +276,11 @@ export default function ResumePage({
           carrying one line of mono is a sheet nobody wanted. */}
       <footer className="mt-16 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-t border-line pt-6 print:mt-4 print:break-before-avoid print:pt-2">
         <p className={metaLabel}>{t("updated", { date: updated })}</p>
-        <Link href="/intro" className={`${metaLabel} hover:text-accent print:hidden`}>
-          {t("introLink")} →
+        <Link
+          href="/intro"
+          className={`${metaLabel} underline decoration-line underline-offset-4 hover:text-accent print:hidden`}
+        >
+          {t("introLink")}
         </Link>
       </footer>
     </main>

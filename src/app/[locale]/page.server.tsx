@@ -7,6 +7,7 @@ import { localeAlternates } from "@/lib/server/seo";
 
 import { getPosts, getApps, getMoments } from "@/lib/server/content";
 import { getLatestReleases } from "@/lib/server/github";
+import { appGithubRepo } from "@/lib/githubData";
 
 export async function loadPageData(input: PageProps<"/[locale]">) {
   const { params } = input;
@@ -17,7 +18,7 @@ export async function loadPageData(input: PageProps<"/[locale]">) {
     getApps(),
     getMoments(),
   ]);
-  const releases = await getLatestReleases(allApps.map((app) => app.repo));
+  const releases = await getLatestReleases(allApps.map(appGithubRepo));
   return { locale, allPosts, allApps, moments, releases };
 }
 

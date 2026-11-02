@@ -22,6 +22,12 @@ overrides:
   sharp: "^0.35.5"
   # Cloudflare packages still pin Undici before the October security fixes.
   undici: "7.30.1"
+  # October serializer fixes used by TanStack Start's SSR transport.
+  seroval: "1.6.11"
+  # Void's glob matcher keeps the same named API on the fixed release.
+  "void>minimatch": "11.0.1"
+  # Keep Satori's font decompressor within its patched 0.7 line.
+  "satori>fflate": "0.7.5"
   # GHSA-mrhx-c7xc-m3w5: retain Cloudflare config's Zod 4 API with the fixed patch.
   "@cloudflare/config>zod": "4.6.7"
   # Keep the local Workers runtime and its development/deployment hosts current.

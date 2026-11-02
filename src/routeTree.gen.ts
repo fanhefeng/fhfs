@@ -62,6 +62,8 @@ import { Route as AdminSecretsNewRouteImport } from './routes/admin/secrets/new'
 import { Route as ApiGithubWebhookRouteImport } from './routes/api/github/webhook'
 import { Route as ApiMediaCleanupRouteImport } from './routes/api/media/cleanup'
 import { Route as LocaleBlogSlugOpengraphImageRouteImport } from './routes/$locale/blog/$slug/opengraph-image'
+import { Route as LocaleBlogNotesIndexRouteImport } from './routes/$locale/blog/notes/index'
+import { Route as LocaleBlogNotesSlugRouteImport } from './routes/$locale/blog/notes/$slug'
 import { Route as LocaleBlogTagsTagRouteImport } from './routes/$locale/blog/tags/$tag'
 import { Route as AdminPostsSlugLocaleIndexRouteImport } from './routes/admin/posts/$slug/$locale.index'
 import { Route as AdminSecretsSlugLocaleIndexRouteImport } from './routes/admin/secrets/$slug/$locale.index'
@@ -333,6 +335,16 @@ const LocaleBlogSlugOpengraphImageRoute =
     path: '/opengraph-image',
     getParentRoute: () => LocaleBlogSlugRoute,
   } as any)
+const LocaleBlogNotesIndexRoute = LocaleBlogNotesIndexRouteImport.update({
+  id: '/blog/notes/',
+  path: '/blog/notes/',
+  getParentRoute: () => LocaleRoute,
+} as any)
+const LocaleBlogNotesSlugRoute = LocaleBlogNotesSlugRouteImport.update({
+  id: '/blog/notes/$slug',
+  path: '/blog/notes/$slug',
+  getParentRoute: () => LocaleRoute,
+} as any)
 const LocaleBlogTagsTagRoute = LocaleBlogTagsTagRouteImport.update({
   id: '/blog/tags/$tag',
   path: '/blog/tags/$tag',
@@ -405,7 +417,9 @@ export interface FileRoutesByFullPath {
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
+  '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
+  '/$locale/blog/notes/': typeof LocaleBlogNotesIndexRoute
   '/admin/posts/$slug/$locale/': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale/': typeof AdminSecretsSlugLocaleIndexRoute
 }
@@ -461,7 +475,9 @@ export interface FileRoutesByTo {
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/secrets': typeof AdminSecretsIndexRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
+  '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
+  '/$locale/blog/notes': typeof LocaleBlogNotesIndexRoute
   '/admin/posts/$slug/$locale': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale': typeof AdminSecretsSlugLocaleIndexRoute
 }
@@ -520,7 +536,9 @@ export interface FileRoutesById {
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
+  '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
+  '/$locale/blog/notes/': typeof LocaleBlogNotesIndexRoute
   '/admin/posts/$slug/$locale/': typeof AdminPostsSlugLocaleIndexRoute
   '/admin/secrets/$slug/$locale/': typeof AdminSecretsSlugLocaleIndexRoute
 }
@@ -580,7 +598,9 @@ export interface FileRouteTypes {
     | '/admin/posts/'
     | '/admin/secrets/'
     | '/$locale/blog/$slug/opengraph-image'
+    | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
+    | '/$locale/blog/notes/'
     | '/admin/posts/$slug/$locale/'
     | '/admin/secrets/$slug/$locale/'
   fileRoutesByTo: FileRoutesByTo
@@ -636,7 +656,9 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/admin/secrets'
     | '/$locale/blog/$slug/opengraph-image'
+    | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
+    | '/$locale/blog/notes'
     | '/admin/posts/$slug/$locale'
     | '/admin/secrets/$slug/$locale'
   id:
@@ -694,7 +716,9 @@ export interface FileRouteTypes {
     | '/admin/posts/'
     | '/admin/secrets/'
     | '/$locale/blog/$slug/opengraph-image'
+    | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
+    | '/$locale/blog/notes/'
     | '/admin/posts/$slug/$locale/'
     | '/admin/secrets/$slug/$locale/'
   fileRoutesById: FileRoutesById
@@ -1083,6 +1107,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleBlogSlugOpengraphImageRouteImport
       parentRoute: typeof LocaleBlogSlugRoute
     }
+    '/$locale/blog/notes/': {
+      id: '/$locale/blog/notes/'
+      path: '/blog/notes'
+      fullPath: '/$locale/blog/notes/'
+      preLoaderRoute: typeof LocaleBlogNotesIndexRouteImport
+      parentRoute: typeof LocaleRoute
+    }
+    '/$locale/blog/notes/$slug': {
+      id: '/$locale/blog/notes/$slug'
+      path: '/blog/notes/$slug'
+      fullPath: '/$locale/blog/notes/$slug'
+      preLoaderRoute: typeof LocaleBlogNotesSlugRouteImport
+      parentRoute: typeof LocaleRoute
+    }
     '/$locale/blog/tags/$tag': {
       id: '/$locale/blog/tags/$tag'
       path: '/blog/tags/$tag'
@@ -1140,7 +1178,9 @@ interface LocaleRouteChildren {
   LocaleIdolsIndexRoute: typeof LocaleIdolsIndexRoute
   LocaleLabIndexRoute: typeof LocaleLabIndexRoute
   LocaleSecretsIndexRoute: typeof LocaleSecretsIndexRoute
+  LocaleBlogNotesSlugRoute: typeof LocaleBlogNotesSlugRoute
   LocaleBlogTagsTagRoute: typeof LocaleBlogTagsTagRoute
+  LocaleBlogNotesIndexRoute: typeof LocaleBlogNotesIndexRoute
 }
 
 const LocaleRouteChildren: LocaleRouteChildren = {
@@ -1164,7 +1204,9 @@ const LocaleRouteChildren: LocaleRouteChildren = {
   LocaleIdolsIndexRoute: LocaleIdolsIndexRoute,
   LocaleLabIndexRoute: LocaleLabIndexRoute,
   LocaleSecretsIndexRoute: LocaleSecretsIndexRoute,
+  LocaleBlogNotesSlugRoute: LocaleBlogNotesSlugRoute,
   LocaleBlogTagsTagRoute: LocaleBlogTagsTagRoute,
+  LocaleBlogNotesIndexRoute: LocaleBlogNotesIndexRoute,
 }
 
 const LocaleRouteWithChildren =

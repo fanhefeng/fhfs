@@ -15,6 +15,7 @@ import { inLocale } from "@/lib/localized";
 import { stampInZone } from "@/lib/moments";
 import type { SearchEntry } from "@/lib/search";
 import { LAB_ENTRIES } from "@/components/lab/entries";
+import { getNotes } from "@/lib/server/notebook";
 
 export const dynamic = "force-static";
 // Two indexes and nothing else — the same reason as the feed beside it.
@@ -39,10 +40,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return new Response("Not found", { status: 404 });
   const l: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
-  const [tn, tl, ts] = await Promise.all([
+  const [tn, tl, ts, notebook] = await Promise.all([
     getTranslations({ locale: l, namespace: "nav" }),
     getTranslations({ locale: l, namespace: "lab" }),
     getTranslations({ locale: l, namespace: "software" }),
+    getTranslations({ locale: l, namespace: "notebook" }),
   ]);
   const [nav, posts, secrets, apps, films, idols, moments] = await Promise.all([
     getAllNavItems(),
@@ -55,6 +57,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
   ]);
 
   const entries: SearchEntry[] = [
+    {
+      kind: "page",
+      title: notebook("title"),
+      text: notebook("subtitle"),
+      href: "/blog/notes",
+    },
+    ...getNotes().map((note) => ({
+      kind: "post" as const,
+      title: note.title,
+      text: [note.summary[l], ...note.tags].join(" "),
+      href: `/blog/notes/${note.slug}`,
+      meta: note.date,
+      tags: note.tags,
+    })),
     ...nav.map((row) => ({
       kind: "page" as const,
       title: tn(row.labelKey),
