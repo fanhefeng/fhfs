@@ -14,6 +14,7 @@ import { OvertureLight } from "@/components/fx/OvertureLight";
 import { ProgressHud } from "@/components/fx/ProgressHud";
 import { Jukebox } from "@/components/fx/Jukebox";
 import { PreviewBanner } from "@/components/layout/PreviewBanner";
+import { WebMCP } from "@/components/agent/WebMCP";
 const layout = createServerFn({ method: "GET" })
   .validator((locale: string) => locale)
   .handler(async ({ data }) => (await import("@/lib/server/layout")).loadLayout(data));
@@ -54,6 +55,7 @@ function PublicLayout() {
       <Footer items={data.footerLinks} />
       {data.preview && <PreviewBanner />}
       <SearchLauncher />
+      <WebMCP enabled={!data.preview} />
     </>
   );
 }

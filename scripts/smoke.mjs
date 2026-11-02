@@ -45,7 +45,7 @@ for (const path of ["/admin", "/admin/posts", "/admin/copy", "/admin/posts/new"]
   assert.equal(login.pathname, "/admin/login");
 }
 assert.equal((await read("/admin/login", { redirect: "manual" })).status, 200);
-const article = paths.find((path) => /^\/zh\/blog\/[^/]+$/.test(path));
+const article = paths.find((path) => /^\/zh\/blog\/(?!notes$)[^/]+$/.test(path));
 assert.ok(article, "sitemap includes a published article");
 for (const path of [
   "/zh/opengraph-image",

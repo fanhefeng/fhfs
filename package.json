@@ -17,6 +17,7 @@
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "test": "vp test run",
+    "import:notebook": "node --import tsx scripts/import-notebook.ts",
     "check": "pnpm check:worker-runtime && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
     "deploy": "pnpm assets && void deploy --platform cloudflare",
     "deploy:cloudflare": "pnpm assets && void deploy --platform cloudflare",

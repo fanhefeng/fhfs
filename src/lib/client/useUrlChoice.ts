@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "@/lib/navigation";
 
 /**
- * A filter that lives in the address bar — `?key=value` — on a page that stays
- * static.
+ * A filter that lives in the address bar — `?key=value`.
  *
- * `useSearchParams` would do it and cost the page its prerender (or a Suspense
- * boundary around the very list a crawler came for). This reads the query once,
- * after hydration, and writes it back with `history.replaceState`, which Next
- * keeps in step with its router. The server render is always the unfiltered
- * page; a link that carries a choice narrows it a moment after it lands.
+ * Read after hydration so server HTML stays unfiltered. Write through the
+ * router with scroll disabled: native replaceState is observed as a navigation
+ * too, but cannot tell TanStack to keep the reader beside the filter.
  *
- * `replaceState`, not `pushState`: a filter is a view of the page, not a place
+ * Replace, not push: a filter is a view of the page, not a place
  * in it, and five chips pressed should not be five presses of Back to leave.
  * What this buys is the other three — a reload, a shared link and a return
  * through the history all come back to the same view.
@@ -22,6 +20,7 @@ export function useUrlChoice(
   key: string,
   allowed: readonly string[],
 ): [string | null, (value: string | null) => void] {
+  const router = useRouter();
   const [choice, setChoice] = useState<string | null>(null);
   const allowedKey = allowed.join("\n");
 
@@ -41,12 +40,9 @@ export function useUrlChoice(
       const url = new URL(window.location.href);
       if (value === null) url.searchParams.delete(key);
       else url.searchParams.set(key, value);
-      // `null`, as Next's docs have it: handed its own state object back, the
-      // patched replaceState takes the call for one of its own and skips the
-      // sync with the router.
-      window.history.replaceState(null, "", url);
+      router.replace(`${url.pathname}${url.search}${url.hash}`, { scroll: false });
     },
-    [key],
+    [key, router],
   );
 
   return [choice, choose];

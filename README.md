@@ -16,6 +16,8 @@ pnpm check
 pnpm build
 pnpm preview --port 4173
 pnpm smoke http://127.0.0.1:4173
+# 杂志卡片的原生 3D / HTML 回退浏览器检查（需本机 Chrome）
+node scripts/smoke-magazine.mjs http://127.0.0.1:4173
 ```
 
 `pnpm assets` 从原始 `public/` 和内容哈希清单生成 `.generated/public/`，包括字体和 Draco 目录的哈希地址。构建前自动执行，不改写原始资源。

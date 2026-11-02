@@ -21,6 +21,29 @@ import { getFilm, getIdol, getTimeline } from "@/lib/server/content";
 import { groveCards } from "@/components/grove/cards";
 import type { GroveCardData } from "@/components/grove/GroveCard";
 const STUDY_KEYS: Record<LabEntry["key"], string[]> = {
+  magazine: [
+    "label",
+    "lede",
+    "coverAria",
+    "edition",
+    "coverKicker",
+    "coverTitle",
+    "coverBody",
+    "read",
+    "save",
+    "saved",
+    "stageNote",
+    "live",
+    "fallback",
+    "turnAria",
+    "turnLeft",
+    "turnRight",
+    "reset",
+    "flatView",
+    "spatialView",
+    "liveHint",
+    "flatHint",
+  ],
   hello: [
     "label",
     "lede",

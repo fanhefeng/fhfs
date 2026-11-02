@@ -4,6 +4,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { site } from "@/config/site";
 
 import { type Release } from "@/lib/server/github";
+import { appGithubRepo } from "@/lib/githubData";
 import { newestSaid, stampInZone } from "@/lib/moments";
 import { newestLabEntry } from "@/components/lab/entries";
 import { Chibi } from "@/components/chibi/Chibi";
@@ -35,7 +36,7 @@ export default function HomePage({
   const study = newestLabEntry();
   let latest: { name: string; release: Release } | undefined;
   for (const app of allApps) {
-    const release = app.repo ? releases.get(app.repo) : undefined;
+    const release = releases.get(appGithubRepo(app) ?? "");
     if (!release?.publishedAt) continue;
     if (!latest || release.publishedAt > latest.release.publishedAt!) {
       latest = { name: app.name, release };

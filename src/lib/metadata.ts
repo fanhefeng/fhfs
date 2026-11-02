@@ -33,7 +33,9 @@ export function routeHead(metadata?: Metadata, admin = false) {
   const description = metadata?.description ?? site.description.zh;
   const canonical = metadata?.alternates?.canonical?.toString();
   const path = canonical ? new URL(canonical).pathname : "/zh";
-  const imagePath = /^\/(zh|en)\/blog\/[^/]+$/.test(path) ? path : `/${path.split("/")[1] || "zh"}`;
+  const imagePath = /^\/(zh|en)\/blog\/(?!notes$)[^/]+$/.test(path)
+    ? path
+    : `/${path.split("/")[1] || "zh"}`;
   return {
     meta: [
       { title },

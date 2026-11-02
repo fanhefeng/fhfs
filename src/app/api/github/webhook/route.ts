@@ -1,6 +1,6 @@
 import { env } from "@/lib/server/env";
 import { revalidateTag } from "@/lib/server/cache";
-import { githubCacheTag, githubEventRepo } from "@/lib/githubData";
+import { appGithubRepo, githubCacheTag, githubEventRepo } from "@/lib/githubData";
 import { getApps } from "@/lib/server/content";
 import { readGithubBody, validGithubSignature } from "@/lib/server/githubWebhook";
 
@@ -29,12 +29,11 @@ export async function POST(request: Request): Promise<Response> {
   if (!repo) return Response.json({ ignored: true });
 
   const apps = await getApps();
-  if (!apps.some((app) => app.repo?.toLowerCase() === repo.toLowerCase())) {
+  if (!apps.some((app) => appGithubRepo(app) === repo.toLowerCase())) {
     return Response.json({ ignored: true });
   }
 
-  // updateTag only runs in Server Actions. This webhook expires the data
-  // immediately; the next page request waits for GitHub's fresh response.
+  // Expire this Worker's cached data; the next page request fetches fresh data.
   revalidateTag(githubCacheTag(repo), { expire: 0 });
   return Response.json({ ok: true, repo });
 }

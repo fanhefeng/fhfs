@@ -36,6 +36,7 @@ vi.mock("@/lib/server/content", async () => {
 import { GET } from "@/app/[locale]/search.json/route";
 import { withContentCacheBypass } from "../server/cacheScope";
 import { updateTag } from "../server/cache";
+import notebook from "@/content/notebook/index.json";
 
 beforeEach(() => {
   updateTag("search-regression");
@@ -52,7 +53,18 @@ describe("search read aggregation", () => {
     expect(response.status).toBe(200);
     const entries = await response.json();
     expect(entries.length).toBeGreaterThan(0);
-    expect(entries.every((entry: { kind: string }) => entry.kind === "lab")).toBe(true);
+    expect(entries.filter((entry: { kind: string }) => entry.kind !== "lab")).toHaveLength(
+      notebook.length + 1,
+    );
+    for (const note of notebook) {
+      expect(entries).toContainEqual(
+        expect.objectContaining({
+          kind: "post",
+          href: `/blog/notes/${note.slug}`,
+          title: note.title,
+        }),
+      );
+    }
     const queries = transport.mock.calls.map(([, init]) => JSON.parse(init.body).query);
     expect(queries).toHaveLength(8);
     expect(queries.filter((query) => query.includes("getCopyOverrides"))).toHaveLength(1);

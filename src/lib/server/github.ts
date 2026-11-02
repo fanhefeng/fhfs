@@ -1,4 +1,4 @@
-import { unstable_cache } from "./cache";
+import { SHARED_CONTENT_TTL_SECONDS, unstable_cache } from "./cache";
 import { githubCacheTag } from "@/lib/githubData";
 import { env } from "@/lib/server/env";
 import "@tanstack/react-start/server-only";
@@ -17,9 +17,8 @@ export type { Release } from "@/lib/githubData";
  * The one thing the site reads from somewhere other than its own database:
  * releases, download assets and repository statistics, straight from GitHub.
  *
- * Cached through `fetch`'s own data cache for an hour: a page that shows a
- * version regenerates hourly as a fallback. A signed webhook expires the
- * repository's tag immediately, across the home and software pages. Set
+ * Completed reads are cached for at most 30 seconds in this Worker. A signed
+ * webhook expires the repository's tag across the home and software pages. Set
  * `GITHUB_TOKEN` to raise the unauthenticated API limit. Failures (no release,
  * rate-limited, offline) omit only the unavailable data.
  */
@@ -55,7 +54,7 @@ async function fetchJson(
 
 function getJson(repo: string, path: string) {
   return unstable_cache(fetchJson, ["github", path], {
-    revalidate: 3600,
+    revalidate: SHARED_CONTENT_TTL_SECONDS,
     tags: [githubCacheTag(repo)],
   })(repo, path);
 }
