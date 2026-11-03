@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 
 import { ArticleNeighbours, ArticleSummary, FallbackNotice } from "@/components/blog/ArticleParts";
 import { Mdx } from "@/components/blog/Mdx";
+import { ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
 import { PostTitle } from "@/components/blog/PostTitle";
 import { RoomMusic } from "@/components/fx/RoomMusic";
 
@@ -19,11 +20,14 @@ export default function SecretPage({
 }) {
   const { locale, secret, older, newer } = data;
   const t = useTranslations("secrets");
+  const tLife = useTranslations("life");
+  const tn = useTranslations("notebook");
   const tt = useTranslations("tracks.secret");
   const tc = useTranslations("common");
   const format = useFormatter();
   const isPodcast = secret.kind === "podcast";
   const audio = secret.audio ? asset(secret.audio) : null;
+  const listHref = secret.note ? "/life" : "/secrets";
   return (
     <main id="main" className="mx-auto w-full max-w-[68ch] flex-1 px-6 pb-28 pt-32 md:pt-40">
       <JsonLd
@@ -33,7 +37,7 @@ export default function SecretPage({
           headline: secret.title,
           name: secret.title,
           description: secret.summary,
-          datePublished: secret.date,
+          ...(secret.date ? { datePublished: secret.date } : {}),
           author: { "@type": "Person", name: site.author },
           // The same URL `generateMetadata` calls canonical: on a fallback
           // render this prefix is not where the text lives, and two URLs each
@@ -50,25 +54,36 @@ export default function SecretPage({
             : {}),
         }}
       />
-      <article lang={secret.isFallback ? htmlLang(secret.locale) : undefined}>
+      <article
+        lang={secret.isFallback || secret.note ? htmlLang(secret.locale) : undefined}
+        className="min-w-0 [overflow-wrap:anywhere]"
+      >
         <header className="mb-12">
           <p
             lang={secret.isFallback ? htmlLang(locale) : undefined}
             className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
           >
-            <Link href="/secrets" className="hit-ext transition-colors hover:text-accent">
-              {t("title")}
+            <Link href={listHref} className="hit-ext transition-colors hover:text-accent">
+              {secret.note ? tLife("title") : t("title")}
             </Link>
             <span aria-hidden>·</span>
-            <span className="text-accent">{t(isPodcast ? "kindPodcast" : "kindEssay")}</span>
+            <span className="text-accent">
+              {secret.format
+                ? tn(`formats.${secret.format}`)
+                : t(isPodcast ? "kindPodcast" : "kindEssay")}
+            </span>
             <span aria-hidden>·</span>
-            <time dateTime={secret.date}>
-              {format.dateTime(new Date(secret.date), {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </time>
+            {secret.date ? (
+              <time dateTime={secret.date}>
+                {format.dateTime(new Date(secret.date), {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </time>
+            ) : (
+              <span>{tn("undated")}</span>
+            )}
             {isPodcast ? (
               secret.duration != null && (
                 <>
@@ -86,7 +101,11 @@ export default function SecretPage({
 
           <PostTitle title={secret.title} className="text-title md:text-display-sm" />
 
-          {secret.summary && <ArticleSummary>{secret.summary}</ArticleSummary>}
+          {secret.summary && (
+            <ArticleSummary lang={secret.note ? htmlLang(locale) : undefined}>
+              {secret.summary}
+            </ArticleSummary>
+          )}
 
           {!isPodcast && (
             <RoomMusic
@@ -122,6 +141,9 @@ export default function SecretPage({
           </figure>
         )}
 
+        {secret.note && (
+          <ImportedNoteDetails note={secret.note} locale={locale} textLocale={secret.locale} />
+        )}
         {secret.html && <Mdx html={secret.html} />}
       </article>
 
@@ -137,10 +159,10 @@ export default function SecretPage({
 
       <p className="mt-14">
         <Link
-          href="/secrets"
+          href={listHref}
           className="hit-ext relative font-mono text-meta uppercase tracking-meta text-fg-secondary underline decoration-line underline-offset-4 transition-colors duration-200 hover:text-accent"
         >
-          {t("backToList")}
+          {secret.note ? tLife("backToList") : t("backToList")}
         </Link>
       </p>
     </main>

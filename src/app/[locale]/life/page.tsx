@@ -7,6 +7,7 @@ import { coverOf } from "@/lib/films";
 import { inLocale } from "@/lib/localized";
 
 import { Reveal } from "@/components/fx/Reveal";
+import { SecretIndex } from "@/components/secrets/SecretIndex";
 import { roomMeta } from "@/components/life/rooms";
 import { useTranslations } from "use-intl";
 type SubLink = { href: string; label: string };
@@ -35,6 +36,7 @@ export default function LifePage({
   const t = useTranslations("life");
   const tNav = useTranslations("nav");
   const tTracks = useTranslations("tracks");
+  const tSecrets = useTranslations("secrets");
   const firstCard = (picture: { src: string; width: number; height: number } | undefined) =>
     picture && { src: asset(picture.src), width: picture.width, height: picture.height };
   const furniture = roomMeta(
@@ -88,7 +90,7 @@ export default function LifePage({
       </Reveal>
 
       {rooms.length === 0 ? (
-        <p className="text-body text-fg-secondary">{t("none")}</p>
+        secrets.length === 0 && <p className="text-body text-fg-secondary">{t("none")}</p>
       ) : (
         <Reveal as="ol" role="list" stagger={0.06} className="border-t border-line">
           {rooms.map((room, i) => {
@@ -167,6 +169,12 @@ export default function LifePage({
             );
           })}
         </Reveal>
+      )}
+
+      {secrets.length > 0 && (
+        <div className={rooms.length > 0 ? "mt-14" : undefined}>
+          <SecretIndex items={secrets} yearAria={(year) => tSecrets("yearAria", { year })} />
+        </div>
       )}
 
       <style href="life-index" precedence="medium">

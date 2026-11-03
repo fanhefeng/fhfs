@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import Page from "@/app/[locale]/blog/notes/[slug]/page";
-import { routeHead } from "@/lib/metadata";
 const loadPage = createServerFn({ method: "GET" })
   .validator(
     (
@@ -12,17 +10,13 @@ const loadPage = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const page = await import("@/app/[locale]/blog/notes/[slug]/page.server");
-    const payload = await page.loadPageData(data);
-    const metadata = await page.generateMetadata(data);
-    return { payload, metadata };
+    return page.loadPageData(data);
   });
 export const Route = createFileRoute("/$locale/blog/notes/$slug")({
   validateSearch: (search: Record<string, unknown>) => search as Record<string, string>,
   loaderDeps: ({ search }) => ({ search }),
-  loader: ({ params, deps }) => loadPage({ data: { params, searchParams: deps.search } }),
-  head: ({ loaderData }) => routeHead(loaderData?.metadata, false),
-  component: RoutePage,
+  loader: async ({ params, deps }) => {
+    const { href } = await loadPage({ data: { params, searchParams: deps.search } });
+    throw redirect({ href, statusCode: 301 });
+  },
 });
-function RoutePage() {
-  return <Page data={Route.useLoaderData().payload} />;
-}

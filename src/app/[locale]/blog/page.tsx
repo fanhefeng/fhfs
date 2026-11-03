@@ -2,7 +2,6 @@ import { YearIndex } from "@/components/blog/PostCard";
 import { TagPill } from "@/components/blog/TagPill";
 import { Reveal } from "@/components/fx/Reveal";
 import { useTranslations } from "use-intl";
-import { Link } from "@/i18n/navigation";
 
 export default function BlogPage({
   data,
@@ -22,26 +21,6 @@ export default function BlogPage({
           </p>
         )}
       </Reveal>
-
-      <Link
-        href="/blog/notes"
-        className="group mb-12 flex items-center justify-between gap-6 border-y border-line py-6"
-      >
-        <span>
-          <span className="font-mono text-meta uppercase tracking-meta text-accent">
-            {t("notebookTitle")}
-          </span>
-          <span className="mt-2 block text-small leading-relaxed text-fg-secondary">
-            {t("notebookDescription")}
-          </span>
-        </span>
-        <span
-          aria-hidden
-          className="text-fg-tertiary transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none"
-        >
-          ↗
-        </span>
-      </Link>
 
       {tags.length > 0 && (
         <Reveal

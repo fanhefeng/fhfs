@@ -49,6 +49,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
   // same article twice.
   const t = await getTranslations({ locale: l, namespace: "blog" });
   for (const post of await getPosts(l)) {
+    // RSS requires a date; undated originals stay readable in the writing index.
+    if (!post.date) continue;
     const url = `${site.url}/${post.locale}/blog/${post.slug}`;
     feed.addItem({
       title: post.isFallback ? `${post.title} ${t("feedFallbackTag")}` : post.title,

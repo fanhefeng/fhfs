@@ -34,13 +34,15 @@ export async function openGraphImage(locale: string, slug?: string) {
     getPosts(locale),
     getPosts(locale === "zh" ? "en" : "zh"),
   ]);
+  const post = posts.find((post) => post.slug === slug);
+  const counterpart = alternate.find((post) => post.slug === slug);
   return png(
     shareImagePath(
       images!,
       locale,
       slug,
-      posts.find((post) => post.slug === slug),
-      alternate.find((post) => post.slug === slug),
+      post?.date ? { ...post, date: post.date } : undefined,
+      counterpart?.date ? { ...counterpart, date: counterpart.date } : undefined,
     ),
   );
 }

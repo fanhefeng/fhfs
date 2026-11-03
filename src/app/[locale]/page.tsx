@@ -24,12 +24,13 @@ export default function HomePage({
   const th = useTranslations("grove");
   const td = useTranslations("splash");
   const tn = useTranslations("nav");
+  const tNote = useTranslations("notebook");
   const tl = useTranslations("lab");
   const posts: WritingItem[] = allPosts.slice(0, POST_COUNT).map((post) => ({
     slug: post.slug,
     title: post.title,
     lang: post.isFallback ? htmlLang(post.locale) : undefined,
-    date: post.date.replaceAll("-", "."),
+    date: post.date?.replaceAll("-", ".") ?? tNote("undated"),
     readingTime: t("readingTime", { minutes: post.readingMinutes }),
   }));
   const said = newestSaid(moments);

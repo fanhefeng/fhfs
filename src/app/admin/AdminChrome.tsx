@@ -73,7 +73,9 @@ export function AdminChrome({
               </Link>
               {group && (
                 <>
-                  <span className="mx-1.5 opacity-50">›</span>
+                  <span aria-hidden="true" className="mx-1.5 opacity-50">
+                    /
+                  </span>
                   {group.label}
                 </>
               )}
@@ -81,7 +83,9 @@ export function AdminChrome({
                   links back to it — that list is where it came from. */}
               {sub && meta && (
                 <>
-                  <span className="mx-1.5 opacity-50">›</span>
+                  <span aria-hidden="true" className="mx-1.5 opacity-50">
+                    /
+                  </span>
                   <Link href={meta.href} className="transition-colors hover:text-accent">
                     {meta.label}
                   </Link>
@@ -103,16 +107,6 @@ export function AdminChrome({
                 {viewHref && (
                   <a href={viewHref} target="_blank" rel="noreferrer" className={ghostButtonClass}>
                     看前台
-                    <svg viewBox="0 0 12 12" aria-hidden className="size-3">
-                      <path
-                        d="M4 2h6v6M10 2 3 9"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
                   </a>
                 )}
                 {action}

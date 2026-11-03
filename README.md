@@ -22,6 +22,8 @@ node scripts/smoke-magazine.mjs http://127.0.0.1:4173
 
 `pnpm assets` 从原始 `public/` 和内容哈希清单生成 `.generated/public/`，包括字体和 Draco 目录的哈希地址。构建前自动执行，不改写原始资源。
 
+电影与偶像的本地 JPEG 同时生成 480 / 768 / 1200 像素宽的候选图（不放大、不保留比原图更大的文件），由 `src/lib/responsive-images.gen.json` 映射到原图哈希地址。公共 Image 按现有 sizes 交给浏览器选图；全屏剧照使用原图。派生图保留原图许可，仅在构建时使用 sharp，不改变共享媒体 Worker 的上传协议。
+
 ## 数据与后台
 
 - 内容继续从原站的 Neon Postgres 读取，沿用 Drizzle schema；部署不创建数据库、不迁移或导入数据。

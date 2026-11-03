@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import index from "@/content/notebook/index.json";
-import { filterNotes, type NoteBody, type NoteSummary } from "@/lib/notebook";
-import { routeHead } from "@/lib/metadata";
+import { noteDestination, type NoteBody, type NoteSummary } from "@/lib/notebook";
 import { getNote, getNotes } from "@/lib/server/notebook";
 
 const notes = index as NoteSummary[];
@@ -47,21 +46,13 @@ describe("published notebook", () => {
     expect(fragments.html).toContain("河津公车随感");
   });
 
-  it("combines category and multilingual keywords, and accepts whitespace", () => {
-    expect(filterNotes(notes, "it", "  ETHERS.JS Ethereum ").map((note) => note.slug)).toEqual([
-      "ethers-notes",
-    ]);
-    expect(filterNotes(notes, "writing", "ethers")).toEqual([]);
-    expect(filterNotes(notes, null, "做饭").map((note) => note.slug)).toEqual(["kitchen-notes"]);
-    expect(filterNotes(notes, null, "   ")).toHaveLength(notes.length);
-  });
-
-  it("uses an existing section share image for the notebook index and details", () => {
-    for (const path of ["/zh/blog/notes", "/zh/blog/notes/solitude"]) {
-      const head = routeHead({ alternates: { canonical: `https://example.com${path}` } });
-      expect(
-        head.meta.find((item) => "property" in item && item.property === "og:image")?.content,
-      ).toMatch(/\/zh\/opengraph-image$/);
-    }
+  it("files technical content under writing and everyday pieces under the existing life room", () => {
+    expect(notes.filter((note) => noteDestination(note) === "/blog")).toHaveLength(11);
+    expect(notes.filter((note) => noteDestination(note) === "/secrets")).toHaveLength(9);
+    expect(noteDestination(notes.find((note) => note.slug === "solitude")!)).toBe("/secrets");
+    expect(noteDestination(notes.find((note) => note.slug === "kitchen-notes")!)).toBe("/secrets");
+    expect(noteDestination(notes.find((note) => note.slug === "frontend-deployment")!)).toBe(
+      "/blog",
+    );
   });
 });

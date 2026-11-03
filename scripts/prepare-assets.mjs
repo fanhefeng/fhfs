@@ -1,5 +1,6 @@
 import { readFile, cp, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { prepareResponsiveImages } from "./responsive-images.mjs";
 const source = "public",
   target = ".generated/public";
 await mkdir(target, { recursive: true });
@@ -18,3 +19,5 @@ for (const [name, info] of Object.entries(manifest.files)) {
 for (const [name, hash] of Object.entries(manifest.sets)) {
   await cp(join(source, name), join(target, name, "_" + hash), { recursive: true });
 }
+
+await prepareResponsiveImages(process.cwd(), manifest);

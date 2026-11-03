@@ -1,4 +1,5 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
+import responsiveImages from "@/lib/responsive-images.gen.json";
 
 type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "width" | "height"> & {
   src: string;
@@ -17,7 +18,7 @@ export default function Image({
   preload,
   priority,
   quality: _quality,
-  unoptimized: _unoptimized,
+  unoptimized,
   style,
   ...props
 }: ImageProps) {
@@ -30,6 +31,10 @@ export default function Image({
       alt={props.alt ?? ""}
       style={{ ...fillStyle, ...style }}
       loading={preload || priority ? "eager" : (props.loading ?? "lazy")}
+      srcSet={
+        props.srcSet ??
+        (unoptimized ? undefined : (responsiveImages as Record<string, string>)[props.src])
+      }
       decoding={props.decoding ?? "async"}
       fetchPriority={preload || priority ? "high" : props.fetchPriority}
     />

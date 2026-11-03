@@ -1,5 +1,10 @@
 # fhfs
 
+UI controls use clear text and interaction states without decorative arrows,
+chevrons or hover-only direction marks. Prefer text for pagination, back links
+and disclosure controls. Keep only direction marks required by the function
+or explicitly requested by the user; preserve keyboard input and content.
+
 TanStack Start, React 19, Vite+, and Void. Read the installed documentation in
 `node_modules/void/docs/integrations/frameworks/tanstack-start.md` before
 changing deployment configuration. Routes live in `src/routes`; page views and

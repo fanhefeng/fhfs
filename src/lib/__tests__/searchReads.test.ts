@@ -6,6 +6,7 @@ vi.mock("@tanstack/react-start/server", () => ({
 }));
 vi.mock("@/lib/server/content", async () => {
   const { unstable_cache } = await import("../server/cache");
+  const { getImportedSummaries } = await import("../server/notebook");
   return Object.fromEntries(
     [
       "getAllNavItems",
@@ -24,7 +25,10 @@ vi.mock("@/lib/server/content", async () => {
             method: "POST",
             body: JSON.stringify({ query: `select * from ${name}`, params: [] }),
           });
-          return name === "getCopyOverrides" ? {} : [];
+          if (name === "getCopyOverrides") return {};
+          if (name === "getPosts") return getImportedSummaries("/blog", "en");
+          if (name === "getSecrets") return getImportedSummaries("/secrets", "en");
+          return [];
         },
         [`search-${name.toLowerCase()}`],
         { tags: ["search-regression"], publicRead: true },
@@ -37,6 +41,7 @@ import { GET } from "@/app/[locale]/search.json/route";
 import { withContentCacheBypass } from "../server/cacheScope";
 import { updateTag } from "../server/cache";
 import notebook from "@/content/notebook/index.json";
+import { noteDestination, type NoteSummary } from "@/lib/notebook";
 
 beforeEach(() => {
   updateTag("search-regression");
@@ -54,17 +59,20 @@ describe("search read aggregation", () => {
     const entries = await response.json();
     expect(entries.length).toBeGreaterThan(0);
     expect(entries.filter((entry: { kind: string }) => entry.kind !== "lab")).toHaveLength(
-      notebook.length + 1,
+      notebook.length,
     );
     for (const note of notebook) {
       expect(entries).toContainEqual(
         expect.objectContaining({
-          kind: "post",
-          href: `/blog/notes/${note.slug}`,
+          kind: note.section === "it" ? "post" : "secret",
+          href: `${noteDestination(note as NoteSummary)}/${note.slug}`,
           title: note.title,
         }),
       );
     }
+    expect(entries.some((entry: { href: string }) => entry.href.includes("/blog/notes"))).toBe(
+      false,
+    );
     const queries = transport.mock.calls.map(([, init]) => JSON.parse(init.body).query);
     expect(queries).toHaveLength(8);
     expect(queries.filter((query) => query.includes("getCopyOverrides"))).toHaveLength(1);
