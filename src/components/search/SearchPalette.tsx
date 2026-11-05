@@ -206,7 +206,9 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
               aria-selected={i === active}
               tabIndex={-1}
               onMouseMove={() => setActive(i)}
-              onClick={() => dialogRef.current?.close()}
+              // The route veil prevents the click during document capture.
+              // RouterLink skips onClick for that event, so close in capture too.
+              onClickCapture={() => dialogRef.current?.close()}
               className={`mx-2 flex items-baseline gap-3 rounded-xl px-3 py-2.5 ${
                 i === active ? "bg-fg/[0.06]" : ""
               }`}
