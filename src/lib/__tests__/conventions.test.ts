@@ -88,9 +88,20 @@ describe("the database", () => {
   it("is read in content.ts only from inside unstable_cache", () => {
     const content = files.find(({ file }) => file === "lib/server/content.ts");
     expect(content).toBeDefined();
-    const uncached = declarations(content!.text)
-      .filter((d) => /\bdb\s*\.\s*(select|query|execute|batch|\$count)/.test(d))
-      .filter((d) => !/^(?:export\s+)?const\s+\w+\s*=\s*unstable_cache\(/.test(d))
+    const topLevel = declarations(content!.text);
+    const cached = /^(?:export\s+)?const\s+\w+\s*=\s*unstable_cache\(/;
+    const uncached = topLevel
+      .filter((d) => /\bdb\s*\.\s*(select|query|execute|batch|\$count)/.test(d) && !cached.test(d))
+      .filter((d) => {
+        // Drizzle SELECT builders are lazy. Only cached getters may call them.
+        const builder =
+          /^const (select[A-Z]\w*) = \([^\n]*\) =>\s*db\s*\.select(?:DistinctOn)?\(/.exec(d);
+        if (!builder || /\.\s*(execute|then|catch|finally)\s*\(/.test(d)) return true;
+        const usesBuilder = new RegExp(`(?<!typeof )\\b${builder[1]}\\b`);
+        return topLevel.some(
+          (other) => other !== d && usesBuilder.test(other) && !cached.test(other),
+        );
+      })
       .map((d) => d.split("\n")[0]);
     expect(uncached).toEqual([]);
   });

@@ -2,15 +2,7 @@ import { hasLocale } from "use-intl";
 import { getTranslations } from "@/i18n/server";
 import { routing, type Locale } from "@/i18n/routing";
 import { site } from "@/config/site";
-import {
-  getAllNavItems,
-  getApps,
-  getFilms,
-  getIdols,
-  getMoments,
-  getPosts,
-  getSecrets,
-} from "@/lib/server/content";
+import { getSearchContent } from "@/lib/server/content";
 import { inLocale } from "@/lib/localized";
 import { stampInZone } from "@/lib/moments";
 import type { SearchEntry } from "@/lib/search";
@@ -37,20 +29,13 @@ export function generateStaticParams() {
 export async function GET(_request: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return new Response("Not found", { status: 404 });
-  const l: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
-  const [tn, tl, ts] = await Promise.all([
+  const l: Locale = locale;
+  // Copy overrides keep their independent fallback to the file catalogue.
+  const [tn, tl, ts, { nav, posts, secrets, apps, films, idols, moments }] = await Promise.all([
     getTranslations({ locale: l, namespace: "nav" }),
     getTranslations({ locale: l, namespace: "lab" }),
     getTranslations({ locale: l, namespace: "software" }),
-  ]);
-  const [nav, posts, secrets, apps, films, idols, moments] = await Promise.all([
-    getAllNavItems(),
-    getPosts(l),
-    getSecrets(l),
-    getApps(),
-    getFilms(),
-    getIdols(),
-    getMoments(),
+    getSearchContent(l),
   ]);
 
   const entries: SearchEntry[] = [
