@@ -26,6 +26,14 @@
 
 export type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
+export type FetchAttempt = {
+  attempt: number;
+  headersMs: number;
+  bodyMs: number | null;
+  status: number | null;
+  failedPhase?: "headers" | "body";
+};
+
 /** The pause before each retry, in ms: two retries, the second patient. */
 const RETRY_DELAYS: readonly number[] = [300, 1200];
 
@@ -52,11 +60,18 @@ export function withConnectionRetry(
   fetchImpl: FetchLike,
   delays: readonly number[] = RETRY_DELAYS,
   sleep: (ms: number) => Promise<void> = wait,
+  observe?: (result: FetchAttempt) => void,
 ): FetchLike {
   return async (input, init) => {
     for (let attempt = 0; ; attempt++) {
+      const started = observe ? performance.now() : 0;
+      let headersAt: number | undefined;
+      let status: number | null = null;
+      let failedPhase: FetchAttempt["failedPhase"];
       try {
         const response = await fetchImpl(input, init);
+        if (observe) headersAt = performance.now();
+        status = response.status;
         const body = await response.arrayBuffer();
         return new Response(NULL_BODY_STATUS.has(response.status) ? null : body, {
           status: response.status,
@@ -64,11 +79,23 @@ export function withConnectionRetry(
           headers: response.headers,
         });
       } catch (error) {
+        failedPhase = status === null ? "headers" : "body";
         if (attempt >= delays.length || !isConnectionFailure(error)) {
           throw error;
         }
-        await sleep(delays[attempt]!);
+      } finally {
+        if (observe) {
+          const ended = performance.now();
+          observe({
+            attempt: attempt + 1,
+            headersMs: Math.round((headersAt ?? ended) - started),
+            bodyMs: headersAt === undefined ? null : Math.round(ended - headersAt),
+            status,
+            failedPhase,
+          });
+        }
       }
+      await sleep(delays[attempt]!);
     }
   };
 }

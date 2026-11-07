@@ -3,6 +3,7 @@ import "@tanstack/react-start/server-only";
 import { neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { withConnectionRetry } from "../lib/retryFetch";
+import { observePublicReadAttempt } from "../lib/server/publicRead";
 import * as schema from "./schema";
 
 /**
@@ -40,7 +41,12 @@ if (!url) {
  * of them changes anything when repeated. Keep the writes that way; a plain
  * insert into a serial-keyed table would not be.
  */
-neonConfig.fetchFunction = withConnectionRetry((input, init) => fetch(input, init));
+neonConfig.fetchFunction = withConnectionRetry(
+  (input, init) => fetch(input, init),
+  undefined,
+  undefined,
+  observePublicReadAttempt,
+);
 
 export const db = drizzle({
   connection: { connectionString: url, isolationLevel: "ReadCommitted" },

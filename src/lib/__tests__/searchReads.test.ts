@@ -1,67 +1,73 @@
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
-
-const { transport } = vi.hoisted(() => ({ transport: vi.fn() }));
-vi.mock("@tanstack/react-start/server", () => ({
-  getRequest: () => new Request("https://site.invalid/en/search.json"),
-}));
-vi.mock("@/lib/server/content", async () => {
-  const { unstable_cache } = await import("../server/cache");
-  const { getImportedSummaries } = await import("../server/notebook");
-  return Object.fromEntries(
-    [
-      "getAllNavItems",
-      "getPosts",
-      "getSecrets",
-      "getApps",
-      "getFilms",
-      "getIdols",
-      "getMoments",
-      "getCopyOverrides",
-    ].map((name) => [
-      name,
-      unstable_cache(
-        async () => {
-          await transport("https://db.invalid/sql", {
-            method: "POST",
-            body: JSON.stringify({ query: `select * from ${name}`, params: [] }),
-          });
-          if (name === "getCopyOverrides") return {};
-          if (name === "getPosts") return getImportedSummaries("/blog", "en");
-          if (name === "getSecrets") return getImportedSummaries("/secrets", "en");
-          return [];
-        },
-        [`search-${name.toLowerCase()}`],
-        { tags: ["search-regression"], publicRead: true },
-      ),
-    ]),
-  );
-});
-
-import { GET } from "@/app/[locale]/search.json/route";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { withContentCacheBypass } from "../server/cacheScope";
 import { updateTag } from "../server/cache";
 import notebook from "@/content/notebook/index.json";
 import { noteDestination, type NoteSummary } from "@/lib/notebook";
 
+type Statement = { query: string; params: unknown[] };
+type Payload = Statement | { queries: Statement[] };
+
+const transport = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
+const empty = { fields: [], rows: [], rowCount: 0, command: "SELECT", rowAsArray: true };
+const ownedNote = notebook.find((note) => note.section === "it")!;
+
+function fixture(init?: RequestInit) {
+  const body = JSON.parse(String(init?.body)) as Payload;
+  if (!("queries" in body)) return Response.json(empty);
+  return Response.json({
+    results: body.queries.map(({ query }) =>
+      query.includes('from "posts"')
+        ? {
+            ...empty,
+            fields: [25, 25, 25, 25, 25, 1009, 23, 16].map((dataTypeID, index) => ({
+              dataTypeID,
+              name: "column" + index,
+            })),
+            rows: [
+              [ownedNote.slug, "en", "Unpublished title", null, "", "{}", "1", "t"],
+              ["search-fixture", "zh", "Fallback title", null, "Summary", "{}", "1", "f"],
+            ],
+            rowCount: 2,
+          }
+        : empty,
+    ),
+  });
+}
+
+async function request(locale: string) {
+  const { GET } = await import("@/app/[locale]/search.json/route");
+  return withContentCacheBypass(false, () =>
+    GET(new Request(`https://site.invalid/${locale}/search.json`), {
+      params: Promise.resolve({ locale }),
+    }),
+  );
+}
+
+function payloads() {
+  return transport.mock.calls.map(([, init]) => JSON.parse(String(init?.body)) as Payload);
+}
+
 beforeEach(() => {
-  updateTag("search-regression");
-  transport.mockReset().mockImplementation(async () => new Response("{}"));
+  updateTag("content");
+  vi.stubEnv(
+    "DATABASE_URL",
+    "postgresql://fixture:fixture@example.invalid/fixture?sslmode=require",
+  );
+  vi.stubGlobal("fetch", transport);
+  transport.mockReset().mockImplementation(async (_input, init) => fixture(init));
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("search read aggregation", () => {
-  it("loads the seven distinct data sets and one shared catalogue read on a cold request", async () => {
-    const response = await withContentCacheBypass(false, () =>
-      GET(new Request("https://site.invalid/en/search.json"), {
-        params: Promise.resolve({ locale: "en" }),
-      }),
-    );
+  it("batches seven distinct content reads and retains one independent catalogue read", async () => {
+    const response = await request("en");
     expect(response.status).toBe(200);
     const entries = await response.json();
-    expect(entries.length).toBeGreaterThan(0);
-    expect(entries.filter((entry: { kind: string }) => entry.kind !== "lab")).toHaveLength(
-      notebook.length,
-    );
-    for (const note of notebook) {
+    for (const note of notebook.filter((note) => note !== ownedNote)) {
       expect(entries).toContainEqual(
         expect.objectContaining({
           kind: note.section === "it" ? "post" : "secret",
@@ -70,18 +76,63 @@ describe("search read aggregation", () => {
         }),
       );
     }
-    expect(entries.some((entry: { href: string }) => entry.href.includes("/blog/notes"))).toBe(
-      false,
+    expect(entries).toContainEqual(
+      expect.objectContaining({ href: "/blog/search-fixture", title: "Fallback title" }),
     );
-    const queries = transport.mock.calls.map(([, init]) => JSON.parse(init.body).query);
-    expect(queries).toHaveLength(8);
-    expect(queries.filter((query) => query.includes("getCopyOverrides"))).toHaveLength(1);
-    expect(new Set(queries).size).toBe(8);
-    await withContentCacheBypass(false, () =>
-      GET(new Request("https://site.invalid/en/search.json"), {
-        params: Promise.resolve({ locale: "en" }),
-      }),
+    expect(entries).not.toContainEqual(
+      expect.objectContaining({ href: `/blog/${ownedNote.slug}` }),
     );
-    expect(transport).toHaveBeenCalledTimes(8);
+
+    expect(transport).toHaveBeenCalledTimes(2);
+    const batch = payloads().find((item) => "queries" in item);
+    expect(batch?.queries.map(({ query }) => /from "(\w+)"/.exec(query)?.[1])).toEqual([
+      "nav_items",
+      "posts",
+      "secrets",
+      "apps",
+      "films",
+      "idols",
+      "moments",
+    ]);
+    expect(payloads().find((item) => "query" in item)?.query).toContain('from "copy_blocks"');
+
+    await request("en");
+    expect(transport).toHaveBeenCalledTimes(2);
+
+    updateTag("posts");
+    await request("en");
+    expect(transport).toHaveBeenCalledTimes(3);
+    expect(payloads().at(-1)).toHaveProperty("queries.1.params", ["en"]);
+
+    await request("zh");
+    expect(transport).toHaveBeenCalledTimes(5);
+    expect(
+      payloads().some((item) => "queries" in item && item.queries[1]?.params[0] === "zh"),
+    ).toBe(true);
+  });
+
+  it("serves the search index with default copy and retries the copy on the next request", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    transport.mockImplementation(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Payload;
+      return "query" in body
+        ? Response.json({ message: "Unavailable" }, { status: 503 })
+        : fixture(init);
+    });
+    expect((await request("en")).status).toBe(200);
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(console.warn).toHaveBeenCalledWith(
+      "copy overrides unavailable, using message catalogue",
+    );
+
+    transport.mockImplementation(async (_input, init) => fixture(init));
+    expect((await request("en")).status).toBe(200);
+    expect(transport).toHaveBeenCalledTimes(3);
+    expect(payloads().at(-1)).toHaveProperty(
+      "query",
+      expect.stringContaining('from "copy_blocks"'),
+    );
   });
 });

@@ -168,21 +168,24 @@ function publicRows<T extends { draft: boolean }>(rows: T[]): Omit<T, "draft">[]
   return rows.filter((row) => !row.draft).map(({ draft: _draft, ...row }) => row);
 }
 
-export const getPosts = unstable_cache(
-  async (locale: Locale): Promise<PostSummary[]> => {
-    const rows = await db
-      .selectDistinctOn([posts.slug], { ...summaryColumns, draft: posts.draft })
-      .from(posts)
-      .orderBy(...indexOrder(locale));
+const selectPosts = (locale: Locale) =>
+  db
+    .selectDistinctOn([posts.slug], { ...summaryColumns, draft: posts.draft })
+    .from(posts)
+    .orderBy(...indexOrder(locale));
 
-    return byDateDesc(
-      mergeImported<PostSummary>(
-        publicRows(rows).map((row) => ({ ...row, isFallback: row.locale !== locale })),
-        getImportedSummaries("/blog", locale),
-        rows,
-      ),
-    );
-  },
+function publicPosts(rows: Awaited<ReturnType<typeof selectPosts>>, locale: Locale): PostSummary[] {
+  return byDateDesc(
+    mergeImported<PostSummary>(
+      publicRows(rows).map((row) => ({ ...row, isFallback: row.locale !== locale })),
+      getImportedSummaries("/blog", locale),
+      rows,
+    ),
+  );
+}
+
+export const getPosts = unstable_cache(
+  async (locale: Locale) => publicPosts(await selectPosts(locale), locale),
   ["posts-by-locale"],
   cacheOptions(TAGS.posts),
 );
@@ -341,20 +344,27 @@ const importedSecrets = (locale: Locale): SecretSummary[] =>
     duration: null,
   }));
 
+const selectSecrets = (locale: Locale) =>
+  db
+    .selectDistinctOn([secrets.slug], { ...secretColumns, draft: secrets.draft })
+    .from(secrets)
+    .orderBy(...secretIndexOrder(locale));
+
+function publicSecrets(
+  rows: Awaited<ReturnType<typeof selectSecrets>>,
+  locale: Locale,
+): SecretSummary[] {
+  return byDateDesc(
+    mergeImported<SecretSummary>(
+      publicRows(rows).map((row) => ({ ...row, isFallback: row.locale !== locale })),
+      importedSecrets(locale),
+      rows,
+    ),
+  );
+}
+
 export const getSecrets = unstable_cache(
-  async (locale: Locale): Promise<SecretSummary[]> => {
-    const rows = await db
-      .selectDistinctOn([secrets.slug], { ...secretColumns, draft: secrets.draft })
-      .from(secrets)
-      .orderBy(...secretIndexOrder(locale));
-    return byDateDesc(
-      mergeImported<SecretSummary>(
-        publicRows(rows).map((row) => ({ ...row, isFallback: row.locale !== locale })),
-        importedSecrets(locale),
-        rows,
-      ),
-    );
-  },
+  async (locale: Locale) => publicSecrets(await selectSecrets(locale), locale),
   ["secrets-by-locale"],
   cacheOptions(TAGS.secrets),
 );
@@ -464,31 +474,34 @@ export type Moment = {
   pinned: boolean;
 };
 
+const selectMoments = () =>
+  db
+    .select({
+      key: moments.key,
+      content: moments.content,
+      postedAt: moments.postedAt,
+      collection: moments.collection,
+      original: moments.original,
+      attribution: moments.attribution,
+      source: moments.source,
+      mood: moments.mood,
+      media: moments.media,
+      pinned: moments.pinned,
+    })
+    .from(moments)
+    .where(eq(moments.draft, false))
+    // Two lines posted in the same second still need a fixed order — the
+    // key breaks the tie, same reason as every list below.
+    .orderBy(desc(moments.pinned), desc(moments.postedAt), asc(moments.key));
+
+const publicMoments = (rows: Awaited<ReturnType<typeof selectMoments>>): Moment[] =>
+  rows.map((row) => ({ ...row, postedAt: row.postedAt.toISOString() }));
+
 /** The whole board, pinned lines first and then newest first. One entry: the
  *  page filters and pages through it on the client, and the home page's card
  *  picks the newest line out of it by the clock, pinned or not. */
 export const getMoments = unstable_cache(
-  async (): Promise<Moment[]> => {
-    const rows = await db
-      .select({
-        key: moments.key,
-        content: moments.content,
-        postedAt: moments.postedAt,
-        collection: moments.collection,
-        original: moments.original,
-        attribution: moments.attribution,
-        source: moments.source,
-        mood: moments.mood,
-        media: moments.media,
-        pinned: moments.pinned,
-      })
-      .from(moments)
-      .where(eq(moments.draft, false))
-      // Two lines posted in the same second still need a fixed order — the
-      // key breaks the tie, same reason as every list below.
-      .orderBy(desc(moments.pinned), desc(moments.postedAt), asc(moments.key));
-    return rows.map((row) => ({ ...row, postedAt: row.postedAt.toISOString() }));
-  },
+  async () => publicMoments(await selectMoments()),
   ["moments"],
   cacheOptions(TAGS.moments),
 );
@@ -506,13 +519,15 @@ export type Film = { [K in keyof typeof filmColumns]: (typeof films.$inferSelect
 export type Idol = { [K in keyof typeof idolColumns]: (typeof idols.$inferSelect)[K] };
 
 /** The films on the wall, in the room's order. */
+const selectFilms = () =>
+  db
+    .select(filmColumns)
+    .from(films)
+    .where(eq(films.draft, false))
+    .orderBy(asc(films.sort), asc(films.key));
+
 export const getFilms = unstable_cache(
-  async (): Promise<Film[]> =>
-    db
-      .select(filmColumns)
-      .from(films)
-      .where(eq(films.draft, false))
-      .orderBy(asc(films.sort), asc(films.key)),
+  async (): Promise<Film[]> => selectFilms(),
   ["films"],
   cacheOptions(TAGS.films),
 );
@@ -532,13 +547,15 @@ export const getFilm = unstable_cache(
 );
 
 /** The idols on the wall, in its order. */
+const selectIdols = () =>
+  db
+    .select(idolColumns)
+    .from(idols)
+    .where(eq(idols.draft, false))
+    .orderBy(asc(idols.sort), asc(idols.key));
+
 export const getIdols = unstable_cache(
-  async (): Promise<Idol[]> =>
-    db
-      .select(idolColumns)
-      .from(idols)
-      .where(eq(idols.draft, false))
-      .orderBy(asc(idols.sort), asc(idols.key)),
+  async (): Promise<Idol[]> => selectIdols(),
   ["idols"],
   cacheOptions(TAGS.idols),
 );
@@ -602,23 +619,25 @@ export const getTimeline = unstable_cache(
   cacheOptions(TAGS.timeline),
 );
 
+const selectApps = () =>
+  db
+    .select({
+      key: apps.key,
+      name: apps.name,
+      tagline: apps.tagline,
+      description: apps.description,
+      category: apps.category,
+      website: apps.website,
+      repo: apps.repo,
+      platforms: apps.platforms,
+      accent: apps.accent,
+      hue: apps.hue,
+    })
+    .from(apps)
+    .orderBy(asc(apps.sort), asc(apps.key));
+
 export const getApps = unstable_cache(
-  async (): Promise<App[]> =>
-    db
-      .select({
-        key: apps.key,
-        name: apps.name,
-        tagline: apps.tagline,
-        description: apps.description,
-        category: apps.category,
-        website: apps.website,
-        repo: apps.repo,
-        platforms: apps.platforms,
-        accent: apps.accent,
-        hue: apps.hue,
-      })
-      .from(apps)
-      .orderBy(asc(apps.sort), asc(apps.key)),
+  async (): Promise<App[]> => selectApps(),
   ["apps"],
   cacheOptions(TAGS.apps),
 );
@@ -842,21 +861,50 @@ export type NavSurface = "header" | "footer" | "fullnav" | "sitemap";
 
 /** The whole nav table, in display order — one cache entry rather than one
  *  per surface, since the layout asks for three surfaces on every render. */
+const selectNavItems = () =>
+  db
+    .select({
+      href: navItems.href,
+      labelKey: navItems.labelKey,
+      surfaces: navItems.surfaces,
+      group: navItems.group,
+    })
+    .from(navItems)
+    .orderBy(asc(navItems.sort), asc(navItems.id));
+
+const publicNavItems = (rows: Awaited<ReturnType<typeof selectNavItems>>): NavItem[] =>
+  rows.map((row) => ({ ...row, group: isNavGroup(row.group) ? row.group : null }));
+
 export const getAllNavItems = unstable_cache(
-  async (): Promise<NavItem[]> => {
-    const rows = await db
-      .select({
-        href: navItems.href,
-        labelKey: navItems.labelKey,
-        surfaces: navItems.surfaces,
-        group: navItems.group,
-      })
-      .from(navItems)
-      .orderBy(asc(navItems.sort), asc(navItems.id));
-    return rows.map((row) => ({ ...row, group: isNavGroup(row.group) ? row.group : null }));
-  },
+  async () => publicNavItems(await selectNavItems()),
   ["nav-items"],
   cacheOptions(TAGS.nav),
+);
+
+/** A cold search index loads its required data in one Neon HTTP request. */
+export const getSearchContent = unstable_cache(
+  async (locale: Locale) => {
+    const [nav, posts, secrets, apps, films, idols, moments] = await db.batch([
+      selectNavItems(),
+      selectPosts(locale),
+      selectSecrets(locale),
+      selectApps(),
+      selectFilms(),
+      selectIdols(),
+      selectMoments(),
+    ]);
+    return {
+      nav: publicNavItems(nav),
+      posts: publicPosts(posts, locale),
+      secrets: publicSecrets(secrets, locale),
+      apps,
+      films,
+      idols,
+      moments: publicMoments(moments),
+    };
+  },
+  ["search-content"],
+  cacheOptions(TAGS.nav, TAGS.posts, TAGS.secrets, TAGS.apps, TAGS.films, TAGS.idols, TAGS.moments),
 );
 
 /** One list, filtered per surface — Header, Footer, FullNav and the sitemap.

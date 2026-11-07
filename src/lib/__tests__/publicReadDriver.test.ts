@@ -57,6 +57,42 @@ describe("real Neon/Drizzle with mock-only transport", () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
+  it("reports time waiting for headers separately from time reading the body", async () => {
+    const { db } = await import("@/db");
+    const bytes = new Uint8Array(await rows().arrayBuffer());
+    transport.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          setTimeout(() => {
+            const body = new ReadableStream<Uint8Array>({
+              start(controller) {
+                setTimeout(() => {
+                  controller.enqueue(bytes);
+                  controller.close();
+                }, 1_300);
+              },
+            });
+            resolve(new Response(body, { headers: { "Content-Type": "application/json" } }));
+          }, 400);
+        }),
+    );
+    const assertion = expect(
+      withPublicRead("driver-read", () => db.execute(sql`select 1 as n`)),
+    ).resolves.toMatchObject({ rows: [{ n: 1 }] });
+    await vi.advanceTimersByTimeAsync(1_700);
+    await assertion;
+    const logs = vi.mocked(console.info).mock.calls.map(([line]) => JSON.parse(line));
+    expect(logs).toContainEqual({
+      service: "fhfs public read transport",
+      operation: "driver-read",
+      attempt: 1,
+      headersMs: 400,
+      bodyMs: 1_300,
+      status: 200,
+    });
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+
   it("does not restart or pretend to cancel a noncooperative upstream", async () => {
     const { db } = await import("@/db");
     const pending: Array<(response: Response) => void> = [];
@@ -173,6 +209,30 @@ describe("real Neon/Drizzle with mock-only transport", () => {
       }
     },
   );
+
+  it("records a failed transport attempt without recording credentials or changing retries", async () => {
+    const { db } = await import("@/db");
+    transport.mockRejectedValueOnce(connectionFailure()).mockImplementation(rows);
+    const assertion = expect(
+      withPublicRead("driver-read", () => db.execute(sql`select 1 as n`)),
+    ).resolves.toMatchObject({ rows: [{ n: 1 }] });
+    await vi.advanceTimersByTimeAsync(300);
+    await assertion;
+    expect(transport).toHaveBeenCalledTimes(2);
+    const logs = vi.mocked(console.info).mock.calls.map(([line]) => JSON.parse(line));
+    expect(logs).toEqual([
+      {
+        service: "fhfs public read transport",
+        operation: "driver-read",
+        attempt: 1,
+        headersMs: 0,
+        bodyMs: null,
+        status: null,
+        failedPhase: "headers",
+      },
+    ]);
+    expect(JSON.stringify(logs)).not.toMatch(/PRIVATE|fixture|postgresql|select /);
+  });
 
   it("does not stack retries on the existing three-attempt connection exhaustion", async () => {
     const { db } = await import("@/db");

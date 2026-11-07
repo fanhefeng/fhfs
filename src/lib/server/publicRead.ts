@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { DrizzleQueryError } from "drizzle-orm/errors";
+import type { FetchAttempt } from "../retryFetch";
 
 type Diagnosis = {
   kind: "timeout" | "connection" | "database" | "aborted" | "unknown";
@@ -27,7 +28,15 @@ const errorTypes = new Set([
   "NeonDbError",
   "DrizzleQueryError",
 ]);
-const scope = new AsyncLocalStorage<boolean>();
+const scope = new AsyncLocalStorage<string>();
+
+export function observePublicReadAttempt(attempt: FetchAttempt) {
+  const operation = scope.getStore();
+  if (!operation) return;
+  const slow = attempt.headersMs + (attempt.bodyMs ?? 0) >= 1_000;
+  if (!slow && !attempt.failedPhase && (attempt.status ?? 0) < 400) return;
+  console.info(JSON.stringify({ service: "fhfs public read transport", operation, ...attempt }));
+}
 
 /** Extract diagnostics only; classification never changes transport or retry behavior. */
 export function diagnosePublicRead(error: unknown): Diagnosis {
@@ -87,11 +96,12 @@ export class PublicReadError extends Error {
  */
 export async function withPublicRead<T>(operation: string, read: () => Promise<T>): Promise<T> {
   if (scope.getStore()) return read();
+  const label = /^[a-z][a-z0-9-]{0,47}$/.test(operation) ? operation : "content";
   const started = performance.now();
   const report = (outcome: "failed" | "slow", diagnosis?: Diagnosis) => {
     const record = JSON.stringify({
       service: "fhfs public read",
-      operation: /^[a-z][a-z0-9-]{0,47}$/.test(operation) ? operation : "content",
+      operation: label,
       outcome,
       durationMs: Math.round(performance.now() - started),
       ...diagnosis,
@@ -101,7 +111,7 @@ export async function withPublicRead<T>(operation: string, read: () => Promise<T
   };
   try {
     // Await lazy Drizzle thenables inside the scope, rather than returning them out of it.
-    const value = await scope.run(true, async () => await read());
+    const value = await scope.run(label, async () => await read());
     if (performance.now() - started >= 1_000) report("slow");
     return value;
   } catch (error) {
