@@ -27,8 +27,13 @@ import {
 } from "@/db/schema";
 import type { Locale } from "@/i18n/routing";
 import type { MomentMedia } from "@/lib/moments";
-import type { NoteDetails, NoteFormat } from "@/lib/notebook";
-import { getImportedArticle, getImportedSummaries, mergeImported } from "./notebook";
+import type { NoteBody, NoteDetails, NoteFormat } from "@/lib/notebook";
+import {
+  getEditedNoteToc,
+  getImportedArticle,
+  getImportedSummaries,
+  mergeImported,
+} from "./notebook";
 import { isNavGroup, type NavGroup } from "@/lib/nav";
 
 /**
@@ -99,7 +104,7 @@ export type PostSummary = {
   isFallback: boolean;
 };
 
-export type Post = PostSummary & { html: string; note?: NoteDetails };
+export type Post = PostSummary & { html: string; note?: NoteDetails; toc?: NoteBody["toc"] };
 
 export type About = { locale: Locale; title: string; html: string };
 
@@ -205,7 +210,11 @@ export const getPost = unstable_cache(
     if (!row) return getImportedArticle("/blog", slug, locale);
     if (row.draft && !drafts) return null;
     const { draft: _draft, ...post } = row;
-    return { ...post, isFallback: post.locale !== locale };
+    return {
+      ...post,
+      isFallback: post.locale !== locale,
+      toc: getEditedNoteToc("/blog", slug, post.html),
+    };
   },
   ["post"],
   cacheOptions(TAGS.posts),
@@ -311,7 +320,7 @@ export type SecretSummary = {
   isFallback: boolean;
 };
 
-export type Secret = SecretSummary & { html: string; note?: NoteDetails };
+export type Secret = SecretSummary & { html: string; note?: NoteDetails; toc?: NoteBody["toc"] };
 
 const secretColumns = {
   slug: secrets.slug,
@@ -384,7 +393,11 @@ export const getSecret = unstable_cache(
     }
     if (row.draft && !drafts) return null;
     const { draft: _draft, ...secret } = row;
-    return { ...secret, isFallback: secret.locale !== locale };
+    return {
+      ...secret,
+      isFallback: secret.locale !== locale,
+      toc: getEditedNoteToc("/secrets", slug, secret.html),
+    };
   },
   ["secret"],
   cacheOptions(TAGS.secrets),

@@ -5,11 +5,11 @@ import { mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
-import { sql, like } from "drizzle-orm";
+import { and, eq, like, or, sql } from "drizzle-orm";
 import { connect } from "./connect.mts";
 import { testDatabaseProblem } from "../src/lib/e2e";
 import { hashPassword } from "../src/lib/server/auth/password";
-import { posts, mediaUploads } from "../src/db/schema";
+import { posts, secrets, mediaUploads } from "../src/db/schema";
 import { backupAuditQueries } from "../src/lib/backupAudit";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -119,7 +119,8 @@ try {
   // A dedicated fhfs test database must never inherit production upload leases.
   if (Number(mediaRows.rows[0]?.count) > 1000) throw new Error("Unexpected test upload inventory");
   // Establish edit evidence only for the dedicated disposable fixture set.
-  await db.execute(backupAuditQueries(posts, `isolated-e2e-${run}`).record);
+  for (const table of [posts, secrets])
+    await db.execute(backupAuditQueries(table, `isolated-e2e-${run}`).record);
   await writeFile(path.join(state, "session.json"), JSON.stringify({ secret, password, prefix }), {
     mode: 0o600,
   });
@@ -245,7 +246,19 @@ try {
     ),
   );
   try {
-    await db.delete(posts).where(like(posts.slug, `${prefix}%`));
+    await db
+      .delete(posts)
+      .where(
+        or(
+          like(posts.slug, `${prefix}%`),
+          and(eq(posts.slug, "typescript-decorators"), like(posts.title, `${prefix}%`)),
+        ),
+      );
+    await db
+      .delete(secrets)
+      .where(and(eq(secrets.slug, "kitchen-notes"), like(secrets.title, `${prefix}%`)));
+    for (const table of [posts, secrets])
+      await db.execute(backupAuditQueries(table, `isolated-e2e-cleanup-${run}`).record);
     // All leases here belong to this application's dedicated disposable database.
     await db.delete(mediaUploads);
   } catch {

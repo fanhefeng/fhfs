@@ -19,7 +19,15 @@ export type SecretDraft = LongformDraft & {
  * is and how long it runs. The notes under an episode are markdown like the
  * rest.
  */
-export function SecretForm({ secret, isNew }: { secret: SecretDraft; isNew: boolean }) {
+export function SecretForm({
+  secret,
+  isNew,
+  imported,
+}: {
+  secret: SecretDraft;
+  isNew: boolean;
+  imported?: boolean;
+}) {
   const kindLabel = useId();
   return (
     <LongformForm
@@ -27,6 +35,7 @@ export function SecretForm({ secret, isNew }: { secret: SecretDraft; isNew: bool
       deleteAction={deleteSecret}
       doc={secret}
       isNew={isNew}
+      imported={imported}
       previewKind="secret"
       headCols="md:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem]"
       head={

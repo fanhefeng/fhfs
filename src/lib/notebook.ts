@@ -19,6 +19,7 @@ export type NoteSummary = {
 };
 
 export type NoteBody = {
+  markdown: string;
   html: string;
   toc: { id: string; title: string }[];
 };
@@ -30,3 +31,15 @@ export function noteDestination(note: Pick<NoteSummary, "section">): "/blog" | "
 
 export type NoteDetails = Pick<NoteSummary, "format" | "context" | "source"> &
   Pick<NoteBody, "toc">;
+
+/** The Markdown renderer supplies the anchor ids. Use them after every edit. */
+export function noteToc(html: string): NoteBody["toc"] {
+  return [...html.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>/g)].map((match) => ({
+    id: match[1]!,
+    title: match[2]!
+      .replace(/<[^>]*>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">"),
+  }));
+}

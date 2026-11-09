@@ -1,6 +1,5 @@
-import { notFound } from "@/lib/navigation";
-
 import { AdminChrome } from "../../../AdminChrome";
+import { Note } from "../../../ui/Note";
 import { SecretForm } from "../../SecretForm";
 
 export default function EditSecret({
@@ -8,9 +7,9 @@ export default function EditSecret({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { slug, locale, secret } = data;
+  const { secret, imported } = data;
+  const { slug, locale } = secret;
 
-  if (!secret) notFound();
   return (
     <AdminChrome
       title={secret.title}
@@ -26,8 +25,15 @@ export default function EditSecret({
         ) : null
       }
     >
+      {imported && (
+        <Note>
+          首次保存后，这篇会改由后台维护，网址沿用原地址。
+          {!secret.date && " 原稿未记日期，请填写这次编辑版的发布日期。"}
+        </Note>
+      )}
       <SecretForm
         isNew={false}
+        imported={imported}
         secret={{
           slug: secret.slug,
           locale: secret.locale,

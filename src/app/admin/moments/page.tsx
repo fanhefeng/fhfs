@@ -117,7 +117,7 @@ export default function MomentsAdminPage({
   const { rows } = data;
 
   return (
-    <AdminChrome title="说说" section="/admin/moments">
+    <AdminChrome title="峰言峰语" section="/admin/moments">
       <Note>
         时间按上海时间写到分钟，写错一分钟就换一个位置——板子是按时刻排的。 key
         是这条说说的身份，只要不重复就行：新写的会自动填好，存下之后不能改。

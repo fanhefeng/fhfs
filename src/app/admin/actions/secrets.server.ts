@@ -49,12 +49,13 @@ export async function saveSecret(_prev: ActionState, form: FormData): Promise<Ac
   }
 
   const row = { ...doc.value, kind, audio, duration: duration.value };
-  const isNew = Boolean(form.get("isNew"));
+  const mode = form.get("isNew");
+  const isNew = Boolean(mode);
   const problem = await upsertLongform(schema.secrets, row, isNew);
   if (problem) return problem;
 
   invalidate(TAGS.secrets);
-  if (isNew) redirect(`/admin/secrets/${row.slug}/${row.locale}`);
+  if (isNew && mode !== "imported") redirect(`/admin/secrets/${row.slug}/${row.locale}`);
   return { ok: true };
 }
 

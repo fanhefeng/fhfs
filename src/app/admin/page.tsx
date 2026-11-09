@@ -15,12 +15,6 @@ export default function AdminHome({
 
   return (
     <AdminChrome title="内容">
-      <section className="mb-10">
-        <h2 className={sectionHeadingClass}>发一条说说</h2>
-        <div className="mt-3">
-          <QuickMoment />
-        </div>
-      </section>
       <div className="space-y-10">
         {SECTION_GROUPS.map((group) => (
           <section key={group.id}>
@@ -40,9 +34,11 @@ export default function AdminHome({
                       <span className="text-heading transition-colors group-hover:text-accent">
                         {section.label}
                       </span>
-                      <span className="font-mono text-meta text-fg-tertiary tabular-nums">
-                        {counts[section.href] ?? 0} {section.unit}
-                      </span>
+                      {counts[section.href] !== undefined && (
+                        <span className="font-mono text-meta text-fg-tertiary tabular-nums">
+                          {counts[section.href]} {section.unit}
+                        </span>
+                      )}
                     </span>
                     <span className="text-caption text-fg-tertiary">{section.blurb}</span>
                   </Link>
@@ -51,6 +47,12 @@ export default function AdminHome({
             </ul>
           </section>
         ))}
+        <section>
+          <h2 className={sectionHeadingClass}>发一条说说</h2>
+          <div className="mt-3">
+            <QuickMoment />
+          </div>
+        </section>
       </div>
     </AdminChrome>
   );

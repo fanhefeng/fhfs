@@ -9,6 +9,7 @@ import {
 } from "@/lib/copy";
 
 import { AdminChrome } from "../AdminChrome";
+import { SECTIONS } from "../sections";
 import { cardClass, metaClass } from "../styles";
 import { Note } from "../ui/Note";
 import { CopyForm } from "./CopyForm";
@@ -19,7 +20,7 @@ export default function CopyPage({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { group, zh, en, rows } = data;
+  const { group, study, labIndex, zh, en, rows } = data;
 
   const overrides = new Map(rows.map((row) => [row.key, row]));
   if (!group) {
@@ -77,8 +78,10 @@ export default function CopyPage({
       </AdminChrome>
     );
   }
+  const prefix = study ? `lab.items.${study.key}.` : null;
   const entries: CopyEntry[] = Object.keys(zh)
     .filter((key) => namespaceOf(key) === group.id)
+    .filter((key) => (prefix ? key.startsWith(prefix) : !labIndex || !key.startsWith("lab.items.")))
     .sort()
     .map((key) => {
       const row = overrides.get(key);
@@ -95,9 +98,31 @@ export default function CopyPage({
         note: COPY_NOTES[key],
       };
     });
+  const parent =
+    study || labIndex
+      ? "/admin/lab"
+      : (SECTIONS.find((section) =>
+          section.tools?.some((tool) => tool.href === `/admin/copy?ns=${group.id}`),
+        )?.href ?? "/admin/copy");
+  const nameKey = prefix ? `${prefix}name` : null;
+  const title = nameKey
+    ? (overrides.get(nameKey)?.zh ?? zh[nameKey] ?? group.label)
+    : labIndex
+      ? "实验室目录与通用文案"
+      : group.label;
   return (
-    <AdminChrome title={group.label} section="/admin/copy" blurb={group.blurb} sub>
-      <CopyForm namespace={group.id} entries={entries} />
+    <AdminChrome
+      title={title}
+      section={parent}
+      blurb={study ? "编辑这则实验的名称、说明和演示文字。" : group.blurb}
+      view={study ? `/zh/lab/${study.slug}` : undefined}
+      sub
+    >
+      <CopyForm
+        key={study?.slug ?? (labIndex ? "lab-index" : group.id)}
+        namespace={group.id}
+        entries={entries}
+      />
     </AdminChrome>
   );
 }

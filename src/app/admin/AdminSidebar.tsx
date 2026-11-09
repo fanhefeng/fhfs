@@ -87,9 +87,9 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
                     <span className="flex-1 truncate">{section.label}</span>
                     {/* With its unit: a bare "0" beside 站点文案 read as "no copy",
                         when it counts the lines edited away from the files. */}
-                    {counts && (
+                    {counts?.[section.href] !== undefined && (
                       <span className="font-mono text-meta text-fg-tertiary tabular-nums">
-                        {counts[section.href] ?? 0}
+                        {counts[section.href]}
                         <span className="ml-1 font-sans">{section.unit}</span>
                       </span>
                     )}

@@ -36,7 +36,7 @@ export default function IntroPage({
     sort: (rows.at(-1)?.sort ?? -1) + 1,
   };
   return (
-    <AdminChrome title="简历节点" section="/admin/intro">
+    <AdminChrome title="3D 自我介绍" section="/admin/intro">
       <Note>
         每条对应 <code>/intro</code> 上头像的一张贴纸，靠 key 关联。贴纸的位置、
         大小、角度是手工标定的 3D 参数，留在代码里（<code>lib/intro/stickers.ts</code>）——

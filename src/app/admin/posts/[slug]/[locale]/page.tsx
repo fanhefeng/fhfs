@@ -1,6 +1,5 @@
-import { notFound } from "@/lib/navigation";
-
 import { AdminChrome } from "../../../AdminChrome";
+import { Note } from "../../../ui/Note";
 import { PostForm } from "../../PostForm";
 
 export default function EditPost({
@@ -8,9 +7,9 @@ export default function EditPost({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { slug, locale, post } = data;
+  const { post, imported } = data;
+  const { slug, locale } = post;
 
-  if (!post) notFound();
   return (
     <AdminChrome
       title={post.title}
@@ -27,8 +26,15 @@ export default function EditPost({
         ) : null
       }
     >
+      {imported && (
+        <Note>
+          首次保存后，这篇会改由后台维护，网址沿用原地址。
+          {!post.date && " 原稿未记日期，请填写这次编辑版的发布日期。"}
+        </Note>
+      )}
       <PostForm
         isNew={false}
+        imported={imported}
         post={{
           slug: post.slug,
           locale: post.locale,

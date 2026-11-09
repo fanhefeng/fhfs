@@ -108,5 +108,8 @@ const pipeline = unified()
 /** Async by necessity — shiki, inside rehype-pretty-code, is asynchronous. */
 export async function renderMarkdown(source: string): Promise<string> {
   const file = await pipeline.process(source);
-  return String(file);
+  // Wide tables scroll within the column on both imported and edited pages.
+  return String(file)
+    .replace(/<table>/g, '<div class="overflow-x-auto"><table>')
+    .replace(/<\/table>/g, "</table></div>");
 }

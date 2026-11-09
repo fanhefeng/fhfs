@@ -37,7 +37,15 @@ for (const locale of ["zh", "en"]) {
 }
 for (const path of ["/fr", "/fr/search.json", "/fr/rss.xml", "/zh/blog/this-page-does-not-exist"])
   assert.equal((await read(path)).status, 404, path);
-for (const path of ["/admin", "/admin/posts", "/admin/copy", "/admin/posts/new"]) {
+for (const path of [
+  "/admin",
+  "/admin/posts",
+  "/admin/copy",
+  "/admin/posts/new",
+  "/admin/home",
+  "/admin/life",
+  "/admin/lab",
+]) {
   const response = await read(path, { redirect: "manual" });
   assert.ok([302, 303, 307].includes(response.status), `${path} must require login`);
   const login = new URL(response.headers.get("location"), base);

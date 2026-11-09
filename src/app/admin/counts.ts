@@ -1,10 +1,11 @@
 import "@tanstack/react-start/server-only";
 import { cache } from "react";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { SECTIONS, type SectionCounts } from "./sections";
+import { importedRows } from "./notebook.server";
 
 /**
  * How many rows each section holds, for the sidebar and the dashboard.
@@ -42,24 +43,32 @@ const TABLES: Record<string, PgTable> = {
 
 export type { SectionCounts };
 
+function countImports(table: typeof schema.posts | typeof schema.secrets) {
+  const slugs = importedRows(table === schema.posts ? "/blog" : "/secrets").map((row) => row.slug);
+  return sql` + ${slugs.length}::int - (
+    select count(distinct ${table.slug})::int from ${table} where ${inArray(table.slug, slugs)}
+  )`;
+}
+
 export const sectionCounts = cache(async (): Promise<SectionCounts> => {
   // A section added to `./sections` without a table here gets no count rather
   // than an `undefined` spliced into the SQL — which would 500 every admin
   // page, the sidebar being on all of them.
   const columns = SECTIONS.flatMap((section) => {
     const table = TABLES[section.href];
-    return table
-      ? [sql`(select count(*)::int from ${table}) as ${sql.identifier(section.href)}`]
-      : [];
+    if (!table) return [];
+    const imports =
+      section.href === "/admin/posts"
+        ? countImports(schema.posts)
+        : section.href === "/admin/secrets"
+          ? countImports(schema.secrets)
+          : sql``;
+    return [sql`(select count(*)::int from ${table})${imports} as ${sql.identifier(section.href)}`];
   });
   const result = await db.execute<Record<string, number>>(
     sql`select ${sql.join(columns, sql`, `)}`,
   );
   const row = result.rows[0] ?? {};
 
-  const counts: SectionCounts = {};
-  for (const section of SECTIONS) {
-    counts[section.href] = Number(row[section.href] ?? 0);
-  }
-  return counts;
+  return Object.fromEntries(Object.entries(row).map(([href, count]) => [href, Number(count)]));
 });

@@ -32,8 +32,11 @@ import { Route as AdminAppsRouteImport } from './routes/admin/apps'
 import { Route as AdminChipsRouteImport } from './routes/admin/chips'
 import { Route as AdminCopyRouteImport } from './routes/admin/copy'
 import { Route as AdminFilmsRouteImport } from './routes/admin/films'
+import { Route as AdminHomeRouteImport } from './routes/admin/home'
 import { Route as AdminIdolsRouteImport } from './routes/admin/idols'
 import { Route as AdminIntroRouteImport } from './routes/admin/intro'
+import { Route as AdminLabRouteImport } from './routes/admin/lab'
+import { Route as AdminLifeRouteImport } from './routes/admin/life'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminManifestDotwebmanifestRouteImport } from './routes/admin/manifest[.]webmanifest'
 import { Route as AdminMomentsRouteImport } from './routes/admin/moments'
@@ -183,6 +186,11 @@ const AdminFilmsRoute = AdminFilmsRouteImport.update({
   path: '/films',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminHomeRoute = AdminHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminIdolsRoute = AdminIdolsRouteImport.update({
   id: '/idols',
   path: '/idols',
@@ -191,6 +199,16 @@ const AdminIdolsRoute = AdminIdolsRouteImport.update({
 const AdminIntroRoute = AdminIntroRouteImport.update({
   id: '/intro',
   path: '/intro',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLabRoute = AdminLabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLifeRoute = AdminLifeRouteImport.update({
+  id: '/life',
+  path: '/life',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -385,8 +403,11 @@ export interface FileRoutesByFullPath {
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/films': typeof AdminFilmsRoute
+  '/admin/home': typeof AdminHomeRoute
   '/admin/idols': typeof AdminIdolsRoute
   '/admin/intro': typeof AdminIntroRoute
+  '/admin/lab': typeof AdminLabRoute
+  '/admin/life': typeof AdminLifeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/manifest.webmanifest': typeof AdminManifestDotwebmanifestRoute
   '/admin/moments': typeof AdminMomentsRoute
@@ -443,8 +464,11 @@ export interface FileRoutesByTo {
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/films': typeof AdminFilmsRoute
+  '/admin/home': typeof AdminHomeRoute
   '/admin/idols': typeof AdminIdolsRoute
   '/admin/intro': typeof AdminIntroRoute
+  '/admin/lab': typeof AdminLabRoute
+  '/admin/life': typeof AdminLifeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/manifest.webmanifest': typeof AdminManifestDotwebmanifestRoute
   '/admin/moments': typeof AdminMomentsRoute
@@ -504,8 +528,11 @@ export interface FileRoutesById {
   '/admin/chips': typeof AdminChipsRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/films': typeof AdminFilmsRoute
+  '/admin/home': typeof AdminHomeRoute
   '/admin/idols': typeof AdminIdolsRoute
   '/admin/intro': typeof AdminIntroRoute
+  '/admin/lab': typeof AdminLabRoute
+  '/admin/life': typeof AdminLifeRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/manifest.webmanifest': typeof AdminManifestDotwebmanifestRoute
   '/admin/moments': typeof AdminMomentsRoute
@@ -566,8 +593,11 @@ export interface FileRouteTypes {
     | '/admin/chips'
     | '/admin/copy'
     | '/admin/films'
+    | '/admin/home'
     | '/admin/idols'
     | '/admin/intro'
+    | '/admin/lab'
+    | '/admin/life'
     | '/admin/login'
     | '/admin/manifest.webmanifest'
     | '/admin/moments'
@@ -624,8 +654,11 @@ export interface FileRouteTypes {
     | '/admin/chips'
     | '/admin/copy'
     | '/admin/films'
+    | '/admin/home'
     | '/admin/idols'
     | '/admin/intro'
+    | '/admin/lab'
+    | '/admin/life'
     | '/admin/login'
     | '/admin/manifest.webmanifest'
     | '/admin/moments'
@@ -684,8 +717,11 @@ export interface FileRouteTypes {
     | '/admin/chips'
     | '/admin/copy'
     | '/admin/films'
+    | '/admin/home'
     | '/admin/idols'
     | '/admin/intro'
+    | '/admin/lab'
+    | '/admin/life'
     | '/admin/login'
     | '/admin/manifest.webmanifest'
     | '/admin/moments'
@@ -897,6 +933,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFilmsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/home': {
+      id: '/admin/home'
+      path: '/home'
+      fullPath: '/admin/home'
+      preLoaderRoute: typeof AdminHomeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/idols': {
       id: '/admin/idols'
       path: '/idols'
@@ -909,6 +952,20 @@ declare module '@tanstack/react-router' {
       path: '/intro'
       fullPath: '/admin/intro'
       preLoaderRoute: typeof AdminIntroRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/lab': {
+      id: '/admin/lab'
+      path: '/lab'
+      fullPath: '/admin/lab'
+      preLoaderRoute: typeof AdminLabRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/life': {
+      id: '/admin/life'
+      path: '/life'
+      fullPath: '/admin/life'
+      preLoaderRoute: typeof AdminLifeRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/login': {
@@ -1233,8 +1290,11 @@ interface AdminRouteChildren {
   AdminChipsRoute: typeof AdminChipsRoute
   AdminCopyRoute: typeof AdminCopyRoute
   AdminFilmsRoute: typeof AdminFilmsRoute
+  AdminHomeRoute: typeof AdminHomeRoute
   AdminIdolsRoute: typeof AdminIdolsRoute
   AdminIntroRoute: typeof AdminIntroRoute
+  AdminLabRoute: typeof AdminLabRoute
+  AdminLifeRoute: typeof AdminLifeRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminManifestDotwebmanifestRoute: typeof AdminManifestDotwebmanifestRoute
   AdminMomentsRoute: typeof AdminMomentsRoute
@@ -1260,8 +1320,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminChipsRoute: AdminChipsRoute,
   AdminCopyRoute: AdminCopyRoute,
   AdminFilmsRoute: AdminFilmsRoute,
+  AdminHomeRoute: AdminHomeRoute,
   AdminIdolsRoute: AdminIdolsRoute,
   AdminIntroRoute: AdminIntroRoute,
+  AdminLabRoute: AdminLabRoute,
+  AdminLifeRoute: AdminLifeRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminManifestDotwebmanifestRoute: AdminManifestDotwebmanifestRoute,
   AdminMomentsRoute: AdminMomentsRoute,

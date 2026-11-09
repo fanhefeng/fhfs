@@ -30,11 +30,14 @@ export default function PostsIndex({
               href={`/admin/posts/${post.slug}/${post.locale}`}
               className="group flex min-h-15 flex-wrap items-baseline gap-x-3 gap-y-1 px-2 py-3.5 transition-colors hover:bg-surface/60"
             >
-              <span className="font-mono text-meta text-fg-tertiary tabular-nums">{post.date}</span>
+              <span className="font-mono text-meta text-fg-tertiary tabular-nums">
+                {post.date ?? "日期未记"}
+              </span>
               <span className="font-mono text-meta uppercase text-fg-tertiary">{post.locale}</span>
               <span className="order-first w-full min-w-0 break-words text-body transition-colors group-hover:text-accent sm:order-none sm:w-auto sm:flex-1">
                 {post.title}
               </span>
+              {post.imported && <span className="text-caption text-fg-tertiary">导入稿</span>}
               {post.draft && (
                 <span className="font-mono text-meta uppercase tracking-meta text-accent">
                   草稿

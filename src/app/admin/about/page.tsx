@@ -12,7 +12,7 @@ export default function AboutPage({
 
   const byLocale = new Map(rows.map((row) => [row.locale, row]));
   return (
-    <AdminChrome title="关于页" section="/admin/about">
+    <AdminChrome title="关于" section="/admin/about">
       <Note>
         下面每份的「标题」目前页面并不显示——页面用的是「站点文案」里的 <code>about.title</code>。
       </Note>

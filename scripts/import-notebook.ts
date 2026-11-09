@@ -5,7 +5,7 @@ import { parse } from "yaml";
 import { catalog } from "./notebook/catalog";
 import { renderMarkdown } from "../src/lib/server/markdown";
 import { readingMinutes } from "../src/lib/reading";
-import type { NoteBody, NoteSummary } from "../src/lib/notebook";
+import { noteToc, type NoteBody, type NoteSummary } from "../src/lib/notebook";
 
 const vault = process.argv[2];
 if (!vault) throw new Error("Usage: pnpm import:notebook /absolute/path/to/Obsidian/note");
@@ -71,21 +71,9 @@ for (const { file, selection, edition, ...entry } of catalog) {
     )
   )
     throw new Error(`Review potential credential in ${file}`);
-  let html = await renderMarkdown(markdown);
-  // A wide reference table scrolls inside the reading column, never the page.
-  html = html
-    .replace(/<table>/g, '<div class="overflow-x-auto"><table>')
-    .replace(/<\/table>/g, "</table></div>");
-  const toc = [...html.matchAll(/<h2 id="([^"]+)">([\s\S]*?)<\/h2>/g)].map((match) => ({
-    id: match[1]!,
-    title: match[2]!
-      .replace(/<[^>]*>/g, "")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">"),
-  }));
+  const html = await renderMarkdown(markdown);
   summaries.push({ ...entry, readingMinutes: readingMinutes(markdown) });
-  pages.push({ slug: entry.slug, body: { html, toc } });
+  pages.push({ slug: entry.slug, body: { markdown, html, toc: noteToc(html) } });
 }
 await mkdir(resolve(output, "pages"), { recursive: true });
 for (const { slug, body } of pages)

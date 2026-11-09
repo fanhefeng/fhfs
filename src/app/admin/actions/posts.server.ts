@@ -19,14 +19,15 @@ export async function savePost(_prev: ActionState, form: FormData): Promise<Acti
   if (!doc.ok) return doc;
   const row = { ...doc.value, tags: list(form, "tags") };
 
-  const isNew = Boolean(form.get("isNew"));
+  const mode = form.get("isNew");
+  const isNew = Boolean(mode);
   const problem = await upsertLongform(schema.posts, row, isNew);
   if (problem) return problem;
 
   invalidate(TAGS.posts);
   // A first save leaves the "new post" page behind: its props are a blank
   // draft, and a saved form resets to its props (`useSaveAction`).
-  if (isNew) redirect(`/admin/posts/${row.slug}/${row.locale}`);
+  if (isNew && mode !== "imported") redirect(`/admin/posts/${row.slug}/${row.locale}`);
   return { ok: true };
 }
 
