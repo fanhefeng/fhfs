@@ -78,10 +78,12 @@
   },
   "blog": {
     "title": "文章",
-    "subtitle": "全部文章，按年份排列。",
+    "subtitle": "写作、学习笔记与阅读收藏。",
     "yearAria": "{year} 年的文章",
     "readingTime": "{minutes} 分钟",
     "tags": "标签",
+    "browseTags": "按标签浏览",
+    "hideTags": "收起标签",
     "taggedWith": "标签：{tag}",
     "filterSummary": "{count} 篇",
     "clearFilter": "清除筛选",
@@ -849,6 +851,7 @@
   "notebook": {
     "undated": "日期未记",
     "contents": "本篇目录 · {count} 节",
+    "hideContents": "收起目录",
     "contentsAria": "本篇章节",
     "source": "参考资料",
     "referenceSource": "阅读收藏 · 原作者",

@@ -27,7 +27,12 @@ export function YearIndex({
           title={post.title}
           titleLang={post.isFallback ? htmlLang(post.locale) : undefined}
           date={post.date}
-          detail={t("readingTime", { minutes: post.readingMinutes })}
+          tag={post.format === "reference" ? tn("formats.reference") : undefined}
+          detail={
+            post.format === "reference"
+              ? undefined
+              : t("readingTime", { minutes: post.readingMinutes })
+          }
         />
       ))}
     </YearSection>

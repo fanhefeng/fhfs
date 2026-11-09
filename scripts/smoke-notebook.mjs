@@ -33,6 +33,14 @@ async function fits(page) {
 try {
   const page = await open();
   for (const locale of ["zh", "en"]) {
+    await go(page, `/${locale}/blog/typescript-decorators`);
+    const decorators = page.locator("article");
+    await expect(decorators.getByRole("heading", { name: "方法装饰器示例" })).toBeVisible();
+    await expect(decorators.locator("pre")).toContainText("ClassMethodDecoratorContext");
+    await expect(
+      decorators.locator('a[href="https://wangdoc.com/typescript/decorator"]'),
+    ).toHaveCount(1);
+    await expect(decorators).toHaveAttribute("lang", "zh-CN");
     for (const section of ["/blog", "/secrets"]) {
       await go(page, `/${locale}${section}`);
       await expect(page.locator('main a[href*="/blog/notes"]')).toHaveCount(0);
@@ -94,7 +102,9 @@ try {
   await go(page, "/zh/blog");
   await page.screenshot({ path: "/private/tmp/fhfs-writing-classified.png" });
   await page.locator('main a[href="/zh/blog/frontend-deployment"]').click();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("前端部署与运维原理详解");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    notes.find((note) => note.slug === "frontend-deployment").title,
+  );
   await page.locator("summary").click();
   const toc = page.getByRole("navigation", { name: "本篇章节" });
   const last = toc.getByRole("link").last();
@@ -118,7 +128,14 @@ try {
     .toBeLessThan(300);
   await fits(page);
 
-  await go(page, `/zh/blog/tags/${encodeURIComponent("前端")}`);
+  await go(page, "/zh/blog");
+  const tagsToggle = page.getByText("按标签浏览", { exact: true });
+  const tags = page.getByRole("navigation", { name: "标签", exact: true });
+  await expect(tags).toBeHidden();
+  await tagsToggle.locator("..").press("Enter");
+  await expect(tags).toBeVisible();
+  await tags.getByRole("link", { name: "#前端", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("标签：前端");
   await expect(page.locator('main a[href="/zh/blog/frontend-deployment"]')).toBeVisible();
   for (const [path, expected] of [
     ["/zh/blog/notes", "/zh/blog"],

@@ -162,9 +162,9 @@ export const EASE = {
 
 ### 2.3 Blog 列表 `/[locale]/blog`
 
-杂志目录页 720px：大标题「文章 / Writing」+ **按年份分组的纯文字列表**（标题 20–22px、日期 mono 右对齐）+ 标签云一行。8 篇内容量刚好一屏半，不做卡片网格。SplitFlap 删除。
-**TagPill 贴纸化**（评审嫁接，放宽贴纸配额）：标签云用轻量白边贴纸（微随机旋转）；文章详情页 meta 行保持极简文字 tag。
-动效：页标题一次 SplitText 行 reveal；列表项 stagger .05 淡入；hover 下划线 250ms + 阅读时长浮现；chip press scale .97；筛选态显示「N 篇 · 清除筛选」出口。
+杂志目录页 720px：大标题「文章 / Writing」+ **按年份分组的纯文字列表**（标题 20–22px、日期 mono 右对齐）。阅读收藏标出类型，未记录日期的文章归入「日期未记」。
+**标签按需展开**：目录首屏优先展示文章，标签收在「按标签浏览」中，展开后用轻量文字链接。详情页和目录一致，用文字和状态表示展开、收起；不加装饰性方向标记。
+动效：页标题一次 reveal；列表项 stagger .05 淡入；悬停或键盘聚焦时显示下划线和阅读时长；筛选态显示「N 篇 · 清除筛选」出口。
 
 ### 2.4 Blog 详情 `/[locale]/blog/[slug]`
 
@@ -199,13 +199,12 @@ display 大字 404 + 一句话 + 两条出路（回首页/看文章）；一角*
 
 **内容纪律**：博客正文（hello-club、on-side-projects 等）是用户的写作，**一律不改动**；messages/*.json 键结构不动、值全面去俱乐部隐喻；site.ts 更新站点定位描述；timeline 换 Changelog 结构、不编造事实。
 
-## 4. 贴纸配额（全站限定 5 处，评审要求的收敛清单）
+## 4. 贴纸配额（历史清单）
 
 1. About 贴纸墙（核心，可拖拽）
 2. Footer 可撕小贴纸（露 email）
 3. Software app 图标白边贴纸化
 4. 404 大贴纸彩蛋（可剥离）
-5. Blog 列表页标签云轻量贴纸
 
 `<Sticker>` 通用组件：SVG `feMorphology` dilate 白边，零 JS、SSR 安全（sticker.oooo.so / Sticker Forge 思路）。材质纪律：贴纸=内容物、玻璃=容器。
 

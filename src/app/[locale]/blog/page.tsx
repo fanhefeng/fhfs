@@ -1,6 +1,7 @@
 import { YearIndex } from "@/components/blog/PostCard";
 import { TagPill } from "@/components/blog/TagPill";
 import { Reveal } from "@/components/fx/Reveal";
+import { ScrollTrigger } from "@/lib/client/gsap";
 import { useTranslations } from "use-intl";
 
 export default function BlogPage({
@@ -12,27 +13,26 @@ export default function BlogPage({
   const t = useTranslations("blog");
   return (
     <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-6 pb-28 pt-32 md:pt-40">
-      <Reveal as="section" className="mb-12">
+      <Reveal as="header" className="mb-10">
         <h1 className="text-display-sm">{t("title")}</h1>
-        <p className="mt-4 max-w-[46ch] text-body text-fg-secondary">{t("subtitle")}</p>
-        {posts.length > 0 && (
-          <p className="mt-5 font-mono text-meta uppercase tracking-meta text-fg-tertiary">
-            {t("filterSummary", { count: posts.length })}
-          </p>
+        <p className="mt-3 max-w-[46ch] text-body text-fg-secondary">{t("subtitle")}</p>
+        {tags.length > 0 && (
+          <details className="group/tags mt-3" onToggle={() => ScrollTrigger.refresh()}>
+            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center text-small text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent focus-visible:text-accent [&::-webkit-details-marker]:hidden">
+              <span className="group-open/tags:hidden">{t("browseTags")}</span>
+              <span className="hidden group-open/tags:inline">{t("hideTags")}</span>
+            </summary>
+            <nav
+              aria-label={t("tags")}
+              className="mt-2 flex flex-wrap gap-x-5 border-t border-line"
+            >
+              {tags.map(({ tag }) => (
+                <TagPill key={tag} tag={tag} className="flex min-h-11 items-center" />
+              ))}
+            </nav>
+          </details>
         )}
       </Reveal>
-
-      {tags.length > 0 && (
-        <Reveal
-          as="div"
-          stagger={0.04}
-          className="mb-16 flex flex-wrap items-center gap-x-3 gap-y-4"
-        >
-          {tags.map(({ tag, count }, i) => (
-            <TagPill key={tag} tag={tag} count={count} variant="sticker" seed={i} />
-          ))}
-        </Reveal>
-      )}
 
       {posts.length === 0 ? (
         <p className="text-body text-fg-secondary">{t("empty")}</p>

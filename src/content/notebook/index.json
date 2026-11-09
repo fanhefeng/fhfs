@@ -139,28 +139,28 @@
   },
   {
     "slug": "frontend-deployment",
-    "title": "前端部署与运维原理详解",
+    "title": "前端部署与运维原理",
     "section": "it",
     "format": "study",
     "locale": "zh",
     "tags": ["前端", "部署", "Docker", "TanStack Start"],
     "date": "2026-06-28",
     "summary": {
-      "zh": "从浏览器要什么讲起，梳理 SPA、全栈框架、反向代理和容器之间的关系。",
-      "en": "From browser assets to full-stack servers, reverse proxies, and containers."
+      "zh": "梳理 SPA、全栈应用、反向代理和容器如何配合。",
+      "en": "How SPAs, full-stack apps, reverse proxies, and containers fit together."
     },
     "readingMinutes": 24
   },
   {
     "slug": "frontend-interview",
-    "title": "前端面试总结",
+    "title": "前端面试提纲",
     "section": "it",
     "format": "study",
     "locale": "zh",
     "tags": ["JavaScript", "React", "Vue", "网络"],
     "summary": {
-      "zh": "语言、框架、网络和工程化的复习提纲，保留待补充的问题。",
-      "en": "A revision outline spanning languages, frameworks, networking, and tooling, including open questions."
+      "zh": "复习 JavaScript、框架、浏览器和网络的常见问题。",
+      "en": "Review questions on JavaScript, frameworks, browsers, and networking."
     },
     "context": {
       "zh": "这是一份持续补充的复习提纲；部分条目只记录问题。",
@@ -172,19 +172,19 @@
     "slug": "typescript-decorators",
     "title": "TypeScript 装饰器",
     "section": "it",
-    "format": "reference",
+    "format": "study",
     "locale": "zh",
     "tags": ["TypeScript", "装饰器"],
     "summary": {
-      "zh": "类、方法、属性与初始化器的学习入口。原笔记摘录自阮一峰的 TypeScript 教程。",
-      "en": "A reading entry for decorators, class members, and initializers, from WangDoc's TypeScript tutorial."
+      "zh": "用一个方法示例理解 TypeScript 5 的标准装饰器，再对照各类装饰器的输入与返回值。",
+      "en": "A method example and a quick reference for TypeScript 5's standard decorators."
     },
     "source": {
       "author": "阮一峰 / 网道",
       "title": "TypeScript 装饰器",
       "url": "https://wangdoc.com/typescript/decorator"
     },
-    "readingMinutes": 1
+    "readingMinutes": 2
   },
   {
     "slug": "adaptive-bitrate",
@@ -194,8 +194,8 @@
     "locale": "en",
     "tags": ["视频", "HLS", "DASH", "FFmpeg"],
     "summary": {
-      "zh": "关于自适应码率、分片和流媒体协议的一页英文学习卡片。",
-      "en": "A compact study note on adaptive bitrate, segments, and streaming protocols."
+      "zh": "自适应码率、视频分片与流媒体协议。",
+      "en": "Adaptive bitrate, video segments, and streaming protocols."
     },
     "readingMinutes": 1
   },
@@ -207,8 +207,8 @@
     "locale": "zh",
     "tags": ["Web3", "ethers.js", "Ethereum"],
     "summary": {
-      "zh": "从单位换算、编码到 Provider、合约和事件，记录边学边试的代码。",
-      "en": "Learning notes and code on units, encoding, providers, contracts, and events."
+      "zh": "单位换算、编码、Provider、合约调用与事件示例。",
+      "en": "Examples of unit conversion, encoding, providers, contract calls, and events."
     },
     "context": {
       "zh": "原笔记混有 ethers 不同版本的 API。示例保留用于学习回顾，使用前请对照对应版本文档。",
@@ -229,8 +229,8 @@
     "locale": "zh",
     "tags": ["Web3", "Solidity", "智能合约"],
     "summary": {
-      "zh": "函数可见性、数据类型与存储位置的基础学习记录。",
-      "en": "Study notes on visibility, data types, and storage locations."
+      "zh": "函数可见性、数据类型与存储位置。",
+      "en": "Function visibility, data types, and storage locations."
     },
     "context": {
       "zh": "学习中的阶段性记录，保留原有表述，尚未逐项校订。",
@@ -246,8 +246,8 @@
     "locale": "zh",
     "tags": ["Web3", "Ethereum", "ABI"],
     "summary": {
-      "zh": "课程入口、尚未解开的疑问，以及 Interface、账户和 EVM 的技术笔记。",
-      "en": "Courses, open questions, and technical notes on interfaces, accounts, and the EVM."
+      "zh": "课程链接、ABI、以太坊账户和 EVM 笔记。",
+      "en": "Course links and notes on ABIs, Ethereum accounts, and the EVM."
     },
     "context": {
       "zh": "选录原笔记的课程与技术部分。",
@@ -263,8 +263,8 @@
     "locale": "en",
     "tags": ["Web3", "Bitcoin", "论文"],
     "summary": {
-      "zh": "收藏的比特币白皮书，直接前往原文阅读。",
-      "en": "A saved reference to the Bitcoin whitepaper. Read the original paper."
+      "zh": "中本聪提出的点对点电子现金方案。",
+      "en": "Satoshi Nakamoto's proposal for peer-to-peer electronic cash."
     },
     "source": {
       "author": "Satoshi Nakamoto",
@@ -281,8 +281,8 @@
     "locale": "zh",
     "tags": ["CSS", "动效", "界面"],
     "summary": {
-      "zh": "玻璃、旋钮、按钮和鼠标跟随效果。保留案例与创作者的原始链接。",
-      "en": "Glass, knobs, buttons, and cursor effects, with links to the original creators."
+      "zh": "玻璃、旋钮、按钮和鼠标跟随效果的案例索引。",
+      "en": "An index of glass, knob, button, and cursor effects."
     },
     "context": {
       "zh": "案例索引，作品与代码的授权以各原始页面为准。",
@@ -298,8 +298,8 @@
     "locale": "zh",
     "tags": ["浏览器", "内存", "待复现"],
     "summary": {
-      "zh": "一次关于聚焦表单与游离节点的现象记录，等待补齐复现条件。",
-      "en": "An observation about focused form controls and detached nodes, awaiting a reproduction."
+      "zh": "表单获得焦点后出现游离节点的观察。",
+      "en": "An observation of detached nodes after focusing a form control."
     },
     "context": {
       "zh": "原记录没有浏览器版本、复现代码或堆快照，暂作为待验证的观察保留。",
@@ -315,8 +315,8 @@
     "locale": "zh",
     "tags": ["WebMCP", "想法"],
     "summary": {
-      "zh": "关于让网站向 AI 提供可读取工具的一条开发备忘。",
-      "en": "A brief reminder about giving AI tools a way to read a website."
+      "zh": "用 WebMCP 向 AI 提供网站工具的备忘。",
+      "en": "A note on exposing website tools to AI through WebMCP."
     },
     "readingMinutes": 1
   }
