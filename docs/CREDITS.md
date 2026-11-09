@@ -140,7 +140,7 @@ OG 拉丁沿用 Nunito 400 / 700；原 Noto Sans SC 400 / 600 文件保留为旧
 `/blog` 与 `/secrets` 收录的 Obsidian 原创写作与随笔保留作者原有权利。阅读收藏通过资料卡链接原文，不复制所收藏文章的全文或附件：
 
 - Steve Jobs，2005 年斯坦福毕业演讲：[Stanford Report](https://news.stanford.edu/stories/2005/06/youve-got-find-love-jobs-says)。
-- 阮一峰 / 网道：[TypeScript 装饰器](https://wangdoc.com/typescript/decorator)。
+- TypeScript 装饰器速记参考阮一峰 / 网道的[装饰器教程](https://wangdoc.com/typescript/decorator)和 [TypeScript 5.0 发布说明](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#decorators)，正文与示例为网站公开版独立编写。
 - Satoshi Nakamoto：[Bitcoin: A Peer-to-Peer Electronic Cash System](https://bitcoin.org/bitcoin.pdf)。
 - 马徐骏，《爸爸的背影》：原笔记未记录原文网址，公开页面仅保留书目信息。
 - CSS 案例索引保留原创作者链接，不复制示例的素材或代码；授权以各原始页面为准。

@@ -1,10 +1,11 @@
 import type { NoteSummary, NoteText } from "../../src/lib/notebook";
 
 type Selection = "canteen" | "fragments" | "web3" | "reference";
-type ImportEntry = Omit<NoteSummary, "readingMinutes"> & {
-  file: string;
-  selection?: Selection;
-};
+type ImportEntry = Omit<NoteSummary, "readingMinutes"> &
+  (
+    | { file: string; selection?: Selection; edition?: never }
+    | { file: string; selection?: never; edition: string }
+  );
 const text = (zh: string, en: string): NoteText => ({ zh, en });
 
 /** Explicit publication list. Never glob the vault: everything else stays private. */
@@ -151,28 +152,28 @@ export const catalog: ImportEntry[] = [
   {
     file: "IT/前端部署与运维原理详解.md",
     slug: "frontend-deployment",
-    title: "前端部署与运维原理详解",
+    title: "前端部署与运维原理",
     section: "it",
     format: "study",
     locale: "zh",
     tags: ["前端", "部署", "Docker", "TanStack Start"],
     date: "2026-06-28",
     summary: text(
-      "从浏览器要什么讲起，梳理 SPA、全栈框架、反向代理和容器之间的关系。",
-      "From browser assets to full-stack servers, reverse proxies, and containers.",
+      "梳理 SPA、全栈应用、反向代理和容器如何配合。",
+      "How SPAs, full-stack apps, reverse proxies, and containers fit together.",
     ),
   },
   {
     file: "IT/前端面试总结.md",
     slug: "frontend-interview",
-    title: "前端面试总结",
+    title: "前端面试提纲",
     section: "it",
     format: "study",
     locale: "zh",
     tags: ["JavaScript", "React", "Vue", "网络"],
     summary: text(
-      "语言、框架、网络和工程化的复习提纲，保留待补充的问题。",
-      "A revision outline spanning languages, frameworks, networking, and tooling, including open questions.",
+      "复习 JavaScript、框架、浏览器和网络的常见问题。",
+      "Review questions on JavaScript, frameworks, browsers, and networking.",
     ),
     context: text(
       "这是一份持续补充的复习提纲；部分条目只记录问题。",
@@ -181,16 +182,16 @@ export const catalog: ImportEntry[] = [
   },
   {
     file: "IT/TypeScript学习/装饰器.md",
+    edition: "typescript-decorators.md",
     slug: "typescript-decorators",
     title: "TypeScript 装饰器",
     section: "it",
-    format: "reference",
+    format: "study",
     locale: "zh",
     tags: ["TypeScript", "装饰器"],
-    selection: "reference",
     summary: text(
-      "类、方法、属性与初始化器的学习入口。原笔记摘录自阮一峰的 TypeScript 教程。",
-      "A reading entry for decorators, class members, and initializers, from WangDoc's TypeScript tutorial.",
+      "用一个方法示例理解 TypeScript 5 的标准装饰器，再对照各类装饰器的输入与返回值。",
+      "A method example and a quick reference for TypeScript 5's standard decorators.",
     ),
     source: {
       author: "阮一峰 / 网道",
@@ -207,8 +208,8 @@ export const catalog: ImportEntry[] = [
     locale: "en",
     tags: ["视频", "HLS", "DASH", "FFmpeg"],
     summary: text(
-      "关于自适应码率、分片和流媒体协议的一页英文学习卡片。",
-      "A compact study note on adaptive bitrate, segments, and streaming protocols.",
+      "自适应码率、视频分片与流媒体协议。",
+      "Adaptive bitrate, video segments, and streaming protocols.",
     ),
   },
   {
@@ -220,8 +221,8 @@ export const catalog: ImportEntry[] = [
     locale: "zh",
     tags: ["Web3", "ethers.js", "Ethereum"],
     summary: text(
-      "从单位换算、编码到 Provider、合约和事件，记录边学边试的代码。",
-      "Learning notes and code on units, encoding, providers, contracts, and events.",
+      "单位换算、编码、Provider、合约调用与事件示例。",
+      "Examples of unit conversion, encoding, providers, contract calls, and events.",
     ),
     context: text(
       "原笔记混有 ethers 不同版本的 API。示例保留用于学习回顾，使用前请对照对应版本文档。",
@@ -242,8 +243,8 @@ export const catalog: ImportEntry[] = [
     locale: "zh",
     tags: ["Web3", "Solidity", "智能合约"],
     summary: text(
-      "函数可见性、数据类型与存储位置的基础学习记录。",
-      "Study notes on visibility, data types, and storage locations.",
+      "函数可见性、数据类型与存储位置。",
+      "Function visibility, data types, and storage locations.",
     ),
     context: text(
       "学习中的阶段性记录，保留原有表述，尚未逐项校订。",
@@ -260,8 +261,8 @@ export const catalog: ImportEntry[] = [
     tags: ["Web3", "Ethereum", "ABI"],
     selection: "web3",
     summary: text(
-      "课程入口、尚未解开的疑问，以及 Interface、账户和 EVM 的技术笔记。",
-      "Courses, open questions, and technical notes on interfaces, accounts, and the EVM.",
+      "课程链接、ABI、以太坊账户和 EVM 笔记。",
+      "Course links and notes on ABIs, Ethereum accounts, and the EVM.",
     ),
     context: text(
       "选录原笔记的课程与技术部分。",
@@ -278,8 +279,8 @@ export const catalog: ImportEntry[] = [
     tags: ["Web3", "Bitcoin", "论文"],
     selection: "reference",
     summary: text(
-      "收藏的比特币白皮书，直接前往原文阅读。",
-      "A saved reference to the Bitcoin whitepaper. Read the original paper.",
+      "中本聪提出的点对点电子现金方案。",
+      "Satoshi Nakamoto's proposal for peer-to-peer electronic cash.",
     ),
     source: {
       author: "Satoshi Nakamoto",
@@ -296,8 +297,8 @@ export const catalog: ImportEntry[] = [
     locale: "zh",
     tags: ["CSS", "动效", "界面"],
     summary: text(
-      "玻璃、旋钮、按钮和鼠标跟随效果。保留案例与创作者的原始链接。",
-      "Glass, knobs, buttons, and cursor effects, with links to the original creators.",
+      "玻璃、旋钮、按钮和鼠标跟随效果的案例索引。",
+      "An index of glass, knob, button, and cursor effects.",
     ),
     context: text(
       "案例索引，作品与代码的授权以各原始页面为准。",
@@ -313,8 +314,8 @@ export const catalog: ImportEntry[] = [
     locale: "zh",
     tags: ["浏览器", "内存", "待复现"],
     summary: text(
-      "一次关于聚焦表单与游离节点的现象记录，等待补齐复现条件。",
-      "An observation about focused form controls and detached nodes, awaiting a reproduction.",
+      "表单获得焦点后出现游离节点的观察。",
+      "An observation of detached nodes after focusing a form control.",
     ),
     context: text(
       "原记录没有浏览器版本、复现代码或堆快照，暂作为待验证的观察保留。",
@@ -330,8 +331,8 @@ export const catalog: ImportEntry[] = [
     locale: "zh",
     tags: ["WebMCP", "想法"],
     summary: text(
-      "关于让网站向 AI 提供可读取工具的一条开发备忘。",
-      "A brief reminder about giving AI tools a way to read a website.",
+      "用 WebMCP 向 AI 提供网站工具的备忘。",
+      "A note on exposing website tools to AI through WebMCP.",
     ),
   },
 ];

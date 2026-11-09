@@ -15,11 +15,14 @@ const summaries: NoteSummary[] = [];
 const pages: { slug: string; body: NoteBody }[] = [];
 
 // Prepare everything before writing: a missing source must not leave a partial import.
-for (const { file, selection, ...entry } of catalog) {
+for (const { file, selection, edition, ...entry } of catalog) {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.slug) || slugs.has(entry.slug))
     throw new Error(`Invalid or duplicate slug: ${entry.slug}`);
   slugs.add(entry.slug);
-  let markdown = await readFile(resolve(vault, file), "utf8");
+  let markdown = await readFile(
+    edition ? new URL(`./notebook/editions/${edition}`, import.meta.url) : resolve(vault, file),
+    "utf8",
+  );
   markdown = markdown.replace(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/, (_all, yaml) => {
     const front = parse(yaml);
     if (front.date && front.date !== entry.date) throw new Error(`Review the date for ${file}`);

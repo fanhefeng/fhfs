@@ -78,10 +78,12 @@
   },
   "blog": {
     "title": "Writing",
-    "subtitle": "All posts, by year.",
+    "subtitle": "Essays, study notes, and reading references.",
     "yearAria": "Writing from {year}",
     "readingTime": "{minutes} min read",
     "tags": "Tags",
+    "browseTags": "Browse by tag",
+    "hideTags": "Hide tags",
     "taggedWith": "Tagged “{tag}”",
     "filterSummary": "{count, plural, one {# post} other {# posts}}",
     "clearFilter": "Clear filter",
@@ -849,6 +851,7 @@
   "notebook": {
     "undated": "Date unrecorded",
     "contents": "Contents · {count} sections",
+    "hideContents": "Hide contents",
     "contentsAria": "Sections in this note",
     "source": "Reference",
     "referenceSource": "Reading shelf · Original author",
