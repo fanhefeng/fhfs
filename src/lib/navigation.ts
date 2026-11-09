@@ -11,8 +11,8 @@ import { useMemo } from "react";
 export function notFound(): never {
   throw routerNotFound();
 }
-export function redirect(href: string): never {
-  throw routerRedirect({ href });
+export function redirect(href: string, options?: { reloadDocument?: boolean }): never {
+  throw routerRedirect({ href, ...options });
 }
 export function unstable_rethrow(error: unknown): void {
   if (isRedirect(error) || isNotFound(error)) throw error;

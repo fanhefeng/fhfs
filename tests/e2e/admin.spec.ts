@@ -122,12 +122,25 @@ test("reset cancels a pending preview; expired sessions and retries retain edito
   await expect(body).toHaveValue("会话过期时仍保留");
 });
 
-test("random test password signs in to the native admin", async ({ page }) => {
+test("signing in loads the sidebar counts without a manual refresh", async ({ page }) => {
+  await newPost(page, "login-count");
+  const draft = page.getByRole("checkbox", { name: /草稿/ });
+  await draft.press("Space");
+  await expect(draft).toBeChecked();
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/admin/posts/${session.prefix}-login-count/zh/?$`));
+  await page.context().clearCookies();
+
   await page.goto("/admin/login");
   await page.getByLabel("密码", { exact: true }).fill(session.password);
   await page.getByRole("button", { name: "进入", exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/?$/);
-  await expect(page.getByRole("main")).toBeVisible();
+  const dashboardPosts = page.getByRole("main").getByRole("link", { name: /^文章 / });
+  const count = (await dashboardPosts.innerText()).match(/(\d+)\s*篇/)?.[1];
+  expect(Number(count)).toBeGreaterThan(0);
+  await expect(
+    page.getByRole("navigation").getByRole("link", { name: /^文章 / }),
+  ).toHaveAccessibleName(new RegExp(`^文章 ${count}\\s*篇$`));
 });
 
 test("invalid input and expired sessions keep the unsaved editor", async ({ page }) => {

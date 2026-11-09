@@ -45,7 +45,10 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   await clearAttempts(ip);
 
   const next = formData.get("next");
-  redirect(typeof next === "string" && next.startsWith("/admin") ? next : "/admin");
+  // The login page shares the admin layout and has already loaded its anonymous counts.
+  redirect(typeof next === "string" && next.startsWith("/admin") ? next : "/admin", {
+    reloadDocument: true,
+  });
 }
 
 /**
