@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 
 import { ArticleNeighbours, ArticleSummary, FallbackNotice } from "@/components/blog/ArticleParts";
 import { Mdx } from "@/components/blog/Mdx";
-import { ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
+import { ArticleContents, ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
 import { PostTitle } from "@/components/blog/PostTitle";
 import { RoomMusic } from "@/components/fx/RoomMusic";
 
@@ -143,6 +143,9 @@ export default function SecretPage({
 
         {secret.note && (
           <ImportedNoteDetails note={secret.note} locale={locale} textLocale={secret.locale} />
+        )}
+        {secret.toc && (
+          <ArticleContents toc={secret.toc} locale={locale} textLocale={secret.locale} />
         )}
         {secret.html && <Mdx html={secret.html} />}
       </article>

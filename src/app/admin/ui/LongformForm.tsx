@@ -48,6 +48,7 @@ export function LongformForm({
   deleteAction,
   doc,
   isNew,
+  imported = false,
   head,
   headCols,
   extras,
@@ -61,6 +62,7 @@ export function LongformForm({
   deleteAction: (form: FormData) => Promise<void>;
   doc: LongformDraft;
   isNew: boolean;
+  imported?: boolean;
   /** Fields between the language and the date. */
   head?: ReactNode;
   /** The grid for the address row — a literal class, so Tailwind sees it. */
@@ -79,6 +81,7 @@ export function LongformForm({
   const bodyLabelId = useId();
   const check = useFieldErrors();
   const localeLabel = useId();
+  const addressEditable = isNew && !imported;
 
   return (
     <>
@@ -87,18 +90,20 @@ export function LongformForm({
             redirect to the edit page: this page's props are a blank draft, and
             a saved form resets to its props (useSaveAction) — without the
             redirect a successful save would wipe the editor. */}
-        {isNew && <input type="hidden" name="isNew" value="1" />}
+        {(isNew || imported) && (
+          <input type="hidden" name="isNew" value={imported ? "imported" : "1"} />
+        )}
         <div className={`grid gap-5 ${headCols}`}>
           <label className="space-y-1.5">
             <span className={labelClass}>slug</span>
             <input
               name="slug"
               defaultValue={doc.slug}
-              readOnly={!isNew}
+              readOnly={!addressEditable}
               required
               pattern={KEY_PATTERN}
               data-mismatch={KEY_MESSAGE}
-              className={`${inputClass} ${isNew ? "" : "text-fg-tertiary"}`}
+              className={inputClass}
               {...check.field("slug")}
             />
             {check.message("slug")}
@@ -112,14 +117,14 @@ export function LongformForm({
               name="locale"
               labelledBy={localeLabel}
               defaultValue={doc.locale}
-              disabled={!isNew}
+              disabled={!addressEditable}
               options={[
                 { value: "zh", label: "zh · 中文" },
                 { value: "en", label: "en · English" },
               ]}
             />
             {/* A disabled control submits nothing — keep the value in the post. */}
-            {!isNew && <input type="hidden" name="locale" value={doc.locale} />}
+            {!addressEditable && <input type="hidden" name="locale" value={doc.locale} />}
           </div>
 
           {head}
@@ -129,7 +134,7 @@ export function LongformForm({
             <input
               name="date"
               defaultValue={doc.date}
-              placeholder={datePlaceholder}
+              placeholder={imported && !doc.date ? "填写发布日期" : datePlaceholder}
               required
               pattern="\d{4}-\d{2}-\d{2}"
               data-mismatch="日期要写成 YYYY-MM-DD。"
@@ -164,7 +169,7 @@ export function LongformForm({
               name="draft"
               defaultChecked={doc.draft}
               label="草稿"
-              hint={draftHint}
+              hint={imported ? "保存为草稿会暂时下架原网址" : draftHint}
               onLabel="草稿"
               offLabel="已公开"
             />
@@ -176,7 +181,7 @@ export function LongformForm({
             <span id={bodyLabelId} className={labelClass}>
               {bodyLabel}
             </span>
-            {!isNew && (
+            {!isNew && !imported && (
               <a
                 href={`/admin/preview?${new URLSearchParams({
                   kind: previewKind,
@@ -217,7 +222,7 @@ export function LongformForm({
         <SaveControls state={state} pending={pending} sticky cancelable />
       </form>
 
-      {!isNew && (
+      {!isNew && !imported && (
         <DeleteRow
           action={deleteAction}
           fields={{ slug: doc.slug, locale: doc.locale }}

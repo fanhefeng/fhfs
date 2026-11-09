@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 
 import { ArticleNeighbours, ArticleSummary, FallbackNotice } from "@/components/blog/ArticleParts";
 import { Mdx } from "@/components/blog/Mdx";
-import { ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
+import { ArticleContents, ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
 import { PostTitle } from "@/components/blog/PostTitle";
 import { TagPill } from "@/components/blog/TagPill";
 import { RadialFab } from "@/components/fx/RadialFab";
@@ -128,6 +128,7 @@ export default function PostPage({
           {post.note && (
             <ImportedNoteDetails note={post.note} locale={locale} textLocale={post.locale} />
           )}
+          {post.toc && <ArticleContents toc={post.toc} locale={locale} textLocale={post.locale} />}
           <Mdx html={post.html} />
         </article>
 

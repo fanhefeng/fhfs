@@ -7,13 +7,22 @@ import { LongformForm, type LongformDraft } from "../ui/LongformForm";
 type PostDraft = LongformDraft & { tags: string[] };
 
 /** The article editor: the long-form form, and the post's tags. */
-export function PostForm({ post, isNew }: { post: PostDraft; isNew: boolean }) {
+export function PostForm({
+  post,
+  isNew,
+  imported,
+}: {
+  post: PostDraft;
+  isNew: boolean;
+  imported?: boolean;
+}) {
   return (
     <LongformForm
       action={savePost}
       deleteAction={deletePost}
       doc={post}
       isNew={isNew}
+      imported={imported}
       previewKind="post"
       headCols="sm:grid-cols-[1fr_9rem_10rem]"
       extrasCols="sm:grid-cols-[1fr_auto]"

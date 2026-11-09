@@ -27,6 +27,7 @@ node scripts/smoke-magazine.mjs http://127.0.0.1:4173
 ## 数据与后台
 
 - 内容继续从原站的 Neon Postgres 读取，沿用 Drizzle schema；部署不创建数据库、不迁移或导入数据。
+- 后台按首页、文章、软件、实验室、生活和关于等前台栏目组织。栏目页提供页面文案和内容编辑入口，导入笔记可直接在「文章」或「不能说的秘密」编辑。
 - 峰言峰语的图片、视频和音频继续使用 `fhfs-media.fhfs.workers.dev`；上传需要配置兼容现有媒体 Worker 的 `MEDIA_UPLOAD_SECRET`。
 - 应用、后台和部署独立于 `fhfs-site.vercel.app`。`/admin` 使用本部署的登录、编辑和预览页面；必须配置本应用的 `AUTH_SECRET`、`ADMIN_PASSWORD_HASH`，所有保存和删除继续逐次检查会话。
 - 本应用公开内容缓存最多保留 30 秒，仅保存已完成的数据；后台与授权预览绕过公开缓存。保存立即清除本部署的相关缓存，原站缓存由原站管理。

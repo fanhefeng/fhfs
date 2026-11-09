@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 import index from "@/content/notebook/index.json";
-import { noteDestination, type NoteBody, type NoteSummary } from "@/lib/notebook";
+import { noteDestination, noteToc, type NoteBody, type NoteSummary } from "@/lib/notebook";
 import type { Locale } from "@/i18n/routing";
 
 const notes: NoteSummary[] = index as NoteSummary[];
@@ -60,4 +60,10 @@ export async function getNote(slug: string) {
   const load = bodies[`../../content/notebook/pages/${slug}.json`];
   if (!load) throw new Error(`Missing notebook body: ${slug}`);
   return { ...summary, ...(await load()) };
+}
+
+export function getEditedNoteToc(destination: "/blog" | "/secrets", slug: string, html: string) {
+  return notes.some((note) => note.slug === slug && noteDestination(note) === destination)
+    ? noteToc(html)
+    : undefined;
 }

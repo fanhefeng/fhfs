@@ -114,7 +114,7 @@ export default function ResumeAdminPage({
         note: { zh: "", en: "" },
       };
   return (
-    <AdminChrome title="简历页" section="/admin/resume">
+    <AdminChrome title="简历" section="/admin/resume">
       <Note>
         这一页是公开的，电话、邮箱、具体公司名这类信息请自行斟酌。时间段是原样显示的文字——
         写成什么样页面就显示什么样，不做日期运算；经历留空要点和项目，就只列公司、职位和时间段一行。

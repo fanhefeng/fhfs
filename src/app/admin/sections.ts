@@ -1,11 +1,8 @@
 /**
  * The admin's own table of contents, grouped the way the front of the site is.
  *
- * The groups are the site's own: `issue` / `rooms` / `me` are the same three
- * the navigation table sorts into (`nav_items.group`), so a section is found
- * here by remembering where its page sits out front, not by remembering which
- * table it happens to live in. `site` is the fourth, and holds what has no page
- * of its own — copy and navigation.
+ * Find editors by the public page they affect. Shared settings have their
+ * own group, and changing a public link's visibility leaves its editor here.
  *
  * `/admin/works` is deliberately not listed. The shelf the old /portfolio read
  * is kept — the table, the editor, `saveWork` — for the day a first work is
@@ -30,6 +27,8 @@ export type AdminSection = {
   view: string | null;
   /** The unit its count is spoken in: 6 篇, 242 条, 23 张. */
   unit: string;
+  /** Companion editors for a single public page. */
+  tools?: readonly { href: string; label: string }[];
 };
 
 /** Row counts keyed by section href. Filled in by `./counts`, which is the
@@ -48,15 +47,23 @@ export type AdminGroup = {
 export const SECTION_GROUPS: AdminGroup[] = [
   {
     id: "issue",
-    label: "作品",
-    caption: "文章和软件。实验室（/lab）的内容写在代码里，不在这里。",
+    label: "首页与作品",
+    caption: "首页、文章、软件和实验室。",
     sections: [
+      {
+        href: "/admin/home",
+        label: "首页",
+        blurb: "开场、首页文案、最新文章和软件。",
+        view: "/",
+        unit: "",
+      },
       {
         href: "/admin/posts",
         label: "文章",
-        blurb: "/blog 的列表与每篇详情。一篇一语言，中英各算一条。",
+        blurb: "管理网站文章和导入的技术笔记。中英文版本分开编辑。",
         view: "/blog",
         unit: "篇",
+        tools: [{ href: "/admin/copy?ns=blog", label: "页面文案" }],
       },
       {
         href: "/admin/apps",
@@ -64,6 +71,22 @@ export const SECTION_GROUPS: AdminGroup[] = [
         blurb: "/software 上的每个应用。版本号不用填，填仓库地址后站点会自己读取。",
         view: "/software",
         unit: "款",
+        tools: [{ href: "/admin/copy?ns=software", label: "页面文案" }],
+      },
+      {
+        href: "/admin/lab",
+        label: "实验室",
+        blurb: "编辑实验室首页和每则实验的标题、摘要与说明。",
+        view: "/lab",
+        unit: "",
+      },
+      {
+        href: "/admin/timeline",
+        label: "版本履历",
+        blurb: "编辑实验室「跟随滚动的年份轴」中的履历。",
+        view: "/lab/changelog",
+        unit: "版",
+        tools: [{ href: "/admin/copy?ns=lab&study=changelog", label: "实验文案" }],
       },
     ],
   },
@@ -73,18 +96,27 @@ export const SECTION_GROUPS: AdminGroup[] = [
     caption: "说说、随笔、电影和偶像，各有自己的页面。",
     sections: [
       {
+        href: "/admin/life",
+        label: "生活",
+        blurb: "编辑生活目录，进入随笔、说说、偶像和电影的编辑器。",
+        view: "/life",
+        unit: "",
+      },
+      {
         href: "/admin/moments",
-        label: "说说",
+        label: "峰言峰语",
         blurb: "/moments 上的说说，一条几行字加一个时间。",
         view: "/moments",
         unit: "条",
+        tools: [{ href: "/admin/copy?ns=moments", label: "页面文案" }],
       },
       {
         href: "/admin/secrets",
-        label: "秘密",
-        blurb: "/secrets 的随笔与播客。和文章同构，多了音频和时长。",
+        label: "不能说的秘密",
+        blurb: "随笔、播客和导入的生活笔记，也会出现在生活目录。",
         view: "/secrets",
         unit: "篇",
+        tools: [{ href: "/admin/copy?ns=secrets", label: "页面文案" }],
       },
       {
         href: "/admin/films",
@@ -92,6 +124,7 @@ export const SECTION_GROUPS: AdminGroup[] = [
         blurb: "/films 的每一部：简介、台词、剧照墙。一部一页。",
         view: "/films",
         unit: "部",
+        tools: [{ href: "/admin/copy?ns=films", label: "页面文案" }],
       },
       {
         href: "/admin/idols",
@@ -99,41 +132,42 @@ export const SECTION_GROUPS: AdminGroup[] = [
         blurb: "/idols 的每一位：照片和出处、时间线。一位一页。",
         view: "/idols",
         unit: "位",
+        tools: [{ href: "/admin/copy?ns=idols", label: "页面文案" }],
       },
     ],
   },
   {
     id: "me",
-    label: "关于我",
+    label: "关于",
     caption: "关于页、3D 自我介绍和简历。",
     sections: [
       {
         href: "/admin/about",
-        label: "关于页",
+        label: "关于",
         blurb: "/about 的正文，中英各一份。",
         view: "/about",
         unit: "份",
-      },
-      {
-        href: "/admin/timeline",
-        label: "版本履历",
-        blurb: "实验室「跟随滚动的年份轴」用的数据，按软件版本号的格式记个人经历。",
-        view: "/lab/changelog",
-        unit: "版",
+        tools: [
+          { href: "/admin/copy?ns=about", label: "页面文案" },
+          { href: "/admin/chips", label: "贴纸墙" },
+          { href: "/admin/resume", label: "编辑共用履历" },
+        ],
       },
       {
         href: "/admin/intro",
-        label: "简历节点",
+        label: "3D 自我介绍",
         blurb: "/intro 的 3D 场景里每个节点的文字。",
         view: "/intro",
         unit: "个",
+        tools: [{ href: "/admin/copy?ns=intro", label: "页面文案" }],
       },
       {
         href: "/admin/resume",
-        label: "简历页",
+        label: "简历",
         blurb: "/resume 的抬头、技术栈和履历；履历那几行 /about 也在用。公开页不写公司名。",
         view: "/resume",
         unit: "段",
+        tools: [{ href: "/admin/copy?ns=resume", label: "页面文案" }],
       },
       {
         href: "/admin/chips",
@@ -165,6 +199,7 @@ export const SECTION_GROUPS: AdminGroup[] = [
         blurb: "顶栏、页脚、全屏菜单和站点地图上分别出现哪几条。",
         view: null,
         unit: "条",
+        tools: [{ href: "/admin/copy?ns=nav", label: "导航名称" }],
       },
     ],
   },

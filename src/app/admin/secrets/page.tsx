@@ -14,7 +14,7 @@ export default function SecretsIndex({
 
   return (
     <AdminChrome
-      title="秘密"
+      title="不能说的秘密"
       section="/admin/secrets"
       action={
         <Link href="/admin/secrets/new" className={ghostButtonClass}>
@@ -35,7 +35,9 @@ export default function SecretsIndex({
               href={`/admin/secrets/${row.slug}/${row.locale}`}
               className="group flex min-h-15 flex-wrap items-baseline gap-x-3 gap-y-1 px-2 py-3.5 transition-colors hover:bg-surface/60"
             >
-              <span className="font-mono text-meta text-fg-tertiary tabular-nums">{row.date}</span>
+              <span className="font-mono text-meta text-fg-tertiary tabular-nums">
+                {row.date ?? "日期未记"}
+              </span>
               <span className="font-mono text-meta uppercase text-fg-tertiary">{row.locale}</span>
               <span className="font-mono text-meta text-accent">
                 {row.kind === "podcast" ? "播客" : "随笔"}
@@ -43,6 +45,7 @@ export default function SecretsIndex({
               <span className="order-first w-full min-w-0 break-words text-body transition-colors group-hover:text-accent sm:order-none sm:w-auto sm:flex-1">
                 {row.title}
               </span>
+              {row.imported && <span className="text-caption text-fg-tertiary">导入稿</span>}
               {row.draft && (
                 <span className="font-mono text-meta uppercase tracking-meta text-accent">
                   草稿

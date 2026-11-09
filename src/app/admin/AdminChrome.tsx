@@ -56,7 +56,8 @@ export function AdminChrome({
   // the first would have cost an index page its count the day one wanted to
   // override that link.
   const count = section && !sub ? counts[section] : undefined;
-  const viewHref = view !== undefined ? view : meta?.view ? `/zh${meta.view}` : null;
+  const viewHref =
+    view !== undefined ? view : meta?.view ? `/zh${meta.view === "/" ? "" : meta.view}` : null;
 
   return (
     <div className="lg:flex">
@@ -109,6 +110,12 @@ export function AdminChrome({
                     看前台
                   </a>
                 )}
+                {!sub &&
+                  meta?.tools?.map((tool) => (
+                    <Link key={tool.href} href={tool.href} className={ghostButtonClass}>
+                      {tool.label}
+                    </Link>
+                  ))}
                 {action}
               </div>
             </div>
