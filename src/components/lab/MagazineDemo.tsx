@@ -30,7 +30,7 @@ function MagazineCover({
         <span className="mag-sun" />
         <span className="mag-art-index">01</span>
         <span className="mag-art-caption" lang="en">
-          A WORLD IN THE MAKING
+          TEXT · LINKS · BOOKMARKS
         </span>
       </div>
       <div className="mag-copy">

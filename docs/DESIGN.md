@@ -197,6 +197,8 @@ display 大字 404 + 一句话 + 两条出路（回首页/看文章）；一角*
 
 **删除**（页面重写完成后统一删文件+资产）：NeonSign、MarqueeLights、FilmGrain（→GrainLayer）、NoteTrail、Atmosphere（→AuroraLayer）、ClubWindow、NotesDeck、PoemInterlude、TourRoad、AppsSlider、PosterWall、PosterLightbox、PlanetStage（+public/models/planet + footer 署名）、Starfield、SplitFlap、NeonLogo、ArtDecoDivider、PullCord、SpotlightReveal（被新 Reveal 取代则删）。
 
+**界面文案**：沿用本站已有的直白语气，按实际阅读问题做最小修改。页头说明页面内容，按钮写明操作，错误与空状态给出可行的下一步。同一个对象统一名称，允许自然重复，不为避重换同义词。保留事实、数值、限定词、API 名称、中英对应关系和作者原文；不为调整指标拆句、改结构或清除正常修辞。不写未经验证的流畅度、性能或耗电保证。演示说明先写可观察的效果与操作，参数和实现放在技术说明中。页面实际呈现的唱机、贴纸、开灯等名称继续使用。检查默认、悬停与聚焦状态，遵守下文不用装饰性箭头的约定。
+
 **内容纪律**：博客正文（hello-club、on-side-projects 等）是用户的写作，**一律不改动**；messages/*.json 键结构不动、值全面去俱乐部隐喻；site.ts 更新站点定位描述；timeline 换 Changelog 结构、不编造事实。
 
 ## 4. 贴纸配额（历史清单）

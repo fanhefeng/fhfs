@@ -17,15 +17,14 @@ export const ERROR_COPY: Record<
   zh: {
     kicker: "出错了",
     title: "页面加载失败",
-    description: "服务器出了问题。请再试一次，不行的话过一会儿再来。",
+    description: "请再试一次，或返回首页。",
     retry: "再试一次",
     backHome: "回首页",
   },
   en: {
     kicker: "Error",
     title: "This page failed to load",
-    description:
-      "Something went wrong on the server. Please try again; if that does not help, come back a little later.",
+    description: "Try again, or return to the home page.",
     retry: "Try again",
     backHome: "Back home",
   },

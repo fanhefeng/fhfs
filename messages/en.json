@@ -122,7 +122,7 @@
     "meta": "MUSIC · GAMES · FILMS",
     "tagline": "A front-end engineer, now in Shanghai.",
     "scrollHint": "Scroll down",
-    "loading": "Loading",
+    "loading": "Loading the 3D scene",
     "outroTitle": "Say hello?",
     "outroBody": "For more, see the About page or read a few posts.",
     "linkAbout": "About me",
@@ -146,14 +146,14 @@
     "printAria": "Print this page, or save it as a PDF from the print dialog",
     "updated": "Updated {date}",
     "introLink": "See the 3D introduction",
-    "empty": "The resume is still being put together — check back soon."
+    "empty": "No résumé has been added yet."
   },
   "lab": {
     "kicker": "Motion lab",
     "title": "Lab",
-    "subtitle": "{count} motion studies, one effect each.",
+    "subtitle": "{count} motion studies.",
     "source": "Source",
-    "sourceLede": "The files this one is made of, on GitHub:",
+    "sourceLede": "Source files on GitHub:",
     "viewSource": "Source · GitHub",
     "back": "Back to the lab",
     "backToIndex": "Back to the lab",
@@ -180,7 +180,7 @@
         "name": "Frames played by scroll",
         "tagline": "GSAP ScrollTrigger + Canvas",
         "summary": "A 90-frame image sequence drawn on a canvas; the scroll position decides which frame is shown. There is no video tag.",
-        "note": "Scroll progress is converted to a frame number and the canvas draws that image. Scrolling back draws the frames in reverse the same way, with no stutter.",
+        "note": "Scroll progress becomes a frame number, and the canvas draws that image. Scrolling back draws the frames in reverse order.",
         "captionOne": "Drawn frame by frame",
         "captionOneBody": "Scroll progress becomes a frame number; the canvas only paints that frame.",
         "captionTwo": "Scrolling back works the same",
@@ -404,9 +404,9 @@
       "peel": {
         "name": "A sticker that peels back on click",
         "tagline": "CSS 3D · one boolean",
-        "summary": "The sticker over the email address in the footer: a corner lifts on hover, and a click folds it up along its top edge, shows its back and fades it out. React toggles a single boolean.",
+        "summary": "The sticker over the footer’s email address. A corner lifts on hover; clicking folds it along its top edge, reveals the back and fades it out.",
         "note": "A pure CSS state machine: React toggles one boolean and everything else is a transition on transform and opacity. The fold is rotateX with perspective 520, and the grey back is visible partway through. The lift is done by cross-fading the opacity of two shadow layers; box-shadow itself is not animated, because it repaints on every frame. Clicking again (or using the keyboard) sticks it back. While the sticker is in place, the link under it has tabIndex -1 and aria-hidden, so Tab does not reach it. The large sticker in the corner of the 404 page can be peeled off completely (the crease is a clip-path). Here the sticker covers a sentence; in the footer it covers the email address.",
-        "label": "Peel · one boolean",
+        "label": "Peel the sticker",
         "peelHint": "Peel me",
         "peelAria": "Peel me: a peel-off sticker",
         "secret": "Nothing under here."
@@ -465,7 +465,7 @@
         "round": "Round",
         "square": "Square",
         "line": "Line",
-        "gridNote": "Rapid clicks do not break it: each click first finishes the previous reshuffle if it is still running and clears the styles it wrote, then starts the new one.",
+        "gridNote": "Each click finishes the previous rearrangement and clears its temporary styles before starting the next animation.",
         "label": "Grid · filter and reshuffle",
         "lede": "Press Round, Square or Line: the three tiles that stay slide into the first row and the other six fade out. Press All and they return the way they came. If it is too fast, choose the slow motion; to see it without the effect, turn the animation off.",
         "filterName": "Filter",
@@ -476,7 +476,7 @@
         "motionNone": "Off",
         "readoutIdle": "All nine are here and nothing is filtered yet. Press any shape above.",
         "readout": "That change: {stay} stayed, sliding to wherever their place now is; {enter} faded in, {leave} faded out.",
-        "readoutNone": "That change had no animation: {stay} stayed, {enter} appeared and {leave} disappeared, all at the same moment, so you cannot tell which tile went where. The animation is there to solve that."
+        "readoutNone": "No animation this time: {stay} kept, {enter} shown and {leave} hidden. Positions update at once."
       },
       "statue": {
         "name": "A 3D statue built in code",
@@ -492,7 +492,7 @@
         "frameLabel": "Frames drawn",
         "stateDrawing": "Drawing",
         "stateIdle": "Stopped · not rendering",
-        "frameNote": "A typical 3D scene redraws 60 frames a second whether or not anything changes. This one stops rendering once it stops turning, so leaving the page open uses no extra power."
+        "frameNote": "The counter records frames drawn by this scene. It increases while the statue turns and stops when it settles."
       },
       "changelog": {
         "name": "A year rail that follows the scroll",
@@ -572,31 +572,31 @@
         "body": "At the top of the page. On a wide screen it folds after 48px of scrolling down and unfolds after 48px of scrolling back up."
       },
       "magazine": {
-        "name": "A magazine in space",
+        "name": "Interactive 3D magazine cover",
         "tagline": "HTML-in-Canvas · a cover you can read",
-        "summary": "A small magazine cover in three dimensions. Select its words, follow a link, or tuck in a bookmark.",
+        "summary": "A 3D cover with selectable text, working links and a bookmark button.",
         "note": "The cover uses the site’s existing typefaces and light and dark palettes. On supported browsers, a live HTML subtree becomes a WebGL texture; one perspective matrix aligns the printed surface with native text selection, focus and links. The light only changes colour, keeping interaction geometry intact. Pointer movement tilts the cover; buttons work on touch screens and with a keyboard. Holding the pointer down or focusing the cover stops it moving so it can be read. Frames are drawn on changes, and rendering pauses off screen or in hidden tabs. Unsupported browsers, Save-Data, forced colours and GPU or loading failures keep the plain HTML edition. The bookmark lasts while this study is open and survives switching editions.",
-        "label": "Paper, with a little depth",
-        "lede": "A cover for the little things worth keeping. Try selecting a sentence or leaving a bookmark.",
+        "label": "Magazine cover",
+        "lede": "Select some text, open About me or add a bookmark.",
         "coverAria": "fhf’s magazine, first issue",
         "edition": "VOL. 01\nNOV. 2026",
         "coverKicker": "Field notes · 随手记",
-        "coverTitle": "A small world,\nin print.",
-        "coverBody": "Writing, software, and the details in between. A few things collected along the way.",
-        "read": "Meet the editor",
+        "coverTitle": "Writing, software\nand daily life.",
+        "coverBody": "Articles, apps and motion studies by fhf.",
+        "read": "About me",
         "save": "Bookmark",
         "saved": "Bookmarked",
-        "stageNote": "fhf’s / The paper collection",
-        "live": "Spatial edition · selectable type",
-        "fallback": "Paper edition · selectable type",
+        "stageNote": "fhf’s / Magazine cover",
+        "live": "3D view · selectable text",
+        "fallback": "Flat view · selectable text",
         "turnAria": "Turn the magazine",
         "turnLeft": "Turn left",
         "turnRight": "Turn right",
         "reset": "Reset",
-        "flatView": "Read flat",
-        "spatialView": "Return to 3D",
-        "liveHint": "Move your pointer to tilt, or use the turn buttons. Select text, try the bookmark, or open the editor’s page.",
-        "flatHint": "Select the words, leave a bookmark, or meet the editor. The paper edition works with ordinary HTML."
+        "flatView": "Switch to flat view",
+        "spatialView": "Switch to 3D view",
+        "liveHint": "Move the pointer or use the buttons to turn the cover. Selecting text or focusing a link keeps it still.",
+        "flatHint": "Text selection, links and bookmarks also work in flat view. The bookmark clears when you reload or leave this page."
       },
       "hello": {
         "name": "Hello handwriting",
@@ -792,7 +792,7 @@
     "localTimeAria": "Local time in Shanghai",
     "stickerHint": "Peel me",
     "stickerAria": "Peel me: a peel-off sticker with an email underneath",
-    "stickerFallback": "email coming soon :)"
+    "stickerFallback": "No email address listed"
   },
   "common": {
     "localeSwitch": "中文",
@@ -811,7 +811,7 @@
   "error": {
     "kicker": "Error",
     "title": "This page failed to load",
-    "description": "Something went wrong on the server. Please try again; if that does not help, come back a little later.",
+    "description": "Try again, or return to the home page.",
     "retry": "Try again",
     "backHome": "Back home"
   },
@@ -832,11 +832,11 @@
     "inputAria": "Search for",
     "placeholder": "Posts, moments, studies, pages…",
     "resultsAria": "Results",
-    "suggestions": "Suggestions",
-    "loading": "Loading…",
-    "error": "Search could not load. Please try again.",
-    "retry": "Try again",
-    "empty": "Nothing found for “{query}”.",
+    "suggestions": "Pages",
+    "loading": "Loading search content…",
+    "error": "Search content could not be loaded. Try again.",
+    "retry": "Reload search content",
+    "empty": "No results for “{query}”. Try fewer words.",
     "hint": "↑ ↓ to choose · Enter to open · Esc to close",
     "kinds": {
       "page": "Page",

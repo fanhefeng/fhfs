@@ -122,7 +122,7 @@
     "meta": "MUSIC · GAMES · FILMS",
     "tagline": "前端工程师，现居上海。",
     "scrollHint": "向下滚动",
-    "loading": "正在加载",
+    "loading": "正在加载 3D 场景",
     "outroTitle": "聊聊？",
     "outroBody": "想了解更多，可以看关于页，或者读几篇文章。",
     "linkAbout": "关于我",
@@ -146,14 +146,14 @@
     "printAria": "打印这一页，或在打印对话框里保存为 PDF",
     "updated": "更新于 {date}",
     "introLink": "看 3D 自我介绍",
-    "empty": "简历内容正在整理中，稍后回来看看。"
+    "empty": "还没有简历内容。"
   },
   "lab": {
     "kicker": "动效实验室",
     "title": "实验室",
-    "subtitle": "{count} 则动效练习，每则一个效果。",
+    "subtitle": "{count} 则动效实验。",
     "source": "源码",
-    "sourceLede": "这一则由下面这些文件写成，都在 GitHub 上：",
+    "sourceLede": "源码文件都在 GitHub：",
     "viewSource": "源码 · GitHub",
     "back": "回实验室",
     "backToIndex": "回实验室",
@@ -180,7 +180,7 @@
         "name": "滚动逐帧播放",
         "tagline": "GSAP ScrollTrigger + Canvas",
         "summary": "一段 90 帧的图片序列画在 canvas 上，滚动到哪就显示哪一帧。没有用 video 标签。",
-        "note": "滚动进度换算成帧号，canvas 画出对应的那张图。往回滚按同样的方式倒着画，不会卡顿。",
+        "note": "滚动进度换算成帧号，canvas 画出对应的那张图。往回滚时，按帧号倒序绘制。",
         "captionOne": "按帧绘制",
         "captionOneBody": "滚动进度映射成帧号，canvas 只负责把那一帧画出来。",
         "captionTwo": "往回滚也一样",
@@ -404,9 +404,9 @@
       "peel": {
         "name": "点击揭开的贴纸",
         "tagline": "CSS 3D · 一个布尔",
-        "summary": "页脚盖着邮箱的那张贴纸：悬停时翘起一角，点击后沿上沿折起，露出背面并淡出。React 只切换一个布尔值。",
+        "summary": "页脚盖住邮箱的贴纸。悬停时翘起一角，点击后沿上沿折起，露出背面并淡出。",
         "note": "纯 CSS 状态机：React 只切换一个布尔值，其余都是 transform 和 opacity 的过渡。折叠用 rotateX，perspective 520，中途能看到灰色的背面；抬起的效果用两层阴影的透明度交替实现，box-shadow 本身不做动画，因为它每帧都会触发重绘。再点一次（键盘也可以）贴回去。贴纸盖着的时候，下面的链接是 tabIndex -1 加 aria-hidden，Tab 键不会聚焦到它。404 页角上那张大贴纸可以整张撕下来（用 clip-path 做折痕）。这里盖住的是一句话，页脚盖住的是邮箱。",
-        "label": "撕开 · 一个布尔值",
+        "label": "揭开贴纸",
         "peelHint": "撕开看看",
         "peelAria": "撕开看看：一张可以撕开的贴纸",
         "secret": "下面什么也没有。"
@@ -465,7 +465,7 @@
         "round": "圆",
         "square": "方",
         "line": "线",
-        "gridNote": "快速连点也不会出错：每次点击先结束上一次没播完的重排并清掉它写的样式，再开始新的。",
+        "gridNote": "连续点击时，会先结束上一次重排并清除临时样式，再开始新的动画。",
         "label": "网格 · 筛选重排",
         "lede": "点「圆」「方」或「线」：留下的三块会滑到第一排，其余六块淡出；再点「全部」，它们按原路回去。看不清就选「慢放」，想看没有动画时的样子就选「关掉动画」。",
         "filterName": "筛选",
@@ -476,7 +476,7 @@
         "motionNone": "关掉动画",
         "readoutIdle": "九块都在，还没筛选。点上面任意一个形状。",
         "readout": "刚才这一下：留下 {stay} 块，位置变了的滑过去；淡入 {enter} 块，淡出 {leave} 块。",
-        "readoutNone": "刚才这一下没有动画：留下 {stay} 块，出现 {enter} 块，消失 {leave} 块，全部同时完成，看不出哪一块去了哪里。动画就是用来解决这个问题的。"
+        "readoutNone": "本次没有动画：保留 {stay} 块，显示 {enter} 块，隐藏 {leave} 块，位置同时更新。"
       },
       "statue": {
         "name": "代码搭建的 3D 铜像",
@@ -492,7 +492,7 @@
         "frameLabel": "已画帧数",
         "stateDrawing": "正在画",
         "stateIdle": "已停止 · 不渲染",
-        "frameNote": "一般的 3D 场景不管有没有变化，每秒都重画 60 帧。这个场景停下后不再渲染，页面开着也不会额外耗电。"
+        "frameNote": "计数器记录这个场景绘制的帧数。转动时增加，停稳后不再增加。"
       },
       "changelog": {
         "name": "跟随滚动的年份轴",
@@ -572,31 +572,31 @@
         "body": "就在页面顶部。宽屏上往下滚 48 像素它会折叠，往回滚 48 像素再展开。"
       },
       "magazine": {
-        "name": "纸上的小世界",
+        "name": "可交互的 3D 杂志封面",
         "tagline": "HTML-in-Canvas · 可以阅读的立体封面",
-        "summary": "把一张杂志封面放进三维空间。文字可以选择，链接可以打开，也能夹上一枚书签。",
+        "summary": "立体封面上的文字可以选中，链接可以打开，也能夹上书签。",
         "note": "封面沿用本站的中英文字体和明暗配色。支持的浏览器将真实 HTML 子树绘制成 WebGL 纹理，用同一个透视矩阵对齐画面、文字选择、焦点和链接；光泽只改变颜色，保持交互位置一致。鼠标移动让封面轻轻倾斜，触屏与键盘可以用按钮转动。按住鼠标或聚焦封面时停止移动，方便阅读。只在变化时绘制，离开视口或隐藏标签页会暂停。不支持接口、开启省流量或强制颜色，以及 GPU 或加载失败时，保留普通 HTML 纸面版。书签在本次打开实验期间保留，切换纸面与立体版也不会丢失。",
-        "label": "纸张，有了一点厚度",
-        "lede": "把值得留下的小事，装订成册。试着选中一句话，或给这一页夹上书签。",
+        "label": "杂志封面",
+        "lede": "试着选中文字、打开「关于我」，或夹上书签。",
         "coverAria": "fhf’s 杂志，创刊号",
         "edition": "创刊号 / VOL. 01\nNOV. 2026",
         "coverKicker": "随手记 · Field notes",
-        "coverTitle": "把日常，\n装订成册。",
-        "coverBody": "写作、软件，还有它们之间的小事。一路走来，慢慢收集。",
-        "read": "认识主编",
+        "coverTitle": "写作、软件\n和日常。",
+        "coverBody": "fhf 的文章、自研软件和动效实验。",
+        "read": "关于我",
         "save": "夹书签",
         "saved": "已夹书签",
-        "stageNote": "fhf’s / 纸上收藏",
-        "live": "立体版 · 文字可以选择",
-        "fallback": "纸面版 · 文字可以选择",
+        "stageNote": "fhf’s / 杂志封面",
+        "live": "立体版 · 可选中文字",
+        "fallback": "平面版 · 可选中文字",
         "turnAria": "转动杂志",
         "turnLeft": "向左转",
         "turnRight": "向右转",
         "reset": "归位",
-        "flatView": "平面阅读",
-        "spatialView": "返回立体",
-        "liveHint": "移动鼠标或用按钮转动封面。选中文字、夹上书签，也可以打开主编的页面。",
-        "flatHint": "选中文字、夹上书签，或认识主编。纸面版使用普通 HTML，照常阅读。"
+        "flatView": "切换平面版",
+        "spatialView": "切换立体版",
+        "liveHint": "移动鼠标或用按钮转动封面。选中文字或聚焦链接时，封面会停住。",
+        "flatHint": "平面版也能选中文字、打开链接和夹书签。刷新或离开本页后，书签会清除。"
       },
       "hello": {
         "name": "Hello 手写动画",
@@ -792,7 +792,7 @@
     "localTimeAria": "上海当地时间",
     "stickerHint": "撕开看看",
     "stickerAria": "撕开看看：一张可以撕开的贴纸，下面藏着邮箱",
-    "stickerFallback": "邮箱稍后贴上 :)"
+    "stickerFallback": "暂未提供邮箱"
   },
   "common": {
     "localeSwitch": "English",
@@ -811,7 +811,7 @@
   "error": {
     "kicker": "出错了",
     "title": "页面加载失败",
-    "description": "服务器出了问题。请再试一次，不行的话过一会儿再来。",
+    "description": "请再试一次，或返回首页。",
     "retry": "再试一次",
     "backHome": "回首页"
   },
@@ -832,11 +832,11 @@
     "inputAria": "搜索内容",
     "placeholder": "搜文章、说说、实验、页面……",
     "resultsAria": "搜索结果",
-    "suggestions": "推荐",
-    "loading": "正在载入……",
-    "error": "搜索内容暂时没能载入，请重试。",
-    "retry": "重新载入",
-    "empty": "没有找到「{query}」。",
+    "suggestions": "页面目录",
+    "loading": "正在加载搜索内容……",
+    "error": "搜索内容加载失败，请重试。",
+    "retry": "重新加载",
+    "empty": "没有找到「{query}」，试试更短的关键词。",
     "hint": "↑ ↓ 选择 · Enter 打开 · Esc 关闭",
     "kinds": {
       "page": "页面",
