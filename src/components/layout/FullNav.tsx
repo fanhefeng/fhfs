@@ -331,7 +331,7 @@ export function FullNav({ links, open, onClose, triggerRef }: FullNavProps) {
         <button
           type="button"
           onClick={onClose}
-          className="liquid-chip absolute left-1/2 top-6 z-10 -translate-x-1/2 rounded-chip px-4 py-2 font-mono text-meta uppercase tracking-meta text-fg-secondary opacity-0 focus-visible:opacity-100"
+          className="ui-button ui-button-secondary absolute left-1/2 top-6 z-10 -translate-x-1/2 opacity-0 focus-visible:opacity-100"
         >
           {t("close")}
         </button>
@@ -372,7 +372,7 @@ export function FullNav({ links, open, onClose, triggerRef }: FullNavProps) {
                   }}
                   className="fn-item group flex min-h-11 w-full items-baseline gap-4 py-1"
                 >
-                  <span className="font-mono text-[11px] tracking-meta text-fg-tertiary">
+                  <span className="font-mono text-meta tracking-meta text-fg-tertiary">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span

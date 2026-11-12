@@ -171,7 +171,7 @@ export function Select({
     return (
       <div
         id={id}
-        className={`${fieldSkin} flex min-h-12 w-full cursor-not-allowed items-center bg-surface px-3.5 py-2.5 text-body text-fg-tertiary hover:border-line`}
+        className="flex min-h-11 w-full min-w-0 items-center rounded-chip border border-line bg-surface px-3 py-2 text-body text-fg-tertiary [overflow-wrap:anywhere]"
       >
         {selected?.label ?? value}
       </div>
@@ -198,27 +198,12 @@ export function Select({
           open ? setOpen(false) : openAt(options.findIndex((o) => o.value === value))
         }
         onKeyDown={onKeyDown}
-        className={`${fieldSkin} flex min-h-12 w-full items-center gap-3 px-3.5 py-2.5 text-left text-body ${
-          open ? "border-accent" : ""
-        }`}
+        className={`${fieldSkin} flex min-h-11 w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-body aria-expanded:border-accent`}
       >
         <span className="flex-1 truncate">{selected?.label ?? value}</span>
-        <svg
-          viewBox="0 0 12 12"
-          aria-hidden
-          className={`size-3 shrink-0 text-fg-tertiary transition-transform duration-200 ${
-            open ? "-scale-y-100" : ""
-          }`}
-        >
-          <path
-            d="M2.5 4.5 6 8l3.5-3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <span aria-hidden className="shrink-0 text-meta text-fg-secondary">
+          {open ? "收起" : "选择"}
+        </span>
       </button>
 
       {open && (
@@ -227,7 +212,7 @@ export function Select({
           id={listId}
           role="listbox"
           tabIndex={-1}
-          className="absolute z-30 mt-1.5 max-h-72 w-full overflow-auto rounded-card border border-line bg-surface-raised p-1 shadow-lift animate-[admin-pop_140ms_ease-out]"
+          className="absolute z-30 mt-1.5 max-h-72 w-full min-w-36 overflow-auto rounded-card border border-[color:var(--admin-action-border)] bg-surface-raised p-1 shadow-lift motion-safe:animate-[admin-pop_140ms_ease-out]"
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
@@ -243,7 +228,7 @@ export function Select({
                 aria-selected={isSelected}
                 onMouseEnter={() => setActive(index)}
                 onClick={() => commit(index)}
-                className={`flex cursor-pointer items-baseline gap-2.5 rounded-[calc(var(--r-chip)-0.25rem)] px-2.5 py-2 text-body transition-colors ${
+                className={`flex min-h-11 cursor-pointer items-baseline gap-2 rounded-[calc(var(--r-chip)-0.25rem)] px-2.5 py-2 text-body transition-colors ${
                   index === active ? "bg-surface" : ""
                 } ${isSelected ? "text-accent" : "text-fg"}`}
               >

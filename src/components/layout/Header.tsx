@@ -665,7 +665,7 @@ export function Header({ links, menuLinks, allLinks }: Props) {
                         onClick={() => {
                           if (!window.matchMedia(WIDE).matches) setExpanded(false);
                         }}
-                        className={`isl-item relative z-[1] rounded-full px-2.5 py-2 text-[13px] font-medium tracking-[0.01em] transition-colors ${
+                        className={`isl-item relative z-[1] inline-flex min-h-11 items-center rounded-full px-2.5 py-2 text-caption font-medium transition-colors ${
                           active ? "text-accent" : "text-fg-secondary hover:text-fg"
                         }`}
                       >

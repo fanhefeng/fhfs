@@ -60,7 +60,7 @@ function ResumeDocument({ text, copy, links }: Omit<Props, "variant">) {
               key={l.label}
               href={l.href}
               {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="rounded-full border border-line px-5 py-2.5 text-caption font-medium text-fg transition-colors hover:border-accent hover:text-accent"
+              className="ui-button ui-button-secondary"
             >
               {l.label}
             </a>

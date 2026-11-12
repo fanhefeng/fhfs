@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "@/components/ui/Link";
+import { Icon } from "@/components/icons/Icon";
 import { usePathname } from "@/lib/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { logout } from "./login/actions";
 import { SECTION_GROUPS, type SectionCounts } from "./sections";
-import { metaClass } from "./styles";
+import { ghostButtonClass, metaClass } from "./styles";
+import styles from "./admin.module.css";
 
 /**
  * The standing table of contents, grouped the way the front of the site is.
@@ -17,13 +19,7 @@ import { metaClass } from "./styles";
  * a single statement for the whole sidebar (`./counts`), so this costs one
  * round trip per page, not twelve.
  *
- * `next/navigation`'s usePathname, not the i18n one: /admin sits outside the
- * locale tree, so there is no locale to strip and the next-intl router would
- * have nothing to do here.
- *
- * Below `lg` it collapses into a bar with a drawer behind it. The drawer closes
- * on every navigation — soft navigation keeps this component mounted, so
- * without that it would stay open over the page you just asked for.
+ * Below `lg` the same navigation opens in a modal drawer.
  *
  * `counts` is left out by the loading state (`./loading.tsx`), which draws the
  * same sidebar before the page has read anything: no numbers rather than a
@@ -31,39 +27,40 @@ import { metaClass } from "./styles";
  */
 export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
   const pathname = usePathname();
+  const drawer = useRef<HTMLDialogElement>(null);
+  const drawerId = useId();
   const [open, setOpen] = useState(false);
   const signOutAction = useServerFn(logout);
 
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => drawer.current?.close(), [pathname]);
 
-  // The drawer is a layer over the page; the page under it must not scroll,
-  // and Escape closes it — it covers the screen the way a dialog does, and a
-  // layer you can only leave by finding the backdrop is a trap for anyone not
-  // using a mouse.
   useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+    const desktop = window.matchMedia("(min-width: 64rem)");
+    const closeAtDesktop = () => {
+      if (desktop.matches) drawer.current?.close();
     };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+    desktop.addEventListener("change", closeAtDesktop);
+    return () => desktop.removeEventListener("change", closeAtDesktop);
+  }, []);
 
   const current = SECTION_GROUPS.flatMap((group) => group.sections).find(
     (section) => pathname === section.href || pathname.startsWith(`${section.href}/`),
   );
 
   const nav = (
-    <nav className="space-y-6">
+    <nav aria-label="内容板块" className="space-y-4">
+      <Link
+        href="/admin"
+        aria-current={pathname === "/admin" || pathname === "/admin/" ? "page" : undefined}
+        className="flex min-h-11 items-center gap-2.5 rounded-chip px-3 text-caption text-fg-secondary transition-colors hover:bg-surface hover:text-fg aria-[current]:bg-surface aria-[current]:font-semibold aria-[current]:text-fg"
+      >
+        <Icon name="overview" className="size-[18px]" />
+        内容总览
+      </Link>
       {SECTION_GROUPS.map((group) => (
         <div key={group.id}>
           <h2 className={`${metaClass} px-3`}>{group.label}</h2>
-          <ul className="mt-2 space-y-0.5">
+          <ul className="mt-1 space-y-0.5">
             {group.sections.map((section) => {
               const isCurrent = section.href === current?.href;
               return (
@@ -71,18 +68,20 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
                   <Link
                     href={section.href}
                     aria-current={isCurrent ? "page" : undefined}
-                    className={`relative flex min-h-11 items-center gap-3 rounded-chip px-3 text-body transition-colors ${
+                    onClick={(event) => {
+                      if (!event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+                        drawer.current?.close();
+                      }
+                    }}
+                    className={`relative flex min-h-11 items-center gap-2.5 rounded-chip px-3 text-caption transition-colors ${
                       isCurrent
-                        ? "bg-surface text-fg"
+                        ? "bg-surface font-semibold text-fg"
                         : "text-fg-secondary hover:bg-surface/60 hover:text-fg"
                     }`}
                   >
-                    {/* The amber tick that marks where you are. */}
-                    <span
-                      aria-hidden
-                      className={`absolute top-1/2 left-0 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent transition-opacity ${
-                        isCurrent ? "opacity-100" : "opacity-0"
-                      }`}
+                    <Icon
+                      name={section.icon}
+                      className={`size-[18px] ${isCurrent ? "text-accent" : ""}`}
                     />
                     <span className="flex-1 truncate">{section.label}</span>
                     {/* With its unit: a bare "0" beside 站点文案 read as "no copy",
@@ -106,9 +105,10 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
   const brand = (
     <Link
       href="/admin"
-      className="font-mono text-meta uppercase tracking-meta text-fg-tertiary transition-colors hover:text-accent"
+      className="inline-flex items-center gap-2 text-body font-semibold tracking-tight text-fg transition-colors hover:text-accent"
     >
-      fhf<span className="hidden sm:inline"> · admin</span>
+      <Icon name="brand" className="size-6" />
+      fhf<span className="hidden sm:inline"> · 内容管理</span>
     </Link>
   );
 
@@ -116,7 +116,7 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
     <form action={signOutAction}>
       <button
         type="submit"
-        className="min-h-11 px-2 font-mono text-meta uppercase tracking-meta text-fg-tertiary transition-colors hover:text-accent"
+        className="min-h-11 min-w-11 rounded-chip px-2 text-caption text-fg-secondary transition-colors hover:bg-surface hover:text-fg"
       >
         退出
       </button>
@@ -126,36 +126,33 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
   return (
     <>
       {/* ≥lg: the column that is always there. */}
-      <aside className="hidden lg:flex lg:h-dvh lg:sticky lg:top-0 lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-line lg:bg-bg">
+      <aside className="hidden lg:flex lg:h-dvh lg:sticky lg:top-0 lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-line lg:bg-bg">
         <div className="flex items-center justify-between px-6 py-3">
           {brand}
           {signOut}
         </div>
         <div className="flex-1 overflow-y-auto px-3 pb-6">{nav}</div>
         <p className="border-t border-line px-6 py-4 text-caption text-fg-tertiary">
-          保存即生效，不用重新部署。
+          保存后更新，前台最多延迟 30 秒。
         </p>
       </aside>
 
       {/* <lg: a bar, and the same nav behind it. */}
-      <div className="sticky top-0 z-40 flex items-center gap-3 border-b border-line bg-bg px-4 py-2 lg:hidden">
+      <div className="sticky top-0 z-40 flex items-center gap-2 border-b border-line bg-bg px-4 py-1.5 lg:hidden">
         <button
           type="button"
-          onClick={() => setOpen((value) => !value)}
+          onClick={(event) => {
+            event.currentTarget.focus({ preventScroll: true });
+            drawer.current?.showModal();
+            setOpen(true);
+          }}
+          aria-haspopup="dialog"
           aria-expanded={open}
-          aria-controls="admin-drawer"
-          className="flex size-11 items-center justify-center rounded-chip border border-line text-fg-secondary transition-colors hover:text-fg"
+          aria-controls={drawerId}
+          className={ghostButtonClass}
         >
-          <span className="sr-only">板块</span>
-          <svg viewBox="0 0 16 16" aria-hidden className="size-4">
-            <path
-              d={open ? "M3.5 3.5l9 9m0-9l-9 9" : "M2.5 4h11M2.5 8h11M2.5 12h11"}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <Icon name="menu" className="size-4" />
+          板块
         </button>
         {brand}
         <span className="text-caption text-fg-tertiary">/</span>
@@ -165,22 +162,33 @@ export function AdminSidebar({ counts }: { counts?: SectionCounts }) {
         {signOut}
       </div>
 
-      {open && (
-        <div className="fixed inset-0 z-30 lg:hidden">
-          <button
-            type="button"
-            aria-label="收起板块"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-bg/70 backdrop-blur-sm"
-          />
-          <div
-            id="admin-drawer"
-            className="absolute inset-x-0 top-[61px] max-h-[calc(100dvh-61px)] overflow-y-auto border-b border-line bg-bg px-3 py-6 shadow-lift animate-[admin-pop_160ms_ease-out]"
-          >
-            {nav}
+      {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- Escape and the close button already provide keyboard dismissal. */}
+      <dialog
+        ref={drawer}
+        id={drawerId}
+        aria-labelledby={`${drawerId}-title`}
+        onClose={() => setOpen(Boolean(drawer.current?.open))}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) drawer.current?.close();
+        }}
+        className={`${styles.drawer} fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-transparent p-0 text-fg backdrop:bg-black/40`}
+      >
+        <div className="flex max-h-[85dvh] flex-col rounded-b-card border-b border-line bg-bg shadow-lift">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-2">
+            <h2 id={`${drawerId}-title`} className="text-body font-semibold">
+              内容板块
+            </h2>
+            <button
+              type="button"
+              className={ghostButtonClass}
+              onClick={() => drawer.current?.close()}
+            >
+              关闭
+            </button>
           </div>
+          <div className="overflow-y-auto overscroll-contain px-3 py-4">{nav}</div>
         </div>
-      )}
+      </dialog>
     </>
   );
 }

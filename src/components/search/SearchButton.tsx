@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icons/Icon";
 import { useTranslations } from "use-intl";
 import { openSearch } from "@/lib/client/search";
 
@@ -12,20 +13,9 @@ export function SearchButton({ className = "" }: { className?: string }) {
       onClick={openSearch}
       aria-label={t("buttonAria")}
       title={t("buttonTitle")}
-      className={`grid size-9 cursor-pointer place-items-center rounded-full text-fg-secondary transition-colors hover:text-fg ${className}`}
+      className={`ui-icon-action cursor-pointer ${className}`}
     >
-      <svg
-        viewBox="0 0 24 24"
-        className="size-[17px]"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        aria-hidden="true"
-      >
-        <circle cx="10.5" cy="10.5" r="6" />
-        <line x1="15" y1="15" x2="20" y2="20" />
-      </svg>
+      <Icon name="search" className="size-[18px]" />
     </button>
   );
 }

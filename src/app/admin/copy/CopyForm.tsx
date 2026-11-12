@@ -1,9 +1,17 @@
 "use client";
 
+import { Icon } from "@/components/icons/Icon";
 import { useState } from "react";
 import type { CopyEntry } from "@/lib/copy";
 import { saveCopy } from "../actions/copy";
-import { cardClass, fieldSkin, hintClass, inputClass, metaClass } from "../styles";
+import {
+  cardClass,
+  choiceButtonClass,
+  fieldSkin,
+  hintClass,
+  inputClass,
+  metaClass,
+} from "../styles";
 import { SaveControls } from "../ui/SaveControls";
 import { useSaveAction } from "../ui/useSaveAction";
 
@@ -42,27 +50,18 @@ export function CopyForm({ namespace, entries }: { namespace: string; entries: C
       <input type="hidden" name="namespace" value={namespace} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 basis-full sm:max-w-xs sm:flex-1 sm:basis-auto">
-          <svg
-            viewBox="0 0 16 16"
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-fg-tertiary"
-          >
-            <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-            <path
-              d="m10.5 10.5 3 3"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-          </svg>
+        <div className="relative min-w-0 flex-1 basis-48 sm:max-w-xs">
+          <Icon
+            name="search"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-tertiary"
+          />
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="按 key 或文案找…"
             aria-label="筛选文案"
-            className={`${fieldSkin} h-12 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
+            className={`${fieldSkin} h-11 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
           />
         </div>
 
@@ -95,7 +94,7 @@ export function CopyForm({ namespace, entries }: { namespace: string; entries: C
 
       <div className={`${cardClass} mt-4 divide-y divide-line`}>
         {entries.map((entry) => (
-          <div key={entry.key} className={`p-5 sm:p-6 ${matches(entry) ? "" : "hidden"}`}>
+          <div key={entry.key} className="p-4 sm:p-5" hidden={!matches(entry)}>
             <p className="flex flex-wrap items-baseline gap-2">
               <span className="font-mono text-meta text-fg-tertiary">
                 {entry.key.slice(namespace.length + 1)}
@@ -151,16 +150,7 @@ function Only({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onPress}
-      aria-pressed={active}
-      className={`min-h-11 rounded-chip border px-3 py-2 text-caption transition-colors ${
-        active
-          ? "border-accent bg-accent/10 text-accent"
-          : "border-line text-fg-tertiary hover:text-fg"
-      }`}
-    >
+    <button type="button" onClick={onPress} aria-pressed={active} className={choiceButtonClass}>
       {children}
     </button>
   );

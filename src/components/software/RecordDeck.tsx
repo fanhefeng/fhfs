@@ -336,7 +336,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
           aria-pressed={playing}
           aria-label={t("spinAria")}
           onClick={toggle}
-          className="absolute bottom-[5%] right-[4.5%] z-30 flex min-h-11 items-center gap-2 rounded-full bg-white/[0.06] px-3 font-mono text-[0.625rem] uppercase tracking-[0.16em] text-white/65 ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/10 hover:text-white/85"
+          className="absolute bottom-[5%] right-[4.5%] z-30 flex min-h-11 items-center gap-2 rounded-full bg-white/[0.06] px-3 font-mono text-meta uppercase tracking-meta text-white/65 ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/10 hover:text-white/85"
         >
           <span
             aria-hidden
@@ -378,7 +378,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${t(app.cta)} — ${app.name}`}
-            className="inline-flex min-h-11 items-center rounded-full bg-fg px-5 text-caption font-medium text-bg transition-opacity duration-200 hover:opacity-85"
+            className="ui-button ui-button-primary"
           >
             {t(app.cta)}
           </a>
@@ -444,7 +444,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
         ) : null}
         {app.release?.downloads.length ? (
           <details className="border-t border-line pt-3 text-caption text-fg-secondary">
-            <summary className="w-fit cursor-pointer py-1 hover:text-accent">
+            <summary className="flex min-h-11 w-fit list-none items-center underline decoration-line underline-offset-4 hover:text-accent focus-visible:text-accent [&::-webkit-details-marker]:hidden">
               {t("downloads", { count: app.release.downloads.length })}
             </summary>
             <ul className="mt-2 space-y-1">

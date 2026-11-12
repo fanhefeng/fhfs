@@ -87,9 +87,80 @@ try {
       await page.close();
     }
   }
+
+  for (const [locale, query, prefix, endings] of [
+    [
+      "zh",
+      "窄屏布局",
+      "窄屏布局中如何让两个开头相同的搜索结果保持可辨认",
+      ["焦点管理", "文字排版"],
+    ],
+    [
+      "en",
+      "narrow screens",
+      "A practical guide to accessible layouts on narrow screens",
+      ["Focus management", "Text wrapping"],
+    ],
+  ]) {
+    phase = `${locale} search title fit at 320px`;
+    const page = await browser.newPage({
+      viewport: { width: 320, height: 740 },
+      hasTouch: locale === "zh",
+      isMobile: locale === "zh",
+      reducedMotion: "reduce",
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.addInitScript(() => sessionStorage.setItem("fhfs-overture-seen", "1"));
+    const titles = endings.map((ending) => `${prefix} · ${ending}`);
+    await page.route(`**/${locale}/search.json`, (route) =>
+      route.fulfill({
+        json: titles.map((title, i) => ({
+          title,
+          kind: "post",
+          text: "",
+          meta: "2026-11-10",
+          href: i === 0 ? "/blog" : "/resume",
+        })),
+      }),
+    );
+    const response = await page.goto(new URL(`/${locale}/about`, base).href, {
+      waitUntil: "networkidle",
+    });
+    assert.equal(response.status(), 200);
+    await page.keyboard.press("Control+k");
+    const dialog = page.getByRole("dialog");
+    const input = dialog.getByRole("combobox");
+    await expect(input).toBeFocused();
+    await input.fill(query);
+    await page.evaluate(() => document.fonts.ready);
+    for (const title of titles) {
+      const text = dialog.getByText(title, { exact: true });
+      await expect(text).toBeVisible();
+      assert.equal(
+        await text.evaluate(
+          (el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight,
+        ),
+        false,
+        title,
+      );
+    }
+
+    const second = dialog.getByRole("option").nth(1);
+    if (locale === "zh") await second.tap();
+    else {
+      await input.press("ArrowDown");
+      await expect(second).toHaveAttribute("aria-selected", "true");
+      await input.press("Enter");
+    }
+    await expect(page).toHaveURL(new RegExp(`/${locale}/resume/?$`));
+    await expect(dialog).toBeHidden();
+    await expect(page.locator("html")).not.toHaveCSS("overflow-y", "hidden");
+    await page.close();
+  }
+
   assert.deepEqual(errors, []);
   console.log(
-    "Verified bilingual mouse/touch dismissal, keyboard focus and Tab cycle, and scroll unlock.",
+    "Verified bilingual navigation and search, unclipped 320px search titles, keyboard and touch selection, and scroll unlock.",
   );
 } catch (error) {
   console.error(JSON.stringify({ phase, errors }));

@@ -65,7 +65,7 @@ export function AdminChrome({
 
       <main className="min-w-0 flex-1">
         <div className={pageWidthClass}>
-          <header className="border-b border-line pb-6">
+          <header className="border-b border-line pb-4 sm:pb-5">
             {/* The dashboard is "内容" itself — a crumb pointing at the page you
                 are already on is furniture, so it only appears below it. */}
             <p className={`${metaClass} ${section ? "" : "hidden"}`}>
@@ -94,9 +94,11 @@ export function AdminChrome({
               )}
             </p>
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
-              <h1 className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 text-title">
-                {title}
+            <div
+              className={`${section ? "mt-2 " : ""}flex flex-wrap items-center justify-between gap-x-4 gap-y-2`}
+            >
+              <h1 className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-title">
+                <span className="min-w-0 [overflow-wrap:anywhere]">{title}</span>
                 {count !== undefined && meta && (
                   <span className="font-mono text-meta text-fg-tertiary tabular-nums">
                     {count} {meta.unit}
@@ -104,7 +106,8 @@ export function AdminChrome({
                 )}
               </h1>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {action}
                 {viewHref && (
                   <a href={viewHref} target="_blank" rel="noreferrer" className={ghostButtonClass}>
                     看前台
@@ -116,18 +119,17 @@ export function AdminChrome({
                       {tool.label}
                     </Link>
                   ))}
-                {action}
               </div>
             </div>
 
             {(blurb ?? meta?.blurb) && (
-              <p className="mt-3 max-w-[62ch] text-caption text-fg-secondary">
+              <p className="mt-2 max-w-[62ch] text-caption text-fg-secondary">
                 {blurb ?? meta?.blurb}
               </p>
             )}
           </header>
 
-          <div className="mt-8">{children}</div>
+          <div className="mt-5 sm:mt-6">{children}</div>
         </div>
       </main>
     </div>

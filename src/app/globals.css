@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./rounded.css";
+@import "../components/ui/controls.css";
 
 /* ---------------------------------------------------------------------------
  * Gallery-editorial design system (Tailwind 4, CSS-first).
@@ -29,17 +30,17 @@
    * it a closed gallery keeps a white scrollbar down its side. */
   color-scheme: light;
   --bg: #faf9f6;
-  --surface: #f2f0ea;
+  --surface: #f1eee7;
   --surface-raised: #ffffff;
-  --fg: #1a1a1a;
+  --fg: #292823;
   /* Both tiers clear 4.5:1 on paper: tertiary carries dates, counts and
    * captions at 11-12px, so hierarchy comes from size, not from fading out. */
-  --fg-secondary: rgba(26, 26, 26, 0.72);
-  --fg-tertiary: rgba(26, 26, 26, 0.62);
+  --fg-secondary: #6c685f;
+  --fg-tertiary: #746e64;
   /* The one accent: amber. ≥4.5:1 on paper, used for link underlines,
    * current-state markers and the lit lamp. */
-  --accent: #b45309;
-  --line: rgba(26, 26, 26, 0.08);
+  --accent: #aa5b1d;
+  --line: #e3dfd5;
 
   /* Aurora colors exist in both themes (glass needs something to refract);
    * only the layer opacity changes per theme. */
@@ -97,16 +98,16 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0e0e11;
-  --surface: #141417;
-  --surface-raised: #1a1a1f;
-  --fg: rgba(255, 255, 255, 0.92);
-  --fg-secondary: rgba(255, 255, 255, 0.68);
-  --fg-tertiary: rgba(255, 255, 255, 0.47);
+  --bg: #141413;
+  --surface: #292925;
+  --surface-raised: #1d1d1b;
+  --fg: #eeeae0;
+  --fg-secondary: #bcb8ad;
+  --fg-tertiary: #a6a296;
   /* The same amber, opened up two stops: #b45309 only reaches 3.8:1 against
    * #0e0e11, which fails for the link and current-state text it carries. */
-  --accent: #d97706;
-  --line: rgba(255, 255, 255, 0.1);
+  --accent: #e8ad68;
+  --line: #383832;
 
   /* The lamp is brighter after closing time. */
   --aurora-opacity: 0.17;
@@ -182,15 +183,15 @@
   --text-heading--line-height: 1.35;
   --text-heading--letter-spacing: -0.01em;
   --text-heading--font-weight: 600;
-  --text-body: 1.0625rem;
+  --text-body: 1rem;
   --text-body--line-height: 1.7;
-  --text-caption: 0.8125rem;
+  --text-caption: 0.875rem;
   --text-caption--line-height: 1.55;
   /* Mono meta line: 11–12px uppercase, wide tracking. */
   --text-meta: 0.75rem;
   --text-meta--line-height: 1.5;
-  --text-meta--letter-spacing: 0.08em;
-  --tracking-meta: 0.08em;
+  --text-meta--letter-spacing: 0.04em;
+  --tracking-meta: 0.04em;
 
   --radius-chip: var(--r-chip);
   --radius-card: var(--r-card);
@@ -270,6 +271,12 @@ body {
  * `transform`, so hover/entrance tweens and the press snap compose instead
  * of clobbering each other. (No effect on non-replaced inline links.) */
 @layer base {
+  :where(button, [role="button"], summary, select, input[type="checkbox"], input[type="radio"]) {
+    cursor: pointer;
+  }
+  :where(a, button, [role="button"], select, input):where(:disabled, [aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
   a,
   button,
   [role="button"] {
@@ -279,7 +286,7 @@ body {
   :where(a, button, [role="button"]) {
     transition: scale 100ms ease-out;
   }
-  :where(a, button, [role="button"]):active {
+  :where(a, button, [role="button"]):active:not(:where(:disabled, [aria-disabled="true"])) {
     scale: 0.97;
   }
   /* A link inside a drawing scales about the drawing's corner, not its own
@@ -576,6 +583,7 @@ body {
   cursor: auto;
 }
 .prose-editorial :is(h1, h2, h3, h4) {
+  text-wrap: balance;
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;

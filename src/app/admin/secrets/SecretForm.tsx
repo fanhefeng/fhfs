@@ -37,9 +37,8 @@ export function SecretForm({
       isNew={isNew}
       imported={imported}
       previewKind="secret"
-      headCols="md:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem]"
       head={
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <span id={kindLabel} className={labelClass}>
             类型
           </span>
@@ -54,7 +53,7 @@ export function SecretForm({
           />
         </div>
       }
-      extrasCols="sm:grid-cols-[1fr_8rem_auto]"
+      extrasCols="sm:grid-cols-[minmax(0,1fr)_8rem_auto]"
       extras={
         <>
           <MediaField

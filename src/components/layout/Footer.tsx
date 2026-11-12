@@ -62,7 +62,7 @@ export function Footer({ items }: { items: NavLink[] }) {
   const time = useLocalClock();
   const slogan = tHome("slogan");
 
-  const kicker = "font-mono text-[11px] uppercase tracking-meta text-fg-tertiary";
+  const kicker = "font-mono text-meta uppercase tracking-meta text-fg-tertiary";
   const row =
     "hit-ext inline-block py-1 decoration-line underline-offset-4 transition-colors hover:text-fg hover:underline focus-visible:text-fg focus-visible:underline";
   // The third copy of the nav, and the one that shows the whole table. Ink
@@ -72,7 +72,7 @@ export function Footer({ items }: { items: NavLink[] }) {
 
   return (
     <footer className="relative mt-24 border-t border-line">
-      <div className="mx-auto w-full max-w-[720px] px-6 pt-10 pb-8 text-[13px]">
+      <div className="mx-auto w-full max-w-[720px] px-6 pt-10 pb-8 text-caption">
         {/* The same badge as the island's — the name in the sign's ring — and
             the slogan beside it, the way a back cover repeats the masthead.
             The sticker takes the corner; on a phone it drops to a line of
@@ -171,7 +171,7 @@ export function Footer({ items }: { items: NavLink[] }) {
         {/* The bottom line: who, what time it is where he is, and the light
             switch. Nothing ornamental — the slogan up top is the footer's one
             line of the author's own. */}
-        <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-5 font-mono text-[11px] text-fg-tertiary">
+        <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-5 font-mono text-meta text-fg-tertiary">
           {/* The provider's initial instant and the site's time zone agree
               across SSR and hydration, including either side of New Year. */}
           <span>

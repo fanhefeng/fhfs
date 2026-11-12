@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { NAV_GROUPS, type NavGroup } from "@/lib/nav";
 import { saveNavItems } from "../actions/nav";
-import { cardClass, ghostButtonClass, inputClass, labelClass, metaClass } from "../styles";
+import {
+  cardClass,
+  ghostButtonClass,
+  iconButtonClass,
+  inputClass,
+  labelClass,
+  metaClass,
+} from "../styles";
 import { SaveControls } from "../ui/SaveControls";
 import { Select } from "../ui/Select";
 import { useSaveAction } from "../ui/useSaveAction";
@@ -111,8 +118,8 @@ export function NavForm({ items }: { items: NavRow[] }) {
       <div className="space-y-4">
         {rows.map((row, i) => (
           <div key={row.id} className={`${cardClass} p-4 sm:p-5`}>
-            <div className="mb-4 flex items-baseline justify-between gap-3">
-              <h3 className={metaClass}>{rowName(row)}</h3>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className={`${metaClass} min-w-0 [overflow-wrap:anywhere]`}>{rowName(row)}</h3>
               <span className="flex items-center gap-1 font-mono text-meta text-fg-tertiary">
                 <button
                   type="button"
@@ -121,7 +128,7 @@ export function NavForm({ items }: { items: NavRow[] }) {
                   data-move="-1"
                   data-row={row.id}
                   aria-label={`上移 ${rowName(row)}`}
-                  className="rounded-chip px-2 py-1 transition-colors hover:text-accent disabled:opacity-30 disabled:hover:text-fg-tertiary"
+                  className={iconButtonClass}
                 >
                   ↑
                 </button>
@@ -132,7 +139,7 @@ export function NavForm({ items }: { items: NavRow[] }) {
                   data-move="1"
                   data-row={row.id}
                   aria-label={`下移 ${rowName(row)}`}
-                  className="rounded-chip px-2 py-1 transition-colors hover:text-accent disabled:opacity-30 disabled:hover:text-fg-tertiary"
+                  className={iconButtonClass}
                 >
                   ↓
                 </button>
@@ -140,7 +147,7 @@ export function NavForm({ items }: { items: NavRow[] }) {
                   type="button"
                   onClick={() => remove(row.id)}
                   aria-label={`删除 ${rowName(row)}`}
-                  className="rounded-chip px-2 py-1 transition-colors hover:text-accent"
+                  className={`${iconButtonClass} enabled:hover:text-[color:var(--admin-danger)]`}
                 >
                   ×
                 </button>

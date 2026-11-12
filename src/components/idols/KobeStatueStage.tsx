@@ -172,7 +172,7 @@ export function KobeStatueStage({
               type="button"
               onClick={() => turn(-STEP)}
               aria-label={turnLeft}
-              className="grid size-11 place-items-center rounded-full border border-line text-fg-secondary transition-colors hover:border-accent hover:text-accent"
+              className="ui-button ui-button-secondary ui-button-icon"
             >
               <span aria-hidden="true">←</span>
             </button>
@@ -180,7 +180,7 @@ export function KobeStatueStage({
               type="button"
               onClick={() => turn(STEP)}
               aria-label={turnRight}
-              className="grid size-11 place-items-center rounded-full border border-line text-fg-secondary transition-colors hover:border-accent hover:text-accent"
+              className="ui-button ui-button-secondary ui-button-icon"
             >
               <span aria-hidden="true">→</span>
             </button>

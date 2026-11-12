@@ -141,12 +141,12 @@ export function SegmentedFilter({ options, value, onChange, ariaLabel, className
       role="group"
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
-      className={`liquid-chip relative inline-flex max-w-full flex-nowrap overflow-x-auto rounded-full p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ""}`}
+      className={`ui-segment relative inline-flex max-w-full flex-nowrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className ?? ""}`}
     >
       <span
         ref={pillRef}
         aria-hidden
-        className="pointer-events-none absolute left-0 top-1 bottom-1 rounded-full bg-surface-raised shadow-[0_1px_3px_rgba(120,80,40,0.18)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.45)]"
+        className="ui-segment-surface pointer-events-none absolute left-0 top-1 bottom-1"
       />
       {options.map((o) => {
         const active = o.value === value;
@@ -157,7 +157,7 @@ export function SegmentedFilter({ options, value, onChange, ariaLabel, className
             data-seg={o.value}
             aria-pressed={active}
             onClick={() => onChange(o.value)}
-            className={`relative z-10 min-h-11 shrink-0 cursor-pointer whitespace-nowrap rounded-full px-4 font-mono text-meta uppercase tracking-meta transition-colors duration-200 ${
+            className={`ui-segment-option relative z-10 shrink-0 cursor-pointer whitespace-nowrap transition-colors duration-200 ${
               active ? "text-fg" : "text-fg-secondary hover:text-fg"
             }`}
           >

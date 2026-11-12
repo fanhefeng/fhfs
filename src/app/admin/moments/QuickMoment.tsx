@@ -1,8 +1,10 @@
 "use client";
 
+import { useId } from "react";
+import { Textarea } from "@/components/ui/Field";
 import { postMoment } from "../actions/moments";
 import { SaveControls } from "../ui/SaveControls";
-import { cardClass, hintClass, textareaClass } from "../styles";
+import { cardClass, hintClass, labelClass } from "../styles";
 import { useSaveAction } from "../ui/useSaveAction";
 import { MediaField } from "../ui/MediaField";
 
@@ -16,17 +18,13 @@ import { MediaField } from "../ui/MediaField";
  */
 export function QuickMoment() {
   const { state, pending, formProps } = useSaveAction(postMoment);
+  const contentId = useId();
 
   return (
     <form {...formProps} className={`${cardClass} space-y-5 p-4 sm:p-6`}>
-      <label className="block">
-        <span className="sr-only">说说正文</span>
-        <textarea
-          name="content"
-          rows={4}
-          placeholder="此刻在想什么？"
-          className={`${textareaClass} text-body`}
-        />
+      <label htmlFor={contentId} className="block space-y-2">
+        <span className={labelClass}>说说正文</span>
+        <Textarea id={contentId} name="content" rows={4} placeholder="此刻在想什么？" />
       </label>
       <MediaField
         name="media"

@@ -1,8 +1,10 @@
 "use client";
 
+import { Icon } from "@/components/icons/Icon";
+import { Button } from "@/components/ui/Button";
+import { Feedback } from "@/components/ui/Feedback";
 import { useEffect, useRef, useState } from "react";
 import type { ActionState } from "../actions/shared";
-import { buttonClass, ghostButtonClass } from "../styles";
 
 /**
  * The submit button and the error/saved lines every admin form ends with.
@@ -60,59 +62,38 @@ export function SaveControls({
     return () => clearTimeout(timer);
   }, [state]);
 
+  useEffect(() => {
+    const form = controls.current?.closest("form");
+    const edited = () => setSaved(false);
+    form?.addEventListener("input", edited);
+    form?.addEventListener("change", edited);
+    return () => {
+      form?.removeEventListener("input", edited);
+      form?.removeEventListener("change", edited);
+    };
+  }, []);
+
   const messages = (
     <>
       {cancelable && (
-        <button
-          type="reset"
-          disabled={pending}
-          className={`${ghostButtonClass} disabled:pointer-events-none disabled:opacity-45`}
-        >
+        <Button type="reset" disabled={pending}>
           取消本次编辑
-        </button>
+        </Button>
       )}
       {!pending && state.error && (
-        <p
-          role="alert"
-          className="flex min-w-0 max-w-full items-center gap-2 text-caption text-accent [overflow-wrap:anywhere]"
-        >
-          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
+        <Feedback tone="error" className="min-w-0 basis-full">
           {state.error}
-        </p>
+        </Feedback>
       )}
-      {!pending && saved && (
-        <p
-          role="status"
-          className="flex min-w-0 max-w-full items-center gap-2 text-caption text-fg-secondary transition-opacity duration-500"
-        >
-          <svg viewBox="0 0 12 12" aria-hidden className="size-3 shrink-0 text-accent">
-            <path
-              d="M2.5 6.5 5 9l4.5-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          已保存，前台已刷新。
-        </p>
-      )}
+      {!pending && saved && <Feedback tone="success">已保存。前台最多 30 秒更新。</Feedback>}
     </>
   );
 
   const button = (
-    <button type="submit" disabled={pending} className={buttonClass}>
-      {pending && (
-        <span
-          aria-hidden
-          // Stops under reduce-motion, and closes its gap so it rests as a
-          // whole ring; "保存中…" beside it is the part that carries meaning.
-          className="size-3 animate-spin rounded-full border-[1.5px] border-current border-t-transparent motion-reduce:animate-none motion-reduce:border-t-current"
-        />
-      )}
+    <Button type="submit" tone="primary" busy={pending}>
+      {!pending && <Icon name={label === "发布" ? "moments" : "save"} className="size-4" />}
       {pending ? "保存中…" : label}
-    </button>
+    </Button>
   );
 
   if (sticky) {
@@ -120,7 +101,7 @@ export function SaveControls({
       <div
         ref={controls}
         data-sticky-save=""
-        className="sticky bottom-0 z-20 -mx-4 mt-6 flex flex-wrap items-center gap-3 border-t border-line bg-bg px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10"
+        className="sticky bottom-0 z-20 -mx-4 mt-5 flex flex-wrap items-center gap-2 border-t border-line bg-bg px-4 pt-2.5 pb-[max(.625rem,env(safe-area-inset-bottom))] sm:-mx-8 sm:gap-3 sm:px-8 lg:-mx-10 lg:px-10"
       >
         {button}
         {messages}
@@ -128,7 +109,10 @@ export function SaveControls({
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
+    <div
+      ref={controls}
+      className="flex flex-wrap items-center gap-2 border-t border-line pt-4 sm:gap-3"
+    >
       {button}
       {messages}
     </div>

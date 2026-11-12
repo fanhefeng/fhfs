@@ -3,7 +3,7 @@
 import type { ResumeProject } from "@/db/schema";
 import { formatProjects } from "@/lib/resume";
 import { deleteResumeExperience, saveResumeExperience } from "../actions/resume";
-import { inputClass, labelClass, metaClass, monoClass, textareaClass } from "../styles";
+import { inputClass, labelClass, monoClass, summaryClass, textareaClass } from "../styles";
 import { DeleteRow } from "../ui/DeleteRow";
 import { SaveControls } from "../ui/SaveControls";
 import { useFieldErrors } from "../ui/fieldErrors";
@@ -106,12 +106,15 @@ export function ExperienceForm({
           pair(field, LINE_FIELDS[field], experience[field]),
         )}
 
-        <details open={detailed || isNew} className="space-y-5">
-          <summary className={`${metaClass} cursor-pointer border-b border-line pb-2`}>
+        <details open={detailed || isNew} className="group/fields space-y-4">
+          <summary className={`${labelClass} ${summaryClass}`}>
             说明、链接、要点与项目（可空）
-            {!detailed && !isNew && (
-              <span className="ml-2 text-fg-tertiary normal-case">都空着 · 点开填写</span>
-            )}
+            <span aria-hidden className="font-normal group-open/fields:hidden">
+              展开填写
+            </span>
+            <span aria-hidden className="hidden font-normal group-open/fields:inline">
+              收起
+            </span>
           </summary>
 
           {pair("summary", "一句话说明（显示在职位下面）", experience.summary)}

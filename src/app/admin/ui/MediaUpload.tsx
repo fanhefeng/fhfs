@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/icons/Icon";
+import { Button } from "@/components/ui/Button";
+import { Feedback } from "@/components/ui/Feedback";
 import {
   inspectMedia,
   sendMedia,
@@ -8,7 +11,7 @@ import {
   type UploadedMedia,
 } from "@/lib/client/mediaUpload";
 import { uploadFile } from "@/lib/mediaUploads";
-import { ghostButtonClass, hintClass } from "../styles";
+import { hintClass } from "../styles";
 import { MediaPreview } from "./MediaPreview";
 
 type Item = {
@@ -162,6 +165,7 @@ export function MediaUpload({
         ref={input}
         type="file"
         className="sr-only"
+        tabIndex={-1}
         aria-label={
           kind === "image"
             ? "选择上传的图片"
@@ -177,22 +181,19 @@ export function MediaUpload({
           void add(files);
         }}
       />
-      <button type="button" onClick={() => input.current?.click()} className={ghostButtonClass}>
-        ＋ 上传{kind === "image" ? "图片" : kind === "audio" ? "音频" : "图片 / 音频 / 视频"}
-      </button>
+      <Button onClick={() => input.current?.click()}>
+        <Icon name="upload" className="size-4" />
+        上传{kind === "image" ? "图片" : kind === "audio" ? "音频" : "图片 / 音频 / 视频"}
+      </Button>
       <p className={hintClass}>
         单个文件最多 25 MiB。取消编辑会清理未保存的上传；异常中断的文件 24
         小时后自动清理。草稿会保留。
       </p>
-      {error && (
-        <p role="alert" className="text-caption text-accent">
-          {error}
-        </p>
-      )}
+      {error && <Feedback tone="error">{error}</Feedback>}
       {items.map((item) => (
         <div key={item.id} className="space-y-2 rounded-chip border border-line p-3">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption">
-            <span className="min-w-0 break-all">
+            <span role="status" className="min-w-0 break-all">
               {item.name} · {item.busy ? "上传中…" : item.error ? "未完成" : "已上传，等待保存"}
             </span>
             <button
@@ -208,11 +209,7 @@ export function MediaUpload({
           {(showReadyPreview || item.busy || item.error) && (
             <MediaPreview media={{ kind: item.kind, src: item.local, local: true }} />
           )}
-          {item.error && (
-            <p role="alert" className="text-caption text-accent">
-              {item.error}
-            </p>
-          )}
+          {item.error && <Feedback tone="error">{item.error}</Feedback>}
         </div>
       ))}
     </div>

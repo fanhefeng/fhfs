@@ -834,7 +834,8 @@
     "resultsAria": "搜索结果",
     "suggestions": "推荐",
     "loading": "正在载入……",
-    "error": "索引没能载入，关掉再打开试试。",
+    "error": "搜索内容暂时没能载入，请重试。",
+    "retry": "重新载入",
     "empty": "没有找到「{query}」。",
     "hint": "↑ ↓ 选择 · Enter 打开 · Esc 关闭",
     "kinds": {

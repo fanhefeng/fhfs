@@ -1,9 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Icon } from "@/components/icons/Icon";
+import { useId, useMemo, useState } from "react";
 import type { ActionState } from "../actions/shared";
 import { RecordForm, type Field, type RecordData } from "./RecordForm";
-import { cardClass, fieldSkin, ghostButtonClass, hintClass, metaClass } from "../styles";
+import {
+  buttonClass,
+  cardClass,
+  choiceButtonClass,
+  fieldSkin,
+  ghostButtonClass,
+  hintClass,
+  listRowClass,
+  metaClass,
+  sectionHeadingClass,
+} from "../styles";
 import { MediaGallery, type PreviewMedia } from "./MediaPreview";
 
 type ListRow = {
@@ -73,9 +84,13 @@ export function RecordList({
   unit?: string;
 }) {
   const [open, setOpen] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  // Uncontrolled fields and upload widgets keep their state in the mounted form.
+  const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
+  const [creation, setCreation] = useState<"unused" | "open" | "closed">("unused");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<View>("all");
+  const listId = useId();
+  const creating = creation === "open";
 
   const drafts = useMemo(() => rows.filter((row) => row.draft).length, [rows]);
   // With no drafts left the buttons are gone, so a stale choice must not keep
@@ -84,56 +99,44 @@ export function RecordList({
 
   const shown = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return rows.filter(
+    const matching = rows.filter(
       (row) =>
         (current === "all" || (current === "draft") === Boolean(row.draft)) &&
         (!needle || `${row.id} ${row.label} ${row.meta ?? ""}`.toLowerCase().includes(needle)),
     );
+    return new Set(matching.map((row) => row.id));
   }, [rows, query, current]);
   const narrowed = Boolean(query) || current !== "all";
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {rows.length > 8 && (
-          <div className="relative min-w-0 basis-full sm:max-w-xs sm:flex-1 sm:basis-auto">
-            <svg
-              viewBox="0 0 16 16"
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-fg-tertiary"
-            >
-              <circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
-              <path
-                d="m10.5 10.5 3 3"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-              />
-            </svg>
+          <div className="relative min-w-0 flex-1 basis-48 sm:max-w-xs">
+            <Icon
+              name="search"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-tertiary"
+            />
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="筛选…"
               aria-label="筛选这张表"
-              className={`${fieldSkin} h-12 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
+              className={`${fieldSkin} h-11 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
             />
           </div>
         )}
 
         {drafts > 0 && (
-          <div role="group" aria-label="按公开状态筛选" className="flex gap-1.5">
+          <div role="group" aria-label="按公开状态筛选" className="flex flex-wrap gap-1.5">
             {VIEWS.map(({ view: value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setView(value)}
                 aria-pressed={current === value}
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-chip border px-3 text-caption transition-colors ${
-                  current === value
-                    ? "border-fg bg-fg text-bg"
-                    : "border-line bg-surface-raised text-fg-secondary hover:border-fg-tertiary/40 hover:text-fg"
-                }`}
+                className={choiceButtonClass}
               >
                 {label}
                 {value === "draft" && <span className="font-mono tabular-nums">{drafts}</span>}
@@ -145,8 +148,8 @@ export function RecordList({
         {/* The plain total is already beside the page title — this line only
             has something to add once the list is being filtered. */}
         {narrowed && (
-          <span className={`${metaClass} tabular-nums`}>
-            {shown.length} / {rows.length} {unit}
+          <span role="status" className={`${metaClass} tabular-nums`}>
+            {shown.size} / {rows.length} {unit}
           </span>
         )}
 
@@ -154,48 +157,46 @@ export function RecordList({
           <button
             type="button"
             onClick={() => {
-              setCreating((value) => !value);
+              setCreation((value) => (value === "open" ? "closed" : "open"));
               setOpen(null);
             }}
             aria-expanded={creating}
-            className={`${ghostButtonClass} ml-auto`}
+            aria-controls={`${listId}-new`}
+            className={`${creating ? ghostButtonClass : buttonClass} ml-auto`}
           >
-            <span aria-hidden className="text-fg-tertiary">
-              {creating ? "×" : "+"}
-            </span>
             {creating ? "收起" : blankLabel}
           </button>
         )}
       </div>
 
-      {blank && creating && (
-        <section className={`${cardClass} mt-4 p-5 animate-[admin-pop_160ms_ease-out] sm:p-6`}>
-          <h2 className={`${metaClass} mb-4`}>{blankLabel}</h2>
-          <RecordForm action={action} fields={fields} record={blank} isNew />
+      {blank && (
+        <section id={`${listId}-new`} hidden={!creating} className={`${cardClass} mt-4 p-4 sm:p-6`}>
+          <h2 className={`${sectionHeadingClass} mb-4`}>{blankLabel}</h2>
+          {creation !== "unused" && (
+            <RecordForm action={action} fields={fields} record={blank} isNew />
+          )}
         </section>
       )}
 
-      <ul className="mt-5 divide-y divide-line border-y border-line">
-        {shown.map((row) => {
+      <ul hidden={shown.size === 0} className="mt-4 border-t border-line">
+        {rows.map((row, index) => {
+          const isShown = shown.has(row.id);
           const isOpen = open === row.id;
+          const panelId = `${listId}-row-${index}`;
           return (
-            <li key={row.id}>
+            <li key={row.id} hidden={!isShown} className="border-b border-line">
               <button
                 type="button"
-                onClick={() => setOpen(isOpen ? null : row.id)}
+                onClick={() => {
+                  setVisited((seen) => (seen.has(row.id) ? seen : new Set(seen).add(row.id)));
+                  setOpen(isOpen ? null : row.id);
+                }}
                 aria-expanded={isOpen}
-                className={`group flex min-h-15 w-full items-baseline gap-3 px-2 py-3.5 text-left transition-colors hover:bg-surface/60 ${
-                  isOpen ? "bg-surface/60" : ""
+                aria-controls={panelId}
+                className={`${listRowClass} flex w-full items-center justify-between gap-3 text-left ${
+                  isOpen ? "bg-surface" : ""
                 }`}
               >
-                <span
-                  aria-hidden
-                  className={`font-mono text-meta transition-colors ${
-                    isOpen ? "text-accent" : "text-fg-tertiary"
-                  }`}
-                >
-                  {isOpen ? "−" : "+"}
-                </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                   <span
                     className={`line-clamp-2 min-w-0 flex-1 break-words text-body group-hover:text-accent ${
@@ -210,16 +211,19 @@ export function RecordList({
                     </span>
                   )}
                 </span>
+                <span aria-hidden className="shrink-0 text-caption font-medium text-fg-secondary">
+                  {isOpen ? "收起" : "编辑"}
+                </span>
               </button>
 
-              {!isOpen && Boolean(row.media?.length) && (
-                <div className="px-2 pt-1 pb-4 sm:pl-8">
+              {isShown && !isOpen && Boolean(row.media?.length) && (
+                <div className="px-3 pb-3">
                   <MediaGallery items={row.media!} compact limit={3} />
                 </div>
               )}
 
-              {isOpen && (
-                <div className="px-2 pt-2 pb-8 animate-[admin-pop_160ms_ease-out]">
+              <div id={panelId} hidden={!isOpen} className="px-3 pt-4 pb-6 sm:px-4">
+                {visited.has(row.id) && (
                   <RecordForm
                     action={action}
                     fields={fields}
@@ -227,15 +231,15 @@ export function RecordList({
                     deleteAction={deleteAction}
                     view={row.view}
                   />
-                </div>
-              )}
+                )}
+              </div>
             </li>
           );
         })}
       </ul>
 
-      {shown.length === 0 && (
-        <p className={`mt-6 ${hintClass}`}>
+      {shown.size === 0 && (
+        <p className={`mt-4 rounded-card border border-dashed border-line px-4 py-5 ${hintClass}`}>
           {rows.length === 0
             ? "还没有内容。"
             : query

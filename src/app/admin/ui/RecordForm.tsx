@@ -1,15 +1,10 @@
 "use client";
 
+import { Input, Textarea } from "@/components/ui/Field";
+
 import { useId } from "react";
 import type { ActionState } from "../actions/shared";
-import {
-  hintClass,
-  inputClass,
-  labelClass,
-  monoClass,
-  sectionHeadingClass,
-  textareaClass,
-} from "../styles";
+import { hintClass, labelClass, monoClass, sectionHeadingClass, summaryClass } from "../styles";
 import { SaveControls } from "./SaveControls";
 import { DeleteRow } from "./DeleteRow";
 import { Select, type SelectOption } from "./Select";
@@ -204,17 +199,15 @@ export function RecordForm({
               <label key={locale} className="space-y-1">
                 <span className="font-mono text-meta text-fg-tertiary">{locale}</span>
                 {field.kind === "localizedArea" ? (
-                  <textarea
+                  <Textarea
                     name={`${field.name}.${locale}`}
                     defaultValue={value(`${field.name}.${locale}`)}
                     rows={field.rows ?? 3}
-                    className={textareaClass}
                   />
                 ) : (
-                  <input
+                  <Input
                     name={`${field.name}.${locale}`}
                     defaultValue={value(`${field.name}.${locale}`)}
-                    className={inputClass}
                   />
                 )}
               </label>
@@ -243,12 +236,12 @@ export function RecordForm({
         <label key={field.name} className="block space-y-1.5">
           <span className={labelClass}>{field.label}</span>
           {field.hint && <span className={`block ${hintClass}`}>{field.hint}</span>}
-          <textarea
+          <Textarea
             name={field.name}
             defaultValue={value(field.name)}
             rows={field.rows ?? 6}
             spellCheck={field.mono ? false : undefined}
-            className={field.mono ? `${textareaClass} ${monoClass}` : textareaClass}
+            className={field.mono ? monoClass : undefined}
           />
         </label>
       );
@@ -263,13 +256,13 @@ export function RecordForm({
             {(["zh", "en"] as const).map((locale) => (
               <label key={locale} className="space-y-1">
                 <span className="font-mono text-meta text-fg-tertiary">{locale}</span>
-                <textarea
+                <Textarea
                   name={`${field.name}.${locale}`}
                   defaultValue={
                     (record[field.name] as { [k: string]: string[] })?.[locale]?.join("\n") ?? ""
                   }
                   rows={field.rows ?? 4}
-                  className={`${textareaClass} ${monoClass}`}
+                  className={`${monoClass}`}
                 />
               </label>
             ))}
@@ -323,7 +316,7 @@ export function RecordForm({
       <label key={field.name} className="block space-y-1.5">
         <span className={labelClass}>{field.label}</span>
         {field.hint && <span className={`block ${hintClass}`}>{field.hint}</span>}
-        <input
+        <Input
           name={field.name}
           type={field.kind === "number" ? "number" : "text"}
           defaultValue={value(field.name)}
@@ -332,7 +325,7 @@ export function RecordForm({
           required={typedKey}
           pattern={typedKey ? KEY_PATTERN : undefined}
           data-mismatch={typedKey ? KEY_MESSAGE : undefined}
-          className={`${inputClass} ${field.kind === "number" ? "tabular-nums" : ""}`}
+          className={`${field.kind === "number" ? "tabular-nums" : ""}`}
           {...check.field(field.name)}
         />
         {check.message(field.name)}
@@ -342,22 +335,31 @@ export function RecordForm({
 
   return (
     <>
-      <form {...formProps} className="space-y-8" {...check.formProps}>
+      <form {...formProps} className="space-y-6 sm:space-y-8" {...check.formProps}>
         {isNew && <input type="hidden" name="isNew" value="1" />}
 
         {groups.map((group) =>
           foldEmpty && !isNew && group.name && !group.fields.some(hasValue) ? (
-            <details key={group.name}>
-              <summary
-                className={`${sectionHeadingClass} cursor-pointer border-b border-line pb-3`}
-              >
+            <details key={group.name} className="group/fields">
+              <summary className={`${sectionHeadingClass} ${summaryClass}`}>
                 {group.name}
-                <span className="ml-2 text-fg-tertiary normal-case">都空着 · 点开填写</span>
+                <span
+                  aria-hidden
+                  className="text-caption font-normal text-fg-secondary group-open/fields:hidden"
+                >
+                  展开填写
+                </span>
+                <span
+                  aria-hidden
+                  className="hidden text-caption font-normal text-fg-secondary group-open/fields:inline"
+                >
+                  收起
+                </span>
               </summary>
-              <div className="mt-6 space-y-6">{group.fields.map(renderField)}</div>
+              <div className="mt-4 space-y-4 sm:space-y-5">{group.fields.map(renderField)}</div>
             </details>
           ) : (
-            <div key={group.name ?? "_"} className="space-y-6">
+            <div key={group.name ?? "_"} className="space-y-4 sm:space-y-5">
               {group.name && (
                 <h3 className={`${sectionHeadingClass} border-b border-line pb-3`}>{group.name}</h3>
               )}

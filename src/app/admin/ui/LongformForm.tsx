@@ -1,5 +1,7 @@
 "use client";
 
+import { Input, Textarea } from "@/components/ui/Field";
+
 import {
   useCallback,
   useEffect,
@@ -10,7 +12,7 @@ import {
   type RefObject,
 } from "react";
 import type { ActionState } from "../actions/shared";
-import { inputClass, labelClass, monoClass, textareaClass } from "../styles";
+import { choiceButtonClass, errorClass, labelClass, monoClass } from "../styles";
 import { SaveControls } from "./SaveControls";
 import { DeleteRow } from "./DeleteRow";
 import { useFieldErrors } from "./fieldErrors";
@@ -50,7 +52,6 @@ export function LongformForm({
   isNew,
   imported = false,
   head,
-  headCols,
   extras,
   extrasCols,
   draftHint,
@@ -65,8 +66,6 @@ export function LongformForm({
   imported?: boolean;
   /** Fields between the language and the date. */
   head?: ReactNode;
-  /** The grid for the address row — a literal class, so Tailwind sees it. */
-  headCols: string;
   /** Fields in the row that ends with the draft switch. */
   extras: ReactNode;
   extrasCols: string;
@@ -85,7 +84,7 @@ export function LongformForm({
 
   return (
     <>
-      <form {...formProps} className="space-y-6" {...check.formProps}>
+      <form {...formProps} className="space-y-4 sm:space-y-5" {...check.formProps}>
         {/* Tells the action to refuse an existing address and, once saved, to
             redirect to the edit page: this page's props are a blank draft, and
             a saved form resets to its props (useSaveAction) — without the
@@ -93,23 +92,26 @@ export function LongformForm({
         {(isNew || imported) && (
           <input type="hidden" name="isNew" value={imported ? "imported" : "1"} />
         )}
-        <div className={`grid gap-5 ${headCols}`}>
-          <label className="space-y-1.5">
+        <div
+          className={`grid grid-cols-2 gap-3 sm:gap-4 ${head ? "md:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"}`}
+        >
+          <label
+            className={`col-span-full min-w-0 space-y-1.5 ${head ? "md:col-span-1" : "sm:col-span-1"}`}
+          >
             <span className={labelClass}>slug</span>
-            <input
+            <Input
               name="slug"
               defaultValue={doc.slug}
               readOnly={!addressEditable}
               required
               pattern={KEY_PATTERN}
               data-mismatch={KEY_MESSAGE}
-              className={inputClass}
               {...check.field("slug")}
             />
             {check.message("slug")}
           </label>
 
-          <div className="space-y-1.5">
+          <div className="min-w-0 space-y-1.5">
             <span id={localeLabel} className={labelClass}>
               语言
             </span>
@@ -129,16 +131,15 @@ export function LongformForm({
 
           {head}
 
-          <label className="space-y-1.5">
+          <label className={`min-w-0 space-y-1.5 ${head ? "col-span-full md:col-span-1" : ""}`}>
             <span className={labelClass}>日期</span>
-            <input
+            <Input
               name="date"
               defaultValue={doc.date}
               placeholder={imported && !doc.date ? "填写发布日期" : datePlaceholder}
               required
               pattern="\d{4}-\d{2}-\d{2}"
               data-mismatch="日期要写成 YYYY-MM-DD。"
-              className={inputClass}
               {...check.field("date")}
             />
             {check.message("date")}
@@ -147,24 +148,18 @@ export function LongformForm({
 
         <label className="block space-y-1.5">
           <span className={labelClass}>标题</span>
-          <input
-            name="title"
-            defaultValue={doc.title}
-            required
-            className={inputClass}
-            {...check.field("title")}
-          />
+          <Input name="title" defaultValue={doc.title} required {...check.field("title")} />
           {check.message("title")}
         </label>
 
-        <label className="block space-y-1.5">
+        <label htmlFor={`${bodyLabelId}-summary`} className="block space-y-1.5">
           <span className={labelClass}>摘要</span>
-          <input name="summary" defaultValue={doc.summary} className={inputClass} />
+          <Input id={`${bodyLabelId}-summary`} name="summary" defaultValue={doc.summary} />
         </label>
 
-        <div className={`grid gap-5 ${extrasCols}`}>
+        <div className={`grid gap-3 sm:gap-4 ${extrasCols}`}>
           {extras}
-          <div className="flex items-end pb-2.5">
+          <div className="flex items-end">
             <Toggle
               name="draft"
               defaultChecked={doc.draft}
@@ -176,35 +171,37 @@ export function LongformForm({
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <span id={bodyLabelId} className={labelClass}>
-              {bodyLabel}
-            </span>
-            {!isNew && !imported && (
-              <a
-                href={`/admin/preview?${new URLSearchParams({
-                  kind: previewKind,
-                  slug: doc.slug,
-                  locale: doc.locale,
-                })}`}
-                target="_blank"
-                rel="noopener"
-                className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline-offset-4 hover:text-accent hover:underline"
-              >
-                在站上看上次保存的版本
-              </a>
-            )}
-          </div>
-          <MarkdownPreview source={body}>
-            <textarea
+        <div className="space-y-2">
+          {!isNew && !imported && (
+            <a
+              href={`/admin/preview?${new URLSearchParams({
+                kind: previewKind,
+                slug: doc.slug,
+                locale: doc.locale,
+              })}`}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent"
+            >
+              在站上看上次保存的版本
+            </a>
+          )}
+          <MarkdownPreview
+            source={body}
+            heading={
+              <span id={bodyLabelId} className={labelClass}>
+                {bodyLabel}
+              </span>
+            }
+          >
+            <Textarea
               ref={body}
               name="bodyMd"
               aria-labelledby={bodyLabelId}
               defaultValue={doc.bodyMd}
               rows={24}
               spellCheck={false}
-              className={`${textareaClass} ${monoClass}`}
+              className={`${monoClass}`}
             />
           </MarkdownPreview>
           <MediaUpload
@@ -241,9 +238,11 @@ export function LongformForm({
  */
 function MarkdownPreview({
   source,
+  heading,
   children,
 }: {
   source: RefObject<HTMLTextAreaElement | null>;
+  heading: ReactNode;
   children: ReactNode;
 }) {
   const [html, setHtml] = useState<string | null>(null);
@@ -316,15 +315,22 @@ function MarkdownPreview({
 
   return (
     <>
-      <div role="group" aria-label="正文视图" className="flex gap-2">
-        <ViewButton pressed={!showing} onClick={write}>
-          写
-        </ViewButton>
-        <ViewButton pressed={showing} onClick={() => void preview()} disabled={busy}>
-          {busy ? "渲染中…" : showing ? "刷新预览" : "预览"}
-        </ViewButton>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {heading}
+        <div role="group" aria-label="正文视图" className="flex gap-2">
+          <ViewButton pressed={!showing} onClick={write}>
+            写
+          </ViewButton>
+          <ViewButton pressed={showing} onClick={() => void preview()} disabled={busy}>
+            {busy ? "渲染中…" : showing ? "刷新预览" : "预览"}
+          </ViewButton>
+        </div>
       </div>
-      {error && <p className="text-caption text-accent">{error}</p>}
+      {error && (
+        <p role="alert" className={errorClass}>
+          {error}
+        </p>
+      )}
       <div hidden={showing}>{children}</div>
       {showing && (
         <div className="rounded-chip border border-line bg-surface px-6 py-8">
@@ -352,11 +358,7 @@ function ViewButton({
       aria-pressed={pressed}
       onClick={onClick}
       disabled={disabled}
-      className={`min-h-11 rounded-chip border px-4 py-2 text-caption transition-colors ${
-        pressed
-          ? "border-fg bg-fg text-bg"
-          : "border-line text-fg-secondary hover:border-fg-tertiary"
-      }`}
+      className={choiceButtonClass}
     >
       {children}
     </button>

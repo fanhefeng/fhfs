@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useId, useState, type FormEvent } from "react";
+import { errorClass } from "../styles";
 
 type Checked = HTMLInputElement | HTMLTextAreaElement;
 
@@ -11,9 +12,9 @@ const isChecked = (target: EventTarget): target is Checked =>
  *  the reader's language, for a constraint nobody wrote a line for. */
 function messageFor(field: Checked): string {
   const { validity } = field;
-  if (validity.valueMissing) return "这一项要填。";
-  if (validity.patternMismatch) return field.dataset.mismatch ?? "格式不对。";
-  if (validity.badInput) return "这里要填数字。";
+  if (validity.valueMissing) return "请填写此项。";
+  if (validity.patternMismatch) return field.dataset.mismatch ?? "格式不正确，请检查后重试。";
+  if (validity.badInput) return "请输入有效数字。";
   return field.validationMessage;
 }
 
@@ -66,9 +67,9 @@ export function useFieldErrors() {
         // A span: these sit inside <label>, where a <p> is not allowed.
         <span
           id={`${id}-${name}`}
-          className="flex items-center gap-2 text-caption text-accent animate-[admin-pop_160ms_ease-out]"
+          className={`${errorClass} flex items-center gap-2 motion-safe:animate-[admin-pop_160ms_ease-out]`}
         >
-          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
+          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-current" />
           {errors[name]}
         </span>
       ) : null,

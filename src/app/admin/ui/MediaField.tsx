@@ -1,8 +1,10 @@
 "use client";
 
+import { Input, Textarea } from "@/components/ui/Field";
+
 import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 import { parseMedia } from "@/lib/forms";
-import { hintClass, inputClass, labelClass, monoClass, textareaClass } from "../styles";
+import { hintClass, labelClass, monoClass } from "../styles";
 import { MediaGallery, type PreviewMedia } from "./MediaPreview";
 import { MediaUpload } from "./MediaUpload";
 
@@ -81,21 +83,21 @@ export function MediaField({
         </p>
       )}
       {kind === "list" ? (
-        <textarea
+        <Textarea
           {...shared}
           ref={(element) => {
             field.current = element;
           }}
           rows={rows}
-          className={`${textareaClass} ${monoClass}`}
+          className={monoClass}
         />
       ) : (
-        <input
+        <Input
           {...shared}
           ref={(element) => {
             field.current = element;
           }}
-          className={`${inputClass} ${monoClass}`}
+          className={monoClass}
         />
       )}
       <MediaUpload

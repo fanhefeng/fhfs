@@ -27,7 +27,7 @@ export default function AdminLoading() {
       <AdminSidebar />
       <main className="min-w-0 flex-1" aria-busy="true">
         <div className={pageWidthClass}>
-          <div className="border-b border-line pb-6">
+          <div className="border-b border-line pb-4 sm:pb-5">
             <div className="h-3 w-24 rounded-full bg-surface" />
             <div className="mt-4 h-7 w-40 rounded-chip bg-surface" />
             <div className="mt-4 h-3 w-72 max-w-full rounded-full bg-surface" />
@@ -35,7 +35,7 @@ export default function AdminLoading() {
           <p className="sr-only" role="status">
             正在读取……
           </p>
-          <div className="mt-8 space-y-3">
+          <div className="mt-5 space-y-3 sm:mt-6">
             {[0, 1, 2, 3, 4].map((row) => (
               <div key={row} className="h-11 rounded-chip bg-surface/70" />
             ))}

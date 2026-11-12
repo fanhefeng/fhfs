@@ -1,7 +1,7 @@
 import Link from "@/components/ui/Link";
 import { AdminChrome } from "../AdminChrome";
 import { sectionByHref } from "../sections";
-import { sectionHeadingClass } from "../styles";
+import { listRowClass, sectionHeadingClass } from "../styles";
 import type { HubData } from "./page.server";
 
 export type Hub = "home" | "lab" | "life";
@@ -36,7 +36,7 @@ function Editors({ heading, links }: { heading: string; links: EditorLink[] }) {
           <li key={href}>
             <Link
               href={href}
-              className="group flex min-h-12 flex-col justify-center gap-x-5 gap-y-1 rounded-chip px-2 py-2.5 hover:bg-surface/60 focus-visible:bg-surface/60 sm:flex-row sm:items-baseline sm:justify-between"
+              className={`${listRowClass} flex flex-col justify-center gap-x-4 gap-y-1 sm:flex-row sm:items-baseline sm:justify-between`}
             >
               <span className="text-body text-fg group-hover:text-accent group-focus-visible:text-accent">
                 {label}
@@ -54,7 +54,7 @@ export function SectionHub({ hub, data }: { hub: Hub; data: HubData }) {
   const href = `/admin/${hub}`;
   return (
     <AdminChrome title={sectionByHref(href)!.label} section={href}>
-      <div className="space-y-9">
+      <div className="space-y-6 sm:space-y-8">
         {hub === "home" && (
           <>
             <Editors heading="页面文案" links={home} />

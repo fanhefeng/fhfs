@@ -139,24 +139,5 @@ const PANEL_CSS = `
    of stretching across it. */
 .spn-control { display: flex; justify-content: flex-start; }
 
-/* The one control a study may need: a replay, a way back to the door. */
-.spn-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: fit-content;
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--fg);
-  font: inherit;
-  font-size: 0.8125rem;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color 0.2s ease-out, color 0.2s ease-out;
-}
-.spn-btn:hover { border-color: var(--spn-accent); color: var(--spn-accent); }
+
 `;

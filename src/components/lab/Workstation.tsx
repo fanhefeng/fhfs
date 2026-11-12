@@ -621,7 +621,7 @@ export function Workstation({ hint, label, turnLeft, turnRight, fallbackNote, cl
               type="button"
               onClick={() => turnRef.current?.(-TURN_STEP)}
               aria-label={turnLeft}
-              className="grid size-11 cursor-pointer place-items-center rounded-full border border-line text-fg-secondary transition-colors hover:border-accent hover:text-accent"
+              className="ui-button ui-button-secondary ui-button-icon"
             >
               <span aria-hidden="true">←</span>
             </button>
@@ -629,7 +629,7 @@ export function Workstation({ hint, label, turnLeft, turnRight, fallbackNote, cl
               type="button"
               onClick={() => turnRef.current?.(TURN_STEP)}
               aria-label={turnRight}
-              className="grid size-11 cursor-pointer place-items-center rounded-full border border-line text-fg-secondary transition-colors hover:border-accent hover:text-accent"
+              className="ui-button ui-button-secondary ui-button-icon"
             >
               <span aria-hidden="true">→</span>
             </button>

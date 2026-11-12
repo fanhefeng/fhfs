@@ -18,6 +18,40 @@ async function authenticate(page: Page, expired = false) {
       { name: "fhfs_admin", value, url: "http://localhost:3100", httpOnly: true, sameSite: "Lax" },
     ]);
 }
+
+test("collapsing a new record preserves edits until the form is reset", async ({ page }) => {
+  await authenticate(page);
+  await page.goto("/admin/apps", { waitUntil: "networkidle" });
+  const create = page.getByRole("button", { name: "新软件", exact: true });
+  await create.click();
+  const name = page.getByRole("textbox", { name: "名字", exact: true });
+  await name.fill("未保存的软件名称");
+  await page.getByRole("button", { name: "收起", exact: true }).click();
+  await expect(name).toBeHidden();
+  await create.click();
+  await expect(name).toHaveValue("未保存的软件名称");
+  await page.getByRole("button", { name: "取消本次编辑", exact: true }).click();
+  await expect(name).toHaveValue("");
+});
+
+test("mobile admin navigation keeps keyboard focus in the drawer and restores it on Escape", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await authenticate(page);
+  await page.goto("/admin/posts/new", { waitUntil: "networkidle" });
+  const trigger = page.getByRole("button", { name: "板块", exact: true });
+  await trigger.press("Enter");
+  const drawer = page.getByRole("dialog", { name: "内容板块" });
+  await expect(drawer.getByRole("button", { name: "关闭" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(drawer.getByRole("link").first()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
 async function newPost(page: Page, suffix: string) {
   await authenticate(page);
   await page.goto("/admin/posts/new");
@@ -195,4 +229,28 @@ test("draft save, local upload retention and authenticated preview", async ({ pa
   expect((await request.get(`http://127.0.0.1:8787${mediaPath}`)).status()).toBe(200);
   await page.request.post("/admin/preview/exit", { headers: { Origin: "http://localhost:3100" } });
   expect((await request.get(publicPath)).status()).toBe(404);
+});
+
+test("save feedback clears after editing and a failed delete keeps the editor", async ({
+  page,
+}) => {
+  await newPost(page, "feedback");
+  await page.getByRole("checkbox", { name: /草稿/ }).press("Space");
+  const save = page.getByRole("button", { name: "保存", exact: true });
+  await save.click();
+  await expect(page).toHaveURL(new RegExp(`/admin/posts/${session.prefix}-feedback/zh/?$`));
+  await save.click();
+  const saved = page.getByRole("status").filter({ hasText: "已保存。前台最多 30 秒更新。" });
+  await expect(saved).toBeVisible();
+  const body = page.getByLabel("正文（Markdown）", { exact: true });
+  await body.fill("保存后继续输入的文字应当保留。");
+  await expect(saved).toBeHidden();
+  await page.getByRole("button", { name: /^删除这篇/ }).click();
+  await page.route("**/*", (route) =>
+    route.request().method() === "POST" ? route.abort() : route.continue(),
+  );
+  await page.getByRole("button", { name: "确认删除", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("暂时无法确认删除结果");
+  await expect(body).toHaveValue("保存后继续输入的文字应当保留。");
+  await expect(page.getByRole("button", { name: "确认删除", exact: true })).toBeEnabled();
 });

@@ -834,7 +834,8 @@
     "resultsAria": "Results",
     "suggestions": "Suggestions",
     "loading": "Loading…",
-    "error": "The index did not load; close and open again to retry.",
+    "error": "Search could not load. Please try again.",
+    "retry": "Try again",
     "empty": "Nothing found for “{query}”.",
     "hint": "↑ ↓ to choose · Enter to open · Esc to close",
     "kinds": {

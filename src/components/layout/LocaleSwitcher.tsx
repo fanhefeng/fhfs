@@ -35,8 +35,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
         })
       }
       aria-label={t("localeSwitchAria")}
-      // hit-ext keeps the ≥44px touch target without inflating the chip.
-      className={`hit-ext cursor-pointer rounded-full px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-meta text-fg-secondary transition-colors hover:text-fg ${className ?? ""}`}
+      className={`inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full px-2.5 text-caption font-medium text-fg-secondary transition-colors hover:bg-surface hover:text-fg ${className ?? ""}`}
     >
       {t("localeSwitch")}
     </button>

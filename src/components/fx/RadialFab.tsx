@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "use-intl";
 import { gsap, useGSAP, EASE, prefersReducedMotion } from "@/lib/client/gsap";
 import { toggleTheme } from "@/lib/theme";
+import { Icon } from "@/components/icons/Icon";
 
 /** Quarter-circle sweep: 180° (due left) → 270° (straight up). */
 const START_ANGLE = 180;
@@ -216,18 +217,7 @@ export function RadialFab({
         onClick={() => setOpen((v) => !v)}
         className="glass-thick relative z-[2] grid size-14 cursor-pointer place-items-center rounded-full text-fg"
       >
-        <svg
-          ref={iconRef}
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="size-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Icon ref={iconRef} name="add" className="size-5" />
       </button>
 
       {actions.map((action) =>
@@ -289,44 +279,10 @@ export function RadialFab({
 }
 
 function ActionIcon({ name }: { name: string }) {
-  const common = {
-    "aria-hidden": "true" as const,
-    viewBox: "0 0 24 24",
-    className: "size-[18px]",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-  switch (name) {
-    case "share":
-      return (
-        <svg {...common}>
-          <path d="M12 15V4m0 0L8.5 7.5M12 4l3.5 3.5" />
-          <path d="M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" />
-        </svg>
-      );
-    case "top":
-      return (
-        <svg {...common}>
-          <path d="M12 20V6m0 0-5 5m5-5 5 5" />
-          <path d="M5 4h14" />
-        </svg>
-      );
-    case "rss":
-      return (
-        <svg {...common}>
-          <circle cx="5.5" cy="18.5" r="1.3" fill="currentColor" stroke="none" />
-          <path d="M5 12a7 7 0 0 1 7 7M5 6a13 13 0 0 1 13 13" />
-        </svg>
-      );
-    default:
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10-1.4 1.4" />
-        </svg>
-      );
-  }
+  return (
+    <Icon
+      name={name === "share" ? "share" : name === "top" ? "top" : name === "rss" ? "rss" : "sun"}
+      className="size-[18px]"
+    />
+  );
 }

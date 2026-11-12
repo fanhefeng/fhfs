@@ -156,7 +156,7 @@ export function MomentCalendar({ years }: { years: CalendarYear[] }) {
                 setTip(null);
                 setPicked(i);
               }}
-              className={`min-h-8 rounded-chip px-2.5 font-mono text-meta tabular-nums transition-colors ${
+              className={`min-h-11 min-w-11 rounded-chip px-2.5 font-mono text-meta tabular-nums transition-colors ${
                 row === shown
                   ? "bg-fg text-bg"
                   : `hover:text-accent ${row.total === 0 ? "text-fg-tertiary/50" : "text-fg-tertiary"}`

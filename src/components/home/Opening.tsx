@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/components/icons/Icon";
 import { useEffect, useState, type ReactNode } from "react";
 import { useLocale } from "use-intl";
 import { Link } from "@/i18n/navigation";
@@ -207,13 +208,7 @@ export function Opening({
               }
             >
               <LiquidPill height={PILL_H} base={0} href={cta.href} label={cta.label}>
-                <svg className="lp-ico" viewBox="0 0 115 115" aria-hidden="true">
-                  <g stroke="currentColor" strokeWidth="11" strokeLinecap="round">
-                    <path d="M14 34.5 H101" />
-                    <path d="M14 57.5 H101" />
-                    <path d="M14 80.5 H68" />
-                  </g>
-                </svg>
+                <Icon name="software" className="lp-ico" />
                 <span className="lp-lbl">{cta.label}</span>
               </LiquidPill>
             </div>

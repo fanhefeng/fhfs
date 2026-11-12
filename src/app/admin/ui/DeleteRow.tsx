@@ -4,7 +4,10 @@ import { useEffect, useRef, useState, type Ref } from "react";
 import { useFormStatus } from "react-dom";
 import { useServerFn } from "@tanstack/react-start";
 import { useRouter } from "@tanstack/react-router";
-import { dangerButtonClass, ghostButtonClass, hintClass } from "../styles";
+import { hintClass } from "../styles";
+import { Button } from "@/components/ui/Button";
+import { Feedback } from "@/components/ui/Feedback";
+import { unstable_rethrow } from "@/lib/navigation";
 
 /**
  * The delete control every editable row ends with.
@@ -31,6 +34,7 @@ export function DeleteRow({
   label?: string;
 }) {
   const [armed, setArmed] = useState(false);
+  const [error, setError] = useState("");
   const backOutRef = useRef<HTMLButtonElement>(null);
   const armRef = useRef<HTMLButtonElement>(null);
   const moved = useRef(false);
@@ -46,6 +50,7 @@ export function DeleteRow({
   }, [armed]);
 
   const arm = (next: boolean) => {
+    setError("");
     moved.current = true;
     setArmed(next);
   };
@@ -53,8 +58,14 @@ export function DeleteRow({
   return (
     <form
       action={async (form) => {
-        await invoke(form);
-        await router.invalidate();
+        setError("");
+        try {
+          await invoke(form);
+          await router.invalidate();
+        } catch (failure) {
+          unstable_rethrow(failure);
+          setError("暂时无法确认删除结果。请先刷新列表查看，再决定是否重试。");
+        }
       }}
       className="mt-8 border-t border-line pt-5"
     >
@@ -80,6 +91,11 @@ export function DeleteRow({
           {label}（{what}）
         </button>
       )}
+      {error && (
+        <Feedback tone="error" className="mt-3">
+          {error}
+        </Feedback>
+      )}
     </form>
   );
 }
@@ -90,9 +106,9 @@ export function DeleteRow({
 function Confirm() {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" disabled={pending} aria-busy={pending} className={dangerButtonClass}>
+    <Button type="submit" tone="danger" busy={pending}>
       {pending ? "删除中…" : "确认删除"}
-    </button>
+    </Button>
   );
 }
 
@@ -102,14 +118,8 @@ function Confirm() {
 function BackOut({ ref, onBackOut }: { ref: Ref<HTMLButtonElement>; onBackOut: () => void }) {
   const { pending } = useFormStatus();
   return (
-    <button
-      ref={ref}
-      type="button"
-      disabled={pending}
-      onClick={onBackOut}
-      className={ghostButtonClass}
-    >
+    <Button ref={ref} type="button" disabled={pending} onClick={onBackOut}>
       算了
-    </button>
+    </Button>
   );
 }

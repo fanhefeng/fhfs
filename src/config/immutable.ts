@@ -45,10 +45,10 @@ export const ASSET_SETS = [
 
 /**
  * Folders in `public/` that are deliberately left out — a file that must keep
- * one address while its content changes. Empty today; a folder goes here with
- * the reason, never by being left out of both lists.
+ * one address while its content changes. The downloadable icon catalogue
+ * keeps stable, relative file links; app UI uses bundled geometry instead.
  */
-export const MUTABLE_DIRS: readonly string[] = [];
+export const MUTABLE_DIRS: readonly string[] = ["/icons"];
 
 export const HASH_LENGTH = 8;
 const HASH = `:hash([0-9a-f]{${HASH_LENGTH}})`;

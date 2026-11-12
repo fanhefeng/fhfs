@@ -65,7 +65,7 @@ export function IndexRow({
       <Link href={href} className="group flex min-h-11 items-baseline gap-4 py-3.5 sm:gap-8">
         <span
           lang={titleLang}
-          className="relative flex-1 text-[1.3125rem] leading-snug font-medium tracking-[-0.01em] text-fg"
+          className="relative min-w-0 flex-1 text-heading font-medium text-fg [overflow-wrap:anywhere]"
         >
           {title}
           {/* Underline as a scaled hairline: transform-only, no reflow. */}

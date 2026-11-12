@@ -196,10 +196,7 @@ export function NotFoundStage({ blocks, sticker }: Props) {
                   at 12px a wrapped link lost the top of its tap target to it. */}
               <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-6">
                 <Magnetic strength={0.3}>
-                  <a
-                    href={b.homeHref}
-                    className="inline-flex min-h-11 items-center rounded-chip bg-fg px-5 text-sm font-medium text-bg"
-                  >
+                  <a href={b.homeHref} className="ui-button ui-button-primary">
                     {b.homeLabel}
                   </a>
                 </Magnetic>

@@ -1,7 +1,7 @@
 import Link from "@/components/ui/Link";
 
 import { AdminChrome } from "../AdminChrome";
-import { ghostButtonClass } from "../styles";
+import { buttonClass, listRowClass } from "../styles";
 import { Note } from "../ui/Note";
 import { MediaPreview } from "../ui/MediaPreview";
 
@@ -17,10 +17,7 @@ export default function SecretsIndex({
       title="不能说的秘密"
       section="/admin/secrets"
       action={
-        <Link href="/admin/secrets/new" className={ghostButtonClass}>
-          <span aria-hidden className="text-fg-tertiary">
-            +
-          </span>
+        <Link href="/admin/secrets/new" className={buttonClass}>
           写新的
         </Link>
       }
@@ -33,7 +30,7 @@ export default function SecretsIndex({
           <li key={`${row.slug}.${row.locale}`}>
             <Link
               href={`/admin/secrets/${row.slug}/${row.locale}`}
-              className="group flex min-h-15 flex-wrap items-baseline gap-x-3 gap-y-1 px-2 py-3.5 transition-colors hover:bg-surface/60"
+              className={`${listRowClass} flex flex-wrap items-baseline gap-x-3 gap-y-1`}
             >
               <span className="font-mono text-meta text-fg-tertiary tabular-nums">
                 {row.date ?? "日期未记"}
@@ -56,7 +53,7 @@ export default function SecretsIndex({
               </span>
             </Link>
             {row.kind === "podcast" && row.audio && (
-              <div className="max-w-xl px-2 pb-4">
+              <div className="max-w-xl px-3 pb-3">
                 <MediaPreview media={{ kind: "audio", src: row.audio }} />
               </div>
             )}

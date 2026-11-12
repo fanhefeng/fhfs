@@ -2,6 +2,8 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Image from "@/components/ui/Image";
+import { Icon } from "@/components/icons/Icon";
+import { Button } from "@/components/ui/Button";
 import { useTranslations } from "use-intl";
 import { site } from "@/config/site";
 import { groupByYear } from "@/lib/byYear";
@@ -208,30 +210,11 @@ function Attachments({ media }: { media: MomentMedia[] }) {
                     loaded. Until then — and a first visit waits on the image
                     optimizer, slower still far from Vercel — the box reads as a
                     picture on its way, not a card with nothing in it. */}
-                <svg
-                  viewBox="0 0 24 24"
-                  aria-hidden
+                <Icon
+                  name="image"
                   className="absolute top-1/2 left-1/2 size-6 -translate-x-1/2 -translate-y-1/2 text-fg-tertiary/50"
-                >
-                  <rect
-                    x="3.5"
-                    y="5"
-                    width="17"
-                    height="14"
-                    rx="2"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                  />
-                  <circle cx="9" cy="10" r="1.6" fill="currentColor" />
-                  <path
-                    d="m4 17 5-4.5 3.5 3 3-2.5 4.5 4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                  monochrome
+                />
                 <Image
                   src={picture.src}
                   width={picture.width}
@@ -295,23 +278,14 @@ function Chip({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      className={`inline-flex min-h-9 items-center gap-2 rounded-chip border px-3.5 py-1.5 text-caption transition-colors ${
-        pressed
-          ? "border-fg bg-fg text-bg"
-          : "border-line text-fg-secondary hover:border-accent hover:text-accent"
-      }`}
-    >
+    <Button type="button" onClick={onClick} aria-pressed={pressed} tone="choice">
       <span>{children}</span>
       <span
         className={`font-mono text-meta tabular-nums ${pressed ? "text-bg/70" : "text-fg-tertiary"}`}
       >
         {count}
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -427,7 +401,7 @@ function MomentCard({ item }: { item: BoardMoment }) {
         {item.media.length > 0 && <Attachments media={item.media} />}
 
         {(item.attribution || folds) && (
-          <footer className="mt-3 flex items-baseline justify-between gap-4">
+          <footer className="mt-2 flex items-center justify-between gap-4">
             {item.attribution ? (
               <p className="text-caption text-fg-tertiary">—— {item.attribution}</p>
             ) : (
@@ -438,7 +412,7 @@ function MomentCard({ item }: { item: BoardMoment }) {
                 type="button"
                 onClick={press}
                 aria-expanded={expanded}
-                className="hit-ext inline-flex shrink-0 items-center font-mono text-meta uppercase tracking-meta text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center font-mono text-meta uppercase tracking-meta text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent"
               >
                 {expanded ? t("collapse") : t("expand")}
               </button>

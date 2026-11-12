@@ -10,7 +10,7 @@
  */
 export function Note({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-6 max-w-[72ch] space-y-2 rounded-card border border-line border-l-2 border-l-accent/50 bg-surface px-4 py-3 text-caption text-fg-secondary [&_code]:font-mono [&_code]:text-fg">
+    <div className="mb-4 max-w-[72ch] space-y-2 rounded-chip bg-surface px-3 py-2.5 text-caption text-fg-secondary sm:mb-5 [&_code]:font-mono [&_code]:text-fg">
       {children}
     </div>
   );

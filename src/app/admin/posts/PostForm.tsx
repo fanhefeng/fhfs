@@ -24,8 +24,7 @@ export function PostForm({
       isNew={isNew}
       imported={imported}
       previewKind="post"
-      headCols="sm:grid-cols-[1fr_9rem_10rem]"
-      extrasCols="sm:grid-cols-[1fr_auto]"
+      extrasCols="min-[380px]:grid-cols-[minmax(0,1fr)_auto]"
       extras={
         <label className="space-y-1.5">
           <span className={labelClass}>标签（逗号分隔）</span>

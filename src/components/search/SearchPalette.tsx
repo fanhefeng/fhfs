@@ -1,5 +1,8 @@
 "use client";
 
+import { Icon } from "@/components/icons/Icon";
+import { Button } from "@/components/ui/Button";
+import { Spinner } from "@/components/ui/Spinner";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useLocale, useTranslations } from "use-intl";
 import { Link } from "@/i18n/navigation";
@@ -23,6 +26,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
   const lockedRef = useRef(false);
   const [entries, setEntries] = useState<SearchEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -42,7 +46,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
     return () => {
       live = false;
     };
-  }, [open, locale]);
+  }, [open, locale, attempt]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -124,20 +128,9 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
       }}
       className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none bg-transparent p-4 pt-[12vh] backdrop:bg-black/35 backdrop:backdrop-blur-[2px]"
     >
-      <div className="mx-auto flex max-h-[70vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[1.25rem] border border-line bg-surface-raised text-fg shadow-2xl">
-        <div className="flex items-center gap-3 border-b border-line px-5">
-          <svg
-            viewBox="0 0 24 24"
-            className="size-[17px] shrink-0 text-fg-tertiary"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <circle cx="10.5" cy="10.5" r="6" />
-            <line x1="15" y1="15" x2="20" y2="20" />
-          </svg>
+      <div className="mx-auto flex max-h-[70vh] w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-line bg-surface-raised text-fg shadow-lift">
+        <div className="flex items-center gap-3 border-b border-line px-5 focus-within:border-fg-secondary">
+          <Icon name="search" className="size-[18px] text-fg-tertiary" />
           <input
             ref={inputRef}
             type="search"
@@ -164,27 +157,33 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
             type="button"
             aria-label={t("closeAria")}
             onClick={() => dialogRef.current?.close()}
-            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-fg-secondary transition-colors hover:text-fg sm:hidden"
+            className="ui-icon-action cursor-pointer sm:hidden"
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
+            <Icon name="close" className="size-[18px]" />
           </button>
         </div>
 
-        {status && <p className="px-5 py-6 text-caption text-fg-secondary">{status}</p>}
+        {status && (
+          <div className="space-y-3 px-5 py-6">
+            <p
+              role={failed ? "alert" : "status"}
+              className="flex items-start gap-2 text-caption text-fg-secondary [overflow-wrap:anywhere]"
+            >
+              {!failed && entries === null && <Spinner />}
+              {status}
+            </p>
+            {failed && (
+              <Button size="small" onClick={() => setAttempt((value) => value + 1)}>
+                {t("retry")}
+              </Button>
+            )}
+          </div>
+        )}
 
         <div
           id={listId}
           role="listbox"
+          aria-busy={entries === null && !failed}
           aria-label={t("resultsAria")}
           data-lenis-prevent
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
@@ -209,15 +208,15 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
               // The route veil prevents the click during document capture.
               // RouterLink skips onClick for that event, so close in capture too.
               onClickCapture={() => dialogRef.current?.close()}
-              className={`mx-2 flex items-baseline gap-3 rounded-xl px-3 py-2.5 ${
+              className={`mx-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 sm:flex-nowrap ${
                 i === active ? "bg-fg/[0.06]" : ""
               }`}
             >
-              <span className="w-10 shrink-0 font-mono text-meta uppercase tracking-meta text-accent">
+              <span className="min-w-0 font-mono text-meta uppercase tracking-meta text-accent [overflow-wrap:anywhere] sm:w-12 sm:shrink-0">
                 {t(`kinds.${hit.kind}`)}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-caption text-fg">
+              <span className="order-first min-w-0 basis-full sm:order-none sm:flex-1">
+                <span className="block text-caption text-fg [overflow-wrap:anywhere]">
                   {hit.title || hit.snippet}
                 </span>
                 {hit.title && hit.snippet && (
@@ -227,7 +226,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
                 )}
               </span>
               {hit.meta && (
-                <span className="shrink-0 font-mono text-meta text-fg-tertiary tabular-nums">
+                <span className="ms-auto min-w-0 text-end font-mono text-meta text-fg-tertiary tabular-nums [overflow-wrap:anywhere] sm:max-w-[40%]">
                   {hit.meta}
                 </span>
               )}
