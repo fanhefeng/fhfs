@@ -56,6 +56,11 @@
 
 ## GitHub main 自动部署
 
+2026-11-13 发布前，依赖审计发现 Void 间接依赖的 Hono 4.13.13 受五项安全公告影响。
+工作区以 `void>hono` 精确覆盖为 4.13.16，并更新锁文件；保持 Void 及其他依赖版本不变，
+不降低 `pnpm audit --audit-level low` 的发布门槛。修复范围与兼容性变化见
+[Hono 4.13.16 官方发布说明](https://github.com/honojs/hono/releases/tag/v4.13.16)。
+
 工作流位于 `.github/workflows/check.yml`：推送到 `main` 后先运行 `pnpm check` 和 `pnpm build`，成功后用 Void 发布到现有 Worker `fhfs`，最后检查 sitemap 中的公开页面、本部署的后台鉴权和分享图片。PR 只运行检查；Actions 页面也可手动运行工作流。
 
 部署任务通过 `fhfs-production` 并发组串行执行，不中断正在进行的发布。每次发布前核对远端 `main` 的提交，避免较旧的检查任务覆盖新版本。

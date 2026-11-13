@@ -26,6 +26,8 @@ overrides:
   seroval: "1.6.11"
   # Void's glob matcher keeps the same named API on the fixed release.
   "void>minimatch": "11.0.1"
+  # Keep Void's Hono within the same minor line with the November security fixes.
+  "void>hono": "4.13.16"
   # Keep Satori's font decompressor within its patched 0.7 line.
   "satori>fflate": "0.7.5"
   # GHSA-mrhx-c7xc-m3w5: retain Cloudflare config's Zod 4 API with the fixed patch.
