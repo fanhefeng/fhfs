@@ -22,7 +22,7 @@ type Props = {
   /** On the deck: the sleeve is empty, and says so. */
   onDeck: boolean;
   /** Hands over the record as it stands right now — the deck flies it from there. */
-  onPick: (id: string, record: DOMRect | null) => void;
+  onPick: (id: string, record: DOMRect | null, focusTrigger: HTMLButtonElement | null) => void;
 };
 
 /**
@@ -33,7 +33,7 @@ type Props = {
  * While it is there the sleeve stays empty.
  *
  * The slot is a size query (`@container`), so the type, the ring and the
- * sticker scale with the sleeve from the phone's three-across to the
+ * sticker scale with the sleeve from the phone's two-across to the
  * desktop's row of six. Hover only engages on hover-capable pointers.
  */
 export function Sleeve({ app, index, onDeck, onPick }: Props) {
@@ -46,7 +46,13 @@ export function Sleeve({ app, index, onDeck, onPick }: Props) {
     <button
       type="button"
       aria-pressed={onDeck}
-      onClick={() => onPick(app.id, recordRef.current?.getBoundingClientRect() ?? null)}
+      onClick={(event) =>
+        onPick(
+          app.id,
+          recordRef.current?.getBoundingClientRect() ?? null,
+          event.detail === 0 ? event.currentTarget : null,
+        )
+      }
       className="group relative block w-full rounded-[4px] text-left hover:z-10 focus-visible:z-10"
     >
       <span data-sleeve-slot={app.id} className="@container relative block aspect-square">
@@ -96,7 +102,10 @@ export function Sleeve({ app, index, onDeck, onPick }: Props) {
       </span>
 
       <span className="mt-3 block min-w-0">
-        <span lang="en" className="block truncate text-[0.95rem] font-semibold text-fg">
+        <span
+          lang="en"
+          className="block text-[0.95rem] font-semibold text-fg [overflow-wrap:anywhere]"
+        >
           {app.name}
         </span>
         <span className="mt-0.5 line-clamp-2 block text-caption text-fg-secondary">

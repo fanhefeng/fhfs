@@ -161,6 +161,7 @@
     "prev": "上一则",
     "next": "下一则",
     "studyNav": "相邻的两则",
+    "groupNav": "实验分类",
     "groups": {
       "piece": {
         "title": "独立练习",

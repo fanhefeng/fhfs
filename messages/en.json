@@ -161,6 +161,7 @@
     "prev": "Previous",
     "next": "Next",
     "studyNav": "The studies either side",
+    "groupNav": "Experiment categories",
     "groups": {
       "piece": {
         "title": "Standalone studies",

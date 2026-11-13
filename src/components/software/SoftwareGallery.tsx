@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "use-intl";
 import { gsap, useGSAP, EASE } from "@/lib/client/gsap";
 import { captureGrid, playGrid, type GridState } from "@/lib/client/flipGrid";
 import { REVEAL_START, REVEAL_VARS } from "@/components/fx/Reveal";
 import { useUrlChoice } from "@/lib/client/useUrlChoice";
 import { SegmentedFilter, type Segment } from "@/components/ui/SegmentedFilter";
-import { RecordDeck } from "./RecordDeck";
+import { RecordDeck, type DeckFocusRequest } from "./RecordDeck";
 import { Sleeve } from "./Sleeve";
 import { APP_CATEGORIES, type AppFilter, type SoftwareApp } from "./appMeta";
 
@@ -40,6 +40,21 @@ export function SoftwareGallery({ apps }: { apps: SoftwareApp[] }) {
   const deckRef = useRef<HTMLDivElement>(null);
   /** Where a picked record was, for the deck to fly it from. */
   const arrival = useRef<Rect | null>(null);
+  const focusRequest = useRef<DeckFocusRequest | null>(null);
+  const pickSequence = useRef(0);
+
+  useEffect(() => {
+    const invalidatePick = () => {
+      // History navigation and unmount both revoke delayed scroll/focus work.
+      pickSequence.current++;
+      focusRequest.current = null;
+    };
+    window.addEventListener("popstate", invalidatePick);
+    return () => {
+      window.removeEventListener("popstate", invalidatePick);
+      invalidatePick();
+    };
+  }, []);
 
   const categories = useMemo(
     () => APP_CATEGORIES.filter((c) => apps.some((a) => a.category === c)),
@@ -67,14 +82,18 @@ export function SoftwareGallery({ apps }: { apps: SoftwareApp[] }) {
   );
 
   const pick = useCallback(
-    (id: string, record: DOMRect | null) => {
+    (id: string, record: DOMRect | null, focusTrigger: HTMLButtonElement | null) => {
+      const sequence = ++pickSequence.current;
+      focusRequest.current = null;
       if (id === current) return;
       const land = () => {
+        if (sequence !== pickSequence.current) return;
         // Measured again on landing: a scroll in between has moved the sleeve.
         const sleeve = document.querySelector(
           `[data-sleeve-slot="${CSS.escape(id)}"] [data-sleeve-record]`,
         );
         arrival.current = sleeve?.getBoundingClientRect() ?? record;
+        focusRequest.current = focusTrigger ? { id, trigger: focusTrigger } : null;
         putOnDeck(id === ids[0] ? null : id);
       };
       // On a phone the deck is a screen above the shelf, and a record flying
@@ -171,7 +190,13 @@ export function SoftwareGallery({ apps }: { apps: SoftwareApp[] }) {
 
   return (
     <div>
-      <RecordDeck apps={apps} current={current} arrival={arrival} deckRef={deckRef} />
+      <RecordDeck
+        apps={apps}
+        current={current}
+        arrival={arrival}
+        deckRef={deckRef}
+        focusRequest={focusRequest}
+      />
 
       <section aria-labelledby="shelf-title" className="mt-24">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
@@ -197,7 +222,7 @@ export function SoftwareGallery({ apps }: { apps: SoftwareApp[] }) {
         {/* `relative` is required for Flip's absolute-positioning pass. */}
         <div
           ref={gridRef}
-          className="relative grid grid-cols-3 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-6"
+          className="relative grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-6"
         >
           {apps.map((app, i) => {
             const shown = filter === "all" || app.category === filter;

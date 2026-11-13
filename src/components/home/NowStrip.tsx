@@ -40,7 +40,7 @@ export function NowStrip({ items, title, index }: Props) {
     <section aria-labelledby="home-now">
       <SectionHeader id="home-now" title={title} index={index} />
 
-      <Reveal as="ul" stagger={0.06}>
+      <Reveal as="ul" role="list" stagger={0.06}>
         {items.map((item) => {
           const inner = (
             <>

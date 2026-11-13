@@ -24,8 +24,8 @@ type Props = {
 /**
  * Recent writing — a plain text index, the way a magazine lists its contents:
  * title left, mono date right, no cards, no covers. The reading time is the
- * one thing that waits for interest: on a hovering pointer it fades in beside
- * the date, on touch it is simply always there.
+ * one thing that waits for interest on a wide screen: on a hovering pointer
+ * it fades in beside the date. On phones and touch it is always there.
  *
  * Server component on purpose — the only client code here is the shared
  * Reveal wrapper, so the list itself ships no JavaScript.
@@ -43,7 +43,7 @@ export function RecentWriting({ items, title, viewAllLabel, index }: Props) {
         index={index}
       />
 
-      <Reveal as="ul" stagger={0.06}>
+      <Reveal as="ul" role="list" stagger={0.06}>
         {items.map((item) => (
           <li key={item.slug} className="border-b border-line last:border-b-0">
             <Link
@@ -52,16 +52,14 @@ export function RecentWriting({ items, title, viewAllLabel, index }: Props) {
             >
               <span
                 lang={item.lang}
-                className="flex-1 text-heading underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-[250ms] group-hover:decoration-accent"
+                className="min-w-0 flex-1 text-heading underline decoration-transparent decoration-1 underline-offset-4 transition-colors duration-[250ms] [overflow-wrap:anywhere] group-hover:decoration-accent group-focus-visible:decoration-accent"
               >
                 {item.title}
               </span>
               <span className="flex shrink-0 items-baseline gap-3 font-mono text-meta text-fg-tertiary">
-                {/* Reading time waits for interest where hovering exists; on
-                    touch there is nothing to hover, so it just stays. Keyboard
-                    focus counts as interest too — without that variant the
-                    reading time is the one thing a tab-through never sees. */}
-                <span className="transition-opacity duration-200 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+                {/* Keep the reading cost visible on narrow screens. Keyboard
+                    focus also reveals it in the wider hover layout. */}
+                <span className="transition-opacity duration-200 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-focus-visible:opacity-100 sm:[@media(hover:hover)]:group-hover:opacity-100">
                   {item.readingTime}
                 </span>
                 <span className="tabular-nums">{item.date}</span>

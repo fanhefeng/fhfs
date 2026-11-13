@@ -1,3 +1,4 @@
+/* oxlint-disable jsx-a11y/no-redundant-roles -- WebKit needs explicit list roles when Tailwind removes markers. */
 import { Link } from "@/i18n/navigation";
 import { site } from "@/config/site";
 
@@ -8,7 +9,9 @@ import { Rich } from "@/components/resume/Rich";
 import { Bullets, ResumeSection } from "@/components/resume/ResumeSection";
 import { MailLink } from "@/components/ui/MailLink";
 import { useTranslations, useFormatter } from "use-intl";
-const metaLabel = "font-mono text-meta uppercase tracking-meta text-fg-tertiary";
+const metaLabel = "text-caption text-fg-tertiary";
+const contactLink =
+  "inline-flex min-h-11 max-w-full flex-wrap items-baseline gap-x-2 py-2 underline decoration-line underline-offset-4 transition-colors hover:text-accent hover:decoration-accent focus-visible:decoration-accent print:min-h-0 print:py-0";
 export default function ResumePage({
   data,
 }: {
@@ -19,7 +22,7 @@ export default function ResumePage({
   const format = useFormatter();
   if (!profile) {
     return (
-      <main id="main" className="mx-auto w-full max-w-[880px] flex-1 px-6 pb-24 pt-24 sm:pt-32">
+      <main id="main" className="mx-auto w-full max-w-[800px] flex-1 px-6 pb-24 pt-24 sm:pt-32">
         {/* The way back out belongs here too — an unsaved résumé is the one
             state where there is nothing else on the page to leave by. */}
         <Link
@@ -28,7 +31,7 @@ export default function ResumePage({
         >
           {t("backToAbout")}
         </Link>
-        <p className={`${metaLabel} mt-4`}>{t("title")}</p>
+        <h1 className="mt-8 text-display-sm text-fg">{t("title")}</h1>
         <p className="mt-6 text-body text-fg-secondary">{t("empty")}</p>
       </main>
     );
@@ -43,13 +46,11 @@ export default function ResumePage({
   const skills = profile.skills[locale];
   const projects = profile.projects[locale];
   const education = profile.education[locale];
-  let count = 0;
-  const next = () => String(++count).padStart(2, "0");
   return (
     <main
       id="main"
       data-resume
-      className="mx-auto w-full max-w-[880px] flex-1 px-6 pb-24 pt-24 sm:pt-32 print:max-w-none print:px-0 print:pb-0 print:pt-0"
+      className="mx-auto w-full max-w-[800px] flex-1 px-6 pb-24 pt-24 [overflow-wrap:anywhere] sm:pt-32 print:max-w-none print:px-0 print:pb-0 print:pt-0"
     >
       <JsonLd
         data={{
@@ -67,27 +68,34 @@ export default function ResumePage({
           {/* 简历 is a page of 关于, not a door of its own — so it says where
               it sits and leads back there. Off the printed sheet: paper has
               no back. */}
-          <Link
-            href="/about"
-            className={`${metaLabel} hit-ext inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent print:hidden`}
-          >
-            {t("backToAbout")}
-          </Link>
-          <div className="mt-4 flex items-start justify-between gap-6">
-            <p className={metaLabel}>{t("title")}</p>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 print:hidden">
+            <Link
+              href="/about"
+              className={`${metaLabel} inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent`}
+            >
+              {t("backToAbout")}
+            </Link>
             <PrintButton label={t("print")} ariaLabel={t("printAria")} />
           </div>
 
-          <h1 className="mt-5 text-display-sm text-fg">{profile.name[locale]}</h1>
-          <p className="accent-light mt-3 font-accent text-title leading-tight text-fg-secondary">
+          <h1 className="mt-10 flex flex-wrap items-baseline gap-x-4 gap-y-2 text-display-sm text-fg print:mt-0">
+            <span>{profile.name[locale]}</span>
+            <span className="text-caption font-medium tracking-normal text-fg-tertiary">
+              {t("title")}
+            </span>
+          </h1>
+          <p className="mt-3 text-heading font-medium text-fg-secondary">
             {profile.tagline[locale]}
           </p>
 
-          <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-caption text-fg-secondary">
+          <ul
+            role="list"
+            className="mt-5 flex flex-wrap gap-x-6 text-caption text-fg-secondary print:gap-y-1"
+          >
             {profile.location?.[locale] && (
-              <li>
-                <span className={metaLabel}>{t("locationLabel")}&ensp;</span>
-                {profile.location[locale]}
+              <li className="inline-flex min-h-11 items-baseline gap-x-2 py-2 print:min-h-0 print:py-0">
+                <span className={metaLabel}>{t("locationLabel")}</span>
+                <span>{profile.location[locale]}</span>
               </li>
             )}
             {profile.github && (
@@ -96,44 +104,39 @@ export default function ResumePage({
                   href={`https://github.com/${profile.github}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-accent"
+                  className={contactLink}
                 >
-                  <span className={metaLabel}>{t("githubLabel")}&ensp;</span>
-                  {profile.github}
+                  <span className={metaLabel}>{t("githubLabel")}</span>
+                  <span>{profile.github}</span>
                 </a>
               </li>
             )}
             {profile.website && (
               <li>
-                <a
-                  href={profile.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="hover:text-accent"
-                >
-                  <span className={metaLabel}>{t("linksLabel")}&ensp;</span>
+                <a href={profile.website} target="_blank" rel="noreferrer" className={contactLink}>
+                  <span className={metaLabel}>{t("linksLabel")}</span>
                   {/* Shown without its scheme — the label already says what it is. */}
-                  {profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  <span>{profile.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
                 </a>
               </li>
             )}
             {profile.email && (
               <li>
-                <MailLink email={profile.email} className="hover:text-accent">
-                  <span className={metaLabel}>{t("emailLabel")}&ensp;</span>
-                  {profile.email}
+                <MailLink email={profile.email} className={contactLink}>
+                  <span className={metaLabel}>{t("emailLabel")}</span>
+                  <span>{profile.email}</span>
                 </MailLink>
               </li>
             )}
-            {profile.note?.[locale] && (
-              <li className="font-accent text-fg-tertiary">{profile.note[locale]}</li>
-            )}
           </ul>
+          {profile.note?.[locale] && (
+            <p className="mt-4 text-caption text-fg-secondary">{profile.note[locale]}</p>
+          )}
         </header>
       </Reveal>
 
       {(intro.length > 0 || highlights.length > 0) && (
-        <ResumeSection index={next()} title={t("summaryTitle")}>
+        <ResumeSection title={t("summaryTitle")}>
           {intro.length > 0 && (
             <div className="space-y-4 text-body text-fg-secondary print:space-y-2">
               {intro.map((paragraph, i) => (
@@ -148,19 +151,15 @@ export default function ResumePage({
       )}
 
       {skills.length > 0 && (
-        <ResumeSection index={next()} title={t("skillsTitle")}>
-          <dl className="divide-y divide-line border-y border-line">
+        <ResumeSection title={t("skillsTitle")}>
+          <dl className="grid gap-x-10 gap-y-6 sm:grid-cols-2 print:gap-y-3">
             {skills.map((group, i) => (
               <div
                 key={i}
-                className="grid gap-x-6 gap-y-1 py-3 sm:grid-cols-[8.5rem_1fr] print:break-inside-avoid print:py-2"
+                className={`min-w-0 print:break-inside-avoid${group.name ? "" : " sm:col-span-2"}`}
               >
-                {/* A bare row — the grammar allows a line with no heading —
-                    takes the whole width rather than leaving the rail empty. */}
-                {group.name && <dt className="text-caption font-medium text-fg">{group.name}</dt>}
-                <dd
-                  className={`text-caption text-fg-secondary${group.name ? "" : " sm:col-span-2"}`}
-                >
+                {group.name && <dt className="text-caption font-semibold text-fg">{group.name}</dt>}
+                <dd className={`text-body text-fg-secondary${group.name ? " mt-1.5" : ""}`}>
                   <Rich text={group.items} />
                 </dd>
               </div>
@@ -174,7 +173,7 @@ export default function ResumePage({
           stack and before the road: what I work with, what came of it,
           where. */}
       {sections.map((section, i) => (
-        <ResumeSection key={i} index={next()} title={section.title}>
+        <ResumeSection key={i} title={section.title}>
           <div className="space-y-4 text-body text-fg-secondary print:space-y-2">
             {section.bullets.map((paragraph, j) => (
               <p key={j}>
@@ -186,7 +185,7 @@ export default function ResumePage({
       ))}
 
       {experiences.length > 0 && (
-        <ResumeSection index={next()} title={t("experienceTitle")}>
+        <ResumeSection title={t("experienceTitle")}>
           {/* Rows with no bullets and no projects are a bare list — where,
               when, doing what — and sit close; rows with content keep their
               room. */}
@@ -237,7 +236,7 @@ export default function ResumePage({
 
                 {experience.projects[locale].map((project, i) => (
                   <div key={i} className="mt-6 print:mt-3 print:break-inside-avoid">
-                    <h4 className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-l-2 border-accent/50 pl-3 text-body font-medium text-fg">
+                    <h4 className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-body font-semibold text-fg">
                       <span>{project.title}</span>
                       {project.period && (
                         <span className="font-mono text-meta font-normal text-fg-tertiary tabular-nums">
@@ -255,14 +254,14 @@ export default function ResumePage({
       )}
 
       {projects.length > 0 && (
-        <ResumeSection index={next()} title={t("projectsTitle")}>
+        <ResumeSection title={t("projectsTitle")}>
           <Bullets items={projects} />
         </ResumeSection>
       )}
 
       {education.length > 0 && (
-        <ResumeSection index={next()} title={t("educationTitle")}>
-          <ul className="space-y-2 text-body text-fg-secondary">
+        <ResumeSection title={t("educationTitle")}>
+          <ul role="list" className="space-y-2 text-body text-fg-secondary">
             {education.map((line, i) => (
               <li key={i}>
                 <Rich text={line} />
@@ -278,7 +277,7 @@ export default function ResumePage({
         <p className={metaLabel}>{t("updated", { date: updated })}</p>
         <Link
           href="/intro"
-          className={`${metaLabel} underline decoration-line underline-offset-4 hover:text-accent print:hidden`}
+          className={`${metaLabel} inline-flex min-h-11 items-center underline decoration-line underline-offset-4 hover:text-accent print:hidden`}
         >
           {t("introLink")}
         </Link>

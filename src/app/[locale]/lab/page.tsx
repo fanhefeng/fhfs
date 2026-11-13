@@ -122,6 +122,17 @@ export default function LabPage({
         <p className="mt-4 text-body text-fg-secondary">
           {t("subtitle", { count: LAB_ENTRIES.length })}
         </p>
+        <nav aria-label={t("groupNav")} className="mt-6 flex flex-wrap gap-x-6 gap-y-1">
+          {LAB_GROUPS.map((group) => (
+            <a
+              key={group}
+              href={`#lab-group-${group}`}
+              className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent focus-visible:text-accent"
+            >
+              {t(`groups.${group}.title`)}
+            </a>
+          ))}
+        </nav>
       </header>
 
       {LAB_GROUPS.map((group) => {
@@ -133,7 +144,7 @@ export default function LabPage({
             <div className="lab-group-head">
               <h2
                 id={`lab-group-${group}`}
-                className="font-mono text-meta uppercase tracking-meta text-fg-tertiary"
+                className="scroll-mt-28 text-heading font-semibold text-fg"
               >
                 {t(`groups.${group}.title`)}
               </h2>

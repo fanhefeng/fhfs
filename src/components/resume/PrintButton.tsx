@@ -16,6 +16,7 @@ export function PrintButton({ label, ariaLabel }: { label: string; ariaLabel: st
       type="button"
       onClick={() => window.print()}
       aria-label={ariaLabel}
+      tone="primary"
       className="print:hidden"
     >
       <Icon name="print" className="size-4" />

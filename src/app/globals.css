@@ -731,10 +731,9 @@ body {
 :root[data-theme="dark"] .prose-editorial code[data-theme*=" "] span {
   color: var(--shiki-dark);
 }
-/* Single-dark-theme output (e.g. tokyo-night alone): tokens are tuned for a
- * dark canvas, so in the light theme the block becomes a dark terminal card
- * instead of showing dim tokens on paper. */
-:root:not([data-theme="dark"]) .prose-editorial pre:has(> code:not([data-theme*=" "])) {
+/* Legacy tokyo-night output has tokens tuned for a dark canvas. Plain code
+ * has no theme attribute and keeps the page's own canvas and ink. */
+:root:not([data-theme="dark"]) .prose-editorial pre:has(> code[data-theme="tokyo-night"]) {
   background: #1a1b26;
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -759,6 +758,12 @@ body {
  * override without any `!important`.
  * ------------------------------------------------------------------------- */
 @media print {
+  /* Print captures immediately; never freeze the screen theme's color fade
+   * between dark ink and the white paper tokens below. */
+  body {
+    transition: none;
+  }
+
   body > :not(main):not(:has(main)) {
     display: none !important;
   }

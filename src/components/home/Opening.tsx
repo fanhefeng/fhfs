@@ -236,23 +236,23 @@ export function Opening({
             line at the left edge like the facts above it, not alone at the
             right. */}
         <div
-          className="op-fade mt-[4.5rem] flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-t border-line pt-5 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
+          className="op-fade mt-[4.5rem] flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-t border-line pt-3 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
           style={{ "--d": "540ms" } as React.CSSProperties}
         >
-          <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
+          <dl className="flex flex-wrap items-center gap-x-8 gap-y-1">
             {meta.map((item) => (
-              <div key={item.label} className="flex items-baseline gap-2">
+              <div key={item.label} className="flex min-h-11 items-center gap-2">
                 <dt>{item.label}</dt>
                 <dd className="text-fg-secondary tabular-nums">{item.value}</dd>
               </div>
             ))}
             {contacts.length > 0 ? (
-              <div className="flex flex-wrap items-baseline gap-x-4">
+              <div className="flex flex-wrap items-center gap-x-4">
                 <dt>{contactTitle}</dt>
                 {contacts.map((contact) => {
                   const inner = contact.label;
                   const className =
-                    "hit-ext text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent focus-visible:text-accent";
+                    "inline-flex min-h-11 min-w-11 items-center justify-center text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent focus-visible:text-accent";
                   return "email" in contact ? (
                     <dd key={contact.email}>
                       <MailLink email={contact.email} className={className}>
@@ -278,7 +278,7 @@ export function Opening({
           </dl>
           <Link
             href="/about"
-            className="hit-ext text-fg-secondary underline decoration-accent/60 decoration-1 underline-offset-4 transition-colors hover:text-accent"
+            className="inline-flex min-h-11 min-w-11 items-center text-fg-secondary underline decoration-accent/60 decoration-1 underline-offset-4 transition-colors hover:text-accent focus-visible:text-accent"
           >
             {aboutLink.label}
           </Link>

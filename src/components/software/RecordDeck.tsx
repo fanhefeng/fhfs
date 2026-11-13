@@ -20,6 +20,7 @@ const ARM_PLAYING = 30;
 const TURN = 1.8;
 
 type Rect = { left: number; top: number; width: number; height: number };
+export type DeckFocusRequest = { id: string; trigger: HTMLButtonElement };
 
 /** The move that puts `rect`'s record where `at`'s is, centre on centre. */
 const offset = (rect: Rect, at: Rect) => ({
@@ -69,6 +70,8 @@ type Props = {
   arrival: RefObject<Rect | null>;
   /** The turntable itself, for the shelf to bring into view on a phone. */
   deckRef: RefObject<HTMLDivElement | null>;
+  /** Only keyboard/assistive activation asks to continue through the notes. */
+  focusRequest: RefObject<DeckFocusRequest | null>;
 };
 
 /**
@@ -86,12 +89,13 @@ type Props = {
  * motion (DESIGN.md §1.5 keeps that list shut). It waits for the deck to come
  * into view before it starts, and pauses whenever the deck leaves it.
  */
-export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
+export function RecordDeck({ apps, current, arrival, deckRef, focusRequest }: Props) {
   const t = useTranslations("software");
   const format = useFormatter();
   const rootRef = useRef<HTMLDivElement>(null);
   const armRef = useRef<SVGGElement>(null);
   const notesRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const records = useRef(new Map<string, HTMLSpanElement>());
   const labels = useRef(new Map<string, HTMLSpanElement>());
   const spin = useRef<gsap.core.Tween | null>(null);
@@ -190,6 +194,8 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
       const label = labels.current.get(current);
       const arm = armRef.current;
       if (!leaving || !coming || !label || !arm) return;
+      if (focusRequest.current?.id !== current) focusRequest.current = null;
+      const requestedFocus = focusRequest.current;
 
       gsap.fromTo(
         notesRef.current,
@@ -201,6 +207,19 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
           ease: EASE.soft,
           delay: from ? 0.35 : 0,
           clearProps: "transform,opacity,visibility",
+          onComplete: () => {
+            // Wait until the notes are visible. A newer pick, navigation or
+            // deliberate focus move wins over this delayed handoff.
+            if (
+              !requestedFocus ||
+              focusRequest.current !== requestedFocus ||
+              requestedFocus.id !== shown.current
+            )
+              return;
+            focusRequest.current = null;
+            if (document.activeElement === requestedFocus.trigger)
+              titleRef.current?.focus({ preventScroll: true });
+          },
         },
       );
 
@@ -364,7 +383,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
           })}
         </p>
         <div>
-          <h2 lang="en" className="text-title text-fg">
+          <h2 ref={titleRef} tabIndex={-1} lang="en" className="text-title text-fg">
             {app.name}
           </h2>
           <p className="mt-2 font-accent text-heading font-normal text-fg-secondary">
@@ -390,7 +409,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
                   href={app.release.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="normal-case text-accent hover:underline"
+                  className="inline-flex min-h-11 items-center normal-case text-accent hover:underline"
                 >
                   {app.version}
                 </a>
@@ -406,7 +425,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
               href={app.repoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="min-h-8 content-center text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent"
+              className="inline-flex min-h-11 items-center text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent"
             >
               {t("source")}
             </a>
@@ -454,7 +473,7 @@ export function RecordDeck({ apps, current, arrival, deckRef }: Props) {
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex min-h-9 items-center justify-between gap-3 py-1 hover:text-accent"
+                    className="flex min-h-11 items-center justify-between gap-3 py-1 hover:text-accent"
                   >
                     <span className="min-w-0 break-all underline decoration-line underline-offset-4">
                       {file.name}

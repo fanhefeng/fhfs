@@ -333,7 +333,7 @@ export function FilmStills({ ratio, stills, text }: Props) {
         className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none touch-pan-y border-0 bg-transparent p-0 text-white backdrop:bg-black/95 backdrop:backdrop-blur-sm"
       >
         {still && (
-          <div className="pointer-events-none relative flex h-full flex-col items-center justify-center px-4 pb-16 pt-16 md:px-24">
+          <div className="pointer-events-none relative flex h-full flex-col items-center justify-center px-4 pb-16 pt-16 md:px-32">
             <div
               ref={frameRef}
               className="pointer-events-auto flex min-h-0 max-w-full flex-col items-center"
@@ -376,13 +376,17 @@ export function FilmStills({ ratio, stills, text }: Props) {
               onClick={() => step(-1)}
               aria-label={text.prev}
               className={`${VIEWER_BUTTON} absolute bottom-4 left-4 md:bottom-auto md:left-6 md:top-1/2 md:-translate-y-1/2`}
-            ></button>
+            >
+              {text.prev}
+            </button>
             <button
               type="button"
               onClick={() => step(1)}
               aria-label={text.next}
               className={`${VIEWER_BUTTON} absolute bottom-4 right-4 md:bottom-auto md:right-6 md:top-1/2 md:-translate-y-1/2`}
-            ></button>
+            >
+              {text.next}
+            </button>
             <p className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 font-mono text-meta uppercase tracking-meta text-white/40 md:block">
               {text.hint}
             </p>

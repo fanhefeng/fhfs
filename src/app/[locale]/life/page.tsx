@@ -82,10 +82,7 @@ export default function LifePage({
   return (
     <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-6 pb-28 pt-32 md:pt-40">
       <Reveal as="header" className="mb-12">
-        <p className="font-mono text-meta uppercase tracking-meta text-fg-tertiary">
-          {t("kicker")}
-        </p>
-        <h1 className="mt-3 text-display-sm">{t("title")}</h1>
+        <h1 className="text-display-sm">{t("title")}</h1>
         <p className="mt-4 max-w-[46ch] text-body text-fg-secondary">{t("subtitle")}</p>
       </Reveal>
 
@@ -139,7 +136,7 @@ export default function LifePage({
                         <li key={link.href}>
                           <Link
                             href={link.href}
-                            className="hit-ext inline-flex min-h-9 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent"
+                            className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 transition-colors hover:text-accent"
                           >
                             {link.label}
                           </Link>

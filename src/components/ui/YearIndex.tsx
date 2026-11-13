@@ -23,7 +23,7 @@ export function YearSection({
       <h2 className="mb-3 font-mono text-meta uppercase tracking-meta text-fg-tertiary tabular-nums">
         {heading}
       </h2>
-      <Reveal as="ol" stagger={0.05} className="border-t border-line">
+      <Reveal as="ol" role="list" stagger={0.05} className="border-t border-line">
         {children}
       </Reveal>
     </section>
@@ -35,9 +35,9 @@ export function YearSection({
  * flush right. No card, no summary, no thumbnail — the list is meant to be
  * read like a table of contents. Hovering (or keyboard-focusing) draws an
  * amber underline and floats `detail` in beside the date; both are
- * transform/opacity only, so a long list stays cheap to render. The waiting
- * is only for a pointer that can hover — on a touch screen wide enough to
- * have the column, the detail is simply there (as in home/RecentWriting).
+ * transform/opacity only, so a long list stays cheap to render. On a phone,
+ * notes and date sit below the title and stay visible. The waiting is only
+ * for a wider screen with a pointer that can hover.
  */
 export function IndexRow({
   href,
@@ -56,16 +56,19 @@ export function IndexRow({
   date: string | null;
   /** Always shown, in the accent: what kind of piece this is. */
   tag?: ReactNode;
-  /** Shown on hover: how long it takes. */
+  /** Reading time: always visible on phones and touch screens. */
   detail?: ReactNode;
 }) {
   const [, month, day] = date?.split("-") ?? [];
   return (
     <li className="border-b border-line last:border-b-0">
-      <Link href={href} className="group flex min-h-11 items-baseline gap-4 py-3.5 sm:gap-8">
+      <Link
+        href={href}
+        className="group flex min-h-11 flex-col items-start gap-1.5 py-3.5 sm:flex-row sm:items-baseline sm:gap-8"
+      >
         <span
           lang={titleLang}
-          className="relative min-w-0 flex-1 text-heading font-medium text-fg [overflow-wrap:anywhere]"
+          className="relative min-w-0 max-w-full text-heading font-medium text-fg [overflow-wrap:anywhere] sm:flex-1"
         >
           {title}
           {/* Underline as a scaled hairline: transform-only, no reflow. */}
@@ -74,10 +77,10 @@ export function IndexRow({
             className="absolute inset-x-0 -bottom-0.5 block h-px origin-left scale-x-0 bg-accent transition-transform duration-[250ms] ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100"
           />
         </span>
-        <span className="flex shrink-0 items-baseline gap-3 font-mono text-meta uppercase tracking-meta text-fg-tertiary">
+        <span className="flex max-w-full shrink-0 flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-meta uppercase tracking-meta text-fg-tertiary">
           {tag && <span className="text-accent">{tag}</span>}
           {detail && (
-            <span className="hidden transition duration-[250ms] ease-out sm:inline-block [@media(hover:hover)]:translate-x-1 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:translate-x-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-visible:translate-x-0 [@media(hover:hover)]:group-focus-visible:opacity-100">
+            <span className="inline-block transition duration-[250ms] ease-out sm:[@media(hover:hover)]:translate-x-1 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:translate-x-0 sm:[@media(hover:hover)]:group-hover:opacity-100 sm:[@media(hover:hover)]:group-focus-visible:translate-x-0 sm:[@media(hover:hover)]:group-focus-visible:opacity-100">
               {detail}
             </span>
           )}

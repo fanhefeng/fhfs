@@ -407,7 +407,7 @@ export function FullNav({ links, open, onClose, triggerRef }: FullNavProps) {
                             onClick={() => {
                               if (member.href === pathname) onClose();
                             }}
-                            className={`hit-ext inline-flex min-h-8 items-center py-1 text-caption transition-colors ${
+                            className={`inline-flex min-h-11 items-center py-1 text-caption transition-colors ${
                               current
                                 ? "text-accent underline underline-offset-4"
                                 : "text-fg-secondary hover:text-accent"

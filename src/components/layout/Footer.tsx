@@ -64,7 +64,7 @@ export function Footer({ items }: { items: NavLink[] }) {
 
   const kicker = "font-mono text-meta uppercase tracking-meta text-fg-tertiary";
   const row =
-    "hit-ext inline-block py-1 decoration-line underline-offset-4 transition-colors hover:text-fg hover:underline focus-visible:text-fg focus-visible:underline";
+    "inline-flex min-h-11 items-center py-1 decoration-line underline-offset-4 transition-colors hover:text-fg hover:underline focus-visible:text-fg focus-visible:underline";
   // The third copy of the nav, and the one that shows the whole table. Ink
   // and a rule mark the page being read, not amber: the footer stays quiet.
   const current =

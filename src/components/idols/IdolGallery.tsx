@@ -17,7 +17,11 @@ export type GalleryPhoto = Omit<IdolPhoto, "title" | "meta" | "alt"> & {
  */
 export function IdolGallery({ photos }: { photos: GalleryPhoto[] }) {
   return (
-    <Reveal as="div" stagger={0.06} className="columns-2 gap-4 md:columns-3 md:gap-5">
+    <Reveal
+      as="div"
+      stagger={0.06}
+      className="columns-1 gap-4 min-[480px]:columns-2 md:columns-3 md:gap-5"
+    >
       {photos.map((photo) => (
         <figure key={photo.id} className="mb-4 break-inside-avoid md:mb-5">
           <Image
@@ -25,7 +29,7 @@ export function IdolGallery({ photos }: { photos: GalleryPhoto[] }) {
             width={photo.width}
             height={photo.height}
             alt={photo.alt}
-            sizes="(min-width: 768px) 340px, 50vw"
+            sizes="(min-width: 768px) 340px, (min-width: 480px) 50vw, 100vw"
             className="w-full rounded-card bg-surface"
           />
           <figcaption className="mt-2">

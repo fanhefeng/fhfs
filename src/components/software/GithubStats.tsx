@@ -42,7 +42,7 @@ export function GithubStats({ stats, repoUrl }: { stats: RepositoryStats; repoUr
             href={`${repoUrl}/${kind === "stars" ? "stargazers" : "forks"}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-8 items-center gap-1.5 hover:text-accent"
+            className="inline-flex min-h-11 items-center gap-1.5 hover:text-accent"
             title={label}
           >
             {content}
