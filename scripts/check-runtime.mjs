@@ -1,9 +1,9 @@
 import { constants } from "node:zlib";
 
 const [major, minor, patch] = process.versions.node.split(".").map(Number);
-if (major !== 24 || minor < 22 || (minor === 22 && patch < 1)) {
+if (major !== 24 || minor < 22 || (minor === 22 && patch < 3)) {
   throw new Error(
-    `Node.js ${process.versions.node} is unsupported. Use Node.js 24.22.1 or newer 24.x.`,
+    `Node.js ${process.versions.node} is unsupported. Use Node.js 24.22.3 or newer 24.x.`,
   );
 }
 
