@@ -1,0 +1,61 @@
+{
+  "title": "留一盏自己的灯",
+  "brand": "fhf’s",
+  "url": "fhfs.fhfs.workers.dev",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration": 25,
+  "seed": 20261105,
+  "palette": {
+    "paper": "#faf9f6",
+    "ink": "#1a1a1a",
+    "night": "#0e0e11",
+    "amber": "#b45309",
+    "blue": "#a9cbff"
+  },
+  "scenes": [
+    {
+      "start": 0,
+      "end": 3.7,
+      "name": "light",
+      "label": "A LITTLE WORLD, ONLINE",
+      "lines": ["互联网很大。", "留一盏自己的灯。"]
+    },
+    {
+      "start": 3.7,
+      "end": 7.7,
+      "name": "hello",
+      "label": "01 / HELLO, I’M FHF",
+      "lines": ["写代码，", "也认真生活。"]
+    },
+    {
+      "start": 7.7,
+      "end": 11.7,
+      "name": "work",
+      "label": "02 / WORDS & WORKS",
+      "lines": ["写下想法。", "把灵感做出来。"]
+    },
+    {
+      "start": 11.7,
+      "end": 17.5,
+      "name": "play",
+      "label": "03 / A SENSE OF WONDER",
+      "lines": ["让好奇心，", "动起来。"]
+    },
+    {
+      "start": 17.5,
+      "end": 21,
+      "name": "life",
+      "label": "04 / LITTLE MOMENTS",
+      "lines": ["把日常，", "慢慢收藏。"]
+    },
+    {
+      "start": 21,
+      "end": 25,
+      "name": "invite",
+      "label": "WELCOME TO FHF’S",
+      "lines": ["来我的小世界，", "坐一会儿。"]
+    }
+  ]
+}
