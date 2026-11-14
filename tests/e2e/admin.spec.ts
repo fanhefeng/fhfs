@@ -195,6 +195,106 @@ test("invalid input and expired sessions keep the unsaved editor", async ({ page
   );
 });
 
+test("a pending save locks editing, rejects duplicate submits and unlocks intact after failure", async ({
+  page,
+}) => {
+  await newPost(page, "save-lock");
+  await authenticate(page, true);
+  const title = page.getByLabel("标题", { exact: true });
+  const body = page.getByLabel("正文（Markdown）", { exact: true });
+  const form = body.locator("xpath=ancestor::form");
+  let submissions = 0;
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/*", async (route) => {
+    if (route.request().method() === "POST") {
+      submissions++;
+      await held;
+    }
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: "保存", exact: true }).click();
+    await expect.poll(() => submissions).toBe(1);
+    await expect(title).toBeDisabled();
+    await expect(body).toBeDisabled();
+    await expect(form.locator("fieldset")).toHaveAttribute("inert", "");
+    await expect(page.getByText("正在保存，编辑暂时锁定。", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "取消本次编辑", exact: true })).toBeDisabled();
+
+    // Native validation skips disabled fields. A second programmatic submit
+    // still must not dispatch an empty snapshot or queue another mutation.
+    await form.evaluate((element) => {
+      (element as HTMLFormElement).requestSubmit();
+      (element as HTMLFormElement).reset();
+    });
+    expect(submissions).toBe(1);
+    await expect(body).toHaveValue("仅存在于隔离测试数据库。");
+  } finally {
+    release();
+  }
+
+  await expect(page.getByText(/登录已过期/)).toBeVisible();
+  await expect(body).toBeEnabled();
+  expect(submissions).toBe(1);
+  await expect(title).toHaveValue("新站隔离浏览器测试");
+  await expect(body).toHaveValue("仅存在于隔离测试数据库。");
+  await expect(page.getByRole("button", { name: "保存", exact: true })).toBeFocused();
+  await page.unroute("**/*");
+
+  await authenticate(page);
+  await title.fill("失败后继续编辑并保存");
+  await body.fill("解锁后的正文仍能正常保存。");
+  const draft = page.getByRole("checkbox", { name: /草稿/ });
+  await draft.press("Space");
+  await expect(draft).toBeChecked();
+  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/admin/posts/${session.prefix}-save-lock/zh/?$`));
+  await expect(title).toHaveValue("失败后继续编辑并保存");
+  await expect(body).toHaveValue("解锁后的正文仍能正常保存。");
+  await expect(page.getByLabel("slug", { exact: true })).toHaveAttribute("readonly", "");
+
+  // The separate delete form is part of the same editor lock, including an
+  // already-armed confirmation and script-triggered native submission.
+  await authenticate(page, true);
+  await page.getByRole("button", { name: /^删除这篇/ }).click();
+  const confirmDelete = page.getByRole("button", { name: "确认删除", exact: true });
+  const backOut = page.getByRole("button", { name: "算了", exact: true });
+  const deleteForm = confirmDelete.locator("xpath=ancestor::form");
+  await expect(backOut).toBeFocused();
+  submissions = 0;
+  let releaseAgain!: () => void;
+  const heldAgain = new Promise<void>((resolve) => {
+    releaseAgain = resolve;
+  });
+  await page.route("**/*", async (route) => {
+    if (route.request().method() === "POST") {
+      submissions++;
+      await heldAgain;
+    }
+    await route.continue();
+  });
+  try {
+    await page.getByRole("button", { name: "保存", exact: true }).click();
+    await expect.poll(() => submissions).toBe(1);
+    await expect(confirmDelete).toBeDisabled();
+    await expect(backOut).toBeDisabled();
+    await deleteForm.evaluate((element) => (element as HTMLFormElement).requestSubmit());
+    expect(submissions).toBe(1);
+  } finally {
+    releaseAgain();
+  }
+  await expect(page.getByText(/登录已过期/)).toBeVisible();
+  await expect(confirmDelete).toBeEnabled();
+  expect(submissions).toBe(1);
+  await page.unroute("**/*");
+  await backOut.click();
+  await expect(page.getByRole("button", { name: /^删除这篇/ })).toBeFocused();
+  await expect(body).toHaveValue("解锁后的正文仍能正常保存。");
+});
+
 test("draft save, local upload retention and authenticated preview", async ({ page, request }) => {
   await newPost(page, "draft");
   const draft = page.getByRole("checkbox", { name: /草稿/ });

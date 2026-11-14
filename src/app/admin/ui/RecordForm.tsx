@@ -6,6 +6,7 @@ import { useId } from "react";
 import type { ActionState } from "../actions/shared";
 import { hintClass, labelClass, monoClass, sectionHeadingClass, summaryClass } from "../styles";
 import { SaveControls } from "./SaveControls";
+import { SaveFields } from "./SaveFields";
 import { DeleteRow } from "./DeleteRow";
 import { Select, type SelectOption } from "./Select";
 import { Segmented } from "./Segmented";
@@ -336,38 +337,41 @@ export function RecordForm({
   return (
     <>
       <form {...formProps} className="space-y-6 sm:space-y-8" {...check.formProps}>
-        {isNew && <input type="hidden" name="isNew" value="1" />}
+        <SaveFields pending={pending} className="space-y-6 sm:space-y-8">
+          {isNew && <input type="hidden" name="isNew" value="1" />}
 
-        {groups.map((group) =>
-          foldEmpty && !isNew && group.name && !group.fields.some(hasValue) ? (
-            <details key={group.name} className="group/fields">
-              <summary className={`${sectionHeadingClass} ${summaryClass}`}>
-                {group.name}
-                <span
-                  aria-hidden
-                  className="text-caption font-normal text-fg-secondary group-open/fields:hidden"
-                >
-                  展开填写
-                </span>
-                <span
-                  aria-hidden
-                  className="hidden text-caption font-normal text-fg-secondary group-open/fields:inline"
-                >
-                  收起
-                </span>
-              </summary>
-              <div className="mt-4 space-y-4 sm:space-y-5">{group.fields.map(renderField)}</div>
-            </details>
-          ) : (
-            <div key={group.name ?? "_"} className="space-y-4 sm:space-y-5">
-              {group.name && (
-                <h3 className={`${sectionHeadingClass} border-b border-line pb-3`}>{group.name}</h3>
-              )}
-              {group.fields.map(renderField)}
-            </div>
-          ),
-        )}
-
+          {groups.map((group) =>
+            foldEmpty && !isNew && group.name && !group.fields.some(hasValue) ? (
+              <details key={group.name} className="group/fields">
+                <summary className={`${sectionHeadingClass} ${summaryClass}`}>
+                  {group.name}
+                  <span
+                    aria-hidden
+                    className="text-caption font-normal text-fg-secondary group-open/fields:hidden"
+                  >
+                    展开填写
+                  </span>
+                  <span
+                    aria-hidden
+                    className="hidden text-caption font-normal text-fg-secondary group-open/fields:inline"
+                  >
+                    收起
+                  </span>
+                </summary>
+                <div className="mt-4 space-y-4 sm:space-y-5">{group.fields.map(renderField)}</div>
+              </details>
+            ) : (
+              <div key={group.name ?? "_"} className="space-y-4 sm:space-y-5">
+                {group.name && (
+                  <h3 className={`${sectionHeadingClass} border-b border-line pb-3`}>
+                    {group.name}
+                  </h3>
+                )}
+                {group.fields.map(renderField)}
+              </div>
+            ),
+          )}
+        </SaveFields>
         <SaveControls state={state} pending={pending} cancelable />
         {view && !isNew && (
           <a
@@ -382,7 +386,7 @@ export function RecordForm({
       </form>
 
       {deleteAction && !isNew && key && (
-        <DeleteRow action={deleteAction} fields={{ key }} what={key} />
+        <DeleteRow disabled={pending} action={deleteAction} fields={{ key }} what={key} />
       )}
     </>
   );

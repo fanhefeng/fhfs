@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { NAV_GROUPS, type NavGroup } from "@/lib/nav";
 import { saveNavItems } from "../actions/nav";
 import {
@@ -12,6 +12,7 @@ import {
   metaClass,
 } from "../styles";
 import { SaveControls } from "../ui/SaveControls";
+import { SaveFields } from "../ui/SaveFields";
 import { Select } from "../ui/Select";
 import { useSaveAction } from "../ui/useSaveAction";
 
@@ -76,6 +77,7 @@ const withIds = (rows: NavRow[]): FormRow[] => rows.map((row) => ({ ...row, id: 
  */
 export function NavForm({ items }: { items: NavRow[] }) {
   const { state, pending, formProps } = useSaveAction(saveNavItems);
+  const formId = useId();
   const [rows, setRows] = useState<FormRow[]>(() => withIds(items));
   useEffect(() => setRows(withIds(items)), [items]);
 
@@ -115,117 +117,122 @@ export function NavForm({ items }: { items: NavRow[] }) {
 
   return (
     <form {...formProps}>
-      <div className="space-y-4">
-        {rows.map((row, i) => (
-          <div key={row.id} className={`${cardClass} p-4 sm:p-5`}>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h3 className={`${metaClass} min-w-0 [overflow-wrap:anywhere]`}>{rowName(row)}</h3>
-              <span className="flex items-center gap-1 font-mono text-meta text-fg-tertiary">
-                <button
-                  type="button"
-                  onClick={() => move(row.id, -1)}
-                  disabled={i === 0}
-                  data-move="-1"
-                  data-row={row.id}
-                  aria-label={`上移 ${rowName(row)}`}
-                  className={iconButtonClass}
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  onClick={() => move(row.id, 1)}
-                  disabled={i === rows.length - 1}
-                  data-move="1"
-                  data-row={row.id}
-                  aria-label={`下移 ${rowName(row)}`}
-                  className={iconButtonClass}
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(row.id)}
-                  aria-label={`删除 ${rowName(row)}`}
-                  className={`${iconButtonClass} enabled:hover:text-[color:var(--admin-danger)]`}
-                >
-                  ×
-                </button>
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-              <label className="space-y-1">
-                <span className={labelClass}>路径</span>
-                <input
-                  name={`nav.${i}.href`}
-                  value={row.href}
-                  onChange={(e) => edit(row.id, { ...row, href: e.target.value })}
-                  placeholder="/blog"
-                  className={inputClass}
-                />
-              </label>
-              <label className="space-y-1">
-                <span className={labelClass}>文案 key（nav.…）</span>
-                <input
-                  name={`nav.${i}.labelKey`}
-                  value={row.labelKey}
-                  onChange={(e) => edit(row.id, { ...row, labelKey: e.target.value })}
-                  placeholder="blog"
-                  className={inputClass}
-                />
-              </label>
-              <div className="space-y-1 sm:w-44">
-                <span className={labelClass}>分组</span>
-                <Select
-                  name={`nav.${i}.group`}
-                  value={row.group ?? ""}
-                  onValueChange={(group) =>
-                    edit(row.id, { ...row, group: (group || null) as NavGroup | null })
-                  }
-                  options={GROUP_OPTIONS}
-                />
+      <SaveFields pending={pending}>
+        <div className="space-y-4">
+          {rows.map((row, i) => (
+            <div key={row.id} className={`${cardClass} p-4 sm:p-5`}>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className={`${metaClass} min-w-0 [overflow-wrap:anywhere]`}>{rowName(row)}</h3>
+                <span className="flex items-center gap-1 font-mono text-meta text-fg-tertiary">
+                  <button
+                    type="button"
+                    onClick={() => move(row.id, -1)}
+                    disabled={i === 0}
+                    data-move="-1"
+                    data-row={row.id}
+                    aria-label={`上移 ${rowName(row)}`}
+                    className={iconButtonClass}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(row.id, 1)}
+                    disabled={i === rows.length - 1}
+                    data-move="1"
+                    data-row={row.id}
+                    aria-label={`下移 ${rowName(row)}`}
+                    className={iconButtonClass}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(row.id)}
+                    aria-label={`删除 ${rowName(row)}`}
+                    className={`${iconButtonClass} enabled:hover:text-[color:var(--admin-danger)]`}
+                  >
+                    ×
+                  </button>
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                <label className="space-y-1">
+                  <span className={labelClass}>路径</span>
+                  <input
+                    name={`nav.${i}.href`}
+                    value={row.href}
+                    onChange={(e) => edit(row.id, { ...row, href: e.target.value })}
+                    placeholder="/blog"
+                    className={inputClass}
+                  />
+                </label>
+                <label className="space-y-1">
+                  <span className={labelClass}>文案 key（nav.…）</span>
+                  <input
+                    name={`nav.${i}.labelKey`}
+                    value={row.labelKey}
+                    onChange={(e) => edit(row.id, { ...row, labelKey: e.target.value })}
+                    placeholder="blog"
+                    className={inputClass}
+                  />
+                </label>
+                <div className="space-y-1 sm:w-44">
+                  <span id={`${formId}-group-${row.id}`} className={labelClass}>
+                    分组
+                  </span>
+                  <Select
+                    name={`nav.${i}.group`}
+                    labelledBy={`${formId}-group-${row.id}`}
+                    value={row.group ?? ""}
+                    onValueChange={(group) =>
+                      edit(row.id, { ...row, group: (group || null) as NavGroup | null })
+                    }
+                    options={GROUP_OPTIONS}
+                  />
+                </div>
+              </div>
+              {/* Which surfaces carry this link, as chips you can see at a
+                glance — four unlabelled ticks never said which was which. */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className={`${metaClass} mr-1`}>出现在</span>
+                {SURFACES.map((surface) => (
+                  <label key={surface.id} className="cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name={`nav.${i}.surface.${surface.id}`}
+                      checked={row.surfaces.includes(surface.id)}
+                      onChange={(e) =>
+                        edit(row.id, {
+                          ...row,
+                          surfaces: e.target.checked
+                            ? [...row.surfaces, surface.id]
+                            : row.surfaces.filter((s) => s !== surface.id),
+                        })
+                      }
+                      className="peer sr-only"
+                    />
+                    <span className="block rounded-chip border border-line px-3 py-1.5 text-caption text-fg-tertiary transition-colors peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-accent/25">
+                      {surface.label}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
-            {/* Which surfaces carry this link, as chips you can see at a
-                glance — four unlabelled ticks never said which was which. */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className={`${metaClass} mr-1`}>出现在</span>
-              {SURFACES.map((surface) => (
-                <label key={surface.id} className="cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name={`nav.${i}.surface.${surface.id}`}
-                    checked={row.surfaces.includes(surface.id)}
-                    onChange={(e) =>
-                      edit(row.id, {
-                        ...row,
-                        surfaces: e.target.checked
-                          ? [...row.surfaces, surface.id]
-                          : row.surfaces.filter((s) => s !== surface.id),
-                      })
-                    }
-                    className="peer sr-only"
-                  />
-                  <span className="block rounded-chip border border-line px-3 py-1.5 text-caption text-fg-tertiary transition-colors peer-checked:border-accent peer-checked:bg-accent/10 peer-checked:text-accent peer-focus-visible:ring-[3px] peer-focus-visible:ring-accent/25">
-                    {surface.label}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <button
-        type="button"
-        onClick={() => setRows([...rows, ...withIds([NEW_ROW])])}
-        className={`${ghostButtonClass} mt-4`}
-      >
-        <span aria-hidden className="text-fg-tertiary">
-          +
-        </span>
-        加一间房
-      </button>
+        <button
+          type="button"
+          onClick={() => setRows([...rows, ...withIds([NEW_ROW])])}
+          className={`${ghostButtonClass} mt-4`}
+        >
+          <span aria-hidden className="text-fg-tertiary">
+            +
+          </span>
+          加一间房
+        </button>
+      </SaveFields>
 
       <SaveControls state={state} pending={pending} sticky />
     </form>

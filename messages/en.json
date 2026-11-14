@@ -748,7 +748,11 @@
       "prev": "Previous",
       "next": "Next",
       "counter": "{index} / {count}",
-      "hint": "Arrow keys to flip · Esc to close"
+      "hint": "Arrow keys to flip · Esc to close",
+      "loading": "Loading the original image…",
+      "failed": "The image could not load. Retry or open the original separately.",
+      "retry": "Reload image",
+      "original": "Open original image"
     }
   },
   "software": {

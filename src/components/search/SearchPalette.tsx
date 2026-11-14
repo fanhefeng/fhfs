@@ -9,6 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { lockScroll, unlockScroll } from "@/lib/client/scrollLock";
 import { search, type SearchEntry, type SearchHit } from "@/lib/search";
 import { loadSearchIndex } from "@/lib/client/searchIndex";
+import { useVisualViewport } from "@/lib/client/useVisualViewport";
 
 /**
  * ⌘K: one field over everything the site holds, in a native `<dialog>` so
@@ -30,6 +31,7 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listId = useId();
+  const viewport = useVisualViewport(open);
 
   useEffect(() => {
     if (!open) return;
@@ -126,10 +128,21 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
         // A press on the backdrop is a press on the dialog itself.
         if (event.target === event.currentTarget) dialogRef.current?.close();
       }}
-      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none bg-transparent p-4 pt-[12vh] backdrop:bg-black/35 backdrop:backdrop-blur-[2px]"
+      style={
+        viewport
+          ? {
+              top: viewport.top,
+              left: viewport.left,
+              width: viewport.width,
+              height: viewport.height,
+              paddingTop: Math.min(96, viewport.height * 0.12),
+            }
+          : undefined
+      }
+      className="fixed left-0 top-0 m-0 h-dvh max-h-none w-full max-w-none overflow-hidden bg-transparent p-4 pt-[min(12dvh,6rem)] backdrop:bg-black/35 backdrop:backdrop-blur-[2px]"
     >
-      <div className="mx-auto flex max-h-[70vh] w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-line bg-surface-raised text-fg shadow-lift">
-        <div className="flex items-center gap-3 border-b border-line px-5 focus-within:border-fg-secondary">
+      <div className="mx-auto flex max-h-full w-full max-w-[560px] flex-col overflow-hidden rounded-card border border-line bg-surface-raised text-fg shadow-lift">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 focus-within:border-fg-secondary">
           <Icon name="search" className="size-[18px] text-fg-tertiary" />
           <input
             ref={inputRef}
@@ -157,84 +170,85 @@ export function SearchPalette({ open, onClose }: { open: boolean; onClose: () =>
             type="button"
             aria-label={t("closeAria")}
             onClick={() => dialogRef.current?.close()}
-            className="ui-icon-action cursor-pointer sm:hidden"
+            className="ui-icon-action shrink-0 cursor-pointer"
           >
             <Icon name="close" className="size-[18px]" />
           </button>
         </div>
 
-        {status && (
-          <div className="space-y-3 px-5 py-6">
-            <p
-              role={failed ? "alert" : "status"}
-              className="flex items-start gap-2 text-caption text-fg-secondary [overflow-wrap:anywhere]"
-            >
-              {!failed && entries === null && <Spinner />}
-              {status}
-            </p>
-            {failed && (
-              <Button size="small" onClick={() => setAttempt((value) => value + 1)}>
-                {t("retry")}
-              </Button>
-            )}
-          </div>
-        )}
-
-        <div
-          id={listId}
-          role="listbox"
-          aria-busy={entries === null && !failed}
-          aria-label={t("resultsAria")}
-          data-lenis-prevent
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
-        >
-          {!query.trim() && hits.length > 0 && (
-            <p
-              role="presentation"
-              className="px-5 pb-1 pt-2 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
-            >
-              {t("suggestions")}
-            </p>
+        <div data-lenis-prevent className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {status && (
+            <div className="space-y-3 px-5 py-6">
+              <p
+                role={failed ? "alert" : "status"}
+                className="flex items-start gap-2 text-caption text-fg-secondary [overflow-wrap:anywhere]"
+              >
+                {!failed && entries === null && <Spinner />}
+                {status}
+              </p>
+              {failed && (
+                <Button size="small" onClick={() => setAttempt((value) => value + 1)}>
+                  {t("retry")}
+                </Button>
+              )}
+            </div>
           )}
-          {hits.map((hit, i) => (
-            <Link
-              key={`${hit.kind}:${hit.href}:${i}`}
-              id={optionId(i)}
-              href={hit.href}
-              role="option"
-              aria-selected={i === active}
-              tabIndex={-1}
-              onMouseMove={() => setActive(i)}
-              // The route veil prevents the click during document capture.
-              // RouterLink skips onClick for that event, so close in capture too.
-              onClickCapture={() => dialogRef.current?.close()}
-              className={`mx-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 sm:flex-nowrap ${
-                i === active ? "bg-fg/[0.06]" : ""
-              }`}
-            >
-              <span className="min-w-0 font-mono text-meta uppercase tracking-meta text-accent [overflow-wrap:anywhere] sm:w-12 sm:shrink-0">
-                {t(`kinds.${hit.kind}`)}
-              </span>
-              <span className="order-first min-w-0 basis-full sm:order-none sm:flex-1">
-                <span className="block text-caption text-fg [overflow-wrap:anywhere]">
-                  {hit.title || hit.snippet}
+
+          <div
+            id={listId}
+            role="listbox"
+            aria-busy={entries === null && !failed}
+            aria-label={t("resultsAria")}
+            className="py-2"
+          >
+            {!query.trim() && hits.length > 0 && (
+              <p
+                role="presentation"
+                className="px-5 pb-1 pt-2 font-mono text-meta uppercase tracking-meta text-fg-tertiary"
+              >
+                {t("suggestions")}
+              </p>
+            )}
+            {hits.map((hit, i) => (
+              <Link
+                key={`${hit.kind}:${hit.href}:${i}`}
+                id={optionId(i)}
+                href={hit.href}
+                role="option"
+                aria-selected={i === active}
+                tabIndex={-1}
+                onMouseMove={() => setActive(i)}
+                // The route veil prevents the click during document capture.
+                // RouterLink skips onClick for that event, so close in capture too.
+                onClickCapture={() => dialogRef.current?.close()}
+                className={`mx-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 rounded-xl px-3 py-2.5 sm:flex-nowrap ${
+                  i === active ? "bg-fg/[0.06]" : ""
+                }`}
+              >
+                <span className="min-w-0 font-mono text-meta uppercase tracking-meta text-accent [overflow-wrap:anywhere] sm:w-12 sm:shrink-0">
+                  {t(`kinds.${hit.kind}`)}
                 </span>
-                {hit.title && hit.snippet && (
-                  <span className="mt-0.5 block truncate text-meta text-fg-tertiary">
-                    {hit.snippet}
+                <span className="order-first min-w-0 basis-full sm:order-none sm:flex-1">
+                  <span className="block text-caption text-fg [overflow-wrap:anywhere]">
+                    {hit.title || hit.snippet}
+                  </span>
+                  {hit.title && hit.snippet && (
+                    <span className="mt-0.5 block truncate text-meta text-fg-tertiary">
+                      {hit.snippet}
+                    </span>
+                  )}
+                </span>
+                {hit.meta && (
+                  <span className="ms-auto min-w-0 text-end font-mono text-meta text-fg-tertiary tabular-nums [overflow-wrap:anywhere] sm:max-w-[40%]">
+                    {hit.meta}
                   </span>
                 )}
-              </span>
-              {hit.meta && (
-                <span className="ms-auto min-w-0 text-end font-mono text-meta text-fg-tertiary tabular-nums [overflow-wrap:anywhere] sm:max-w-[40%]">
-                  {hit.meta}
-                </span>
-              )}
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
 
-        <p className="hidden border-t border-line px-5 py-2.5 font-mono text-meta text-fg-tertiary sm:block">
+        <p className="hidden shrink-0 border-t border-line px-5 py-2.5 font-mono text-meta text-fg-tertiary sm:block">
           {t("hint")}
         </p>
       </div>

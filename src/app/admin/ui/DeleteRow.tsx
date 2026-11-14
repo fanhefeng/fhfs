@@ -26,12 +26,15 @@ export function DeleteRow({
   fields,
   what,
   label = "删除这条",
+  disabled = false,
 }: {
   action: (form: FormData) => Promise<void>;
   fields: { [name: string]: string };
   /** What is about to be deleted, in the words the editor sees elsewhere. */
   what: string;
   label?: string;
+  /** The surrounding editor is saving its snapshot; do not start a delete. */
+  disabled?: boolean;
 }) {
   const [armed, setArmed] = useState(false);
   const [error, setError] = useState("");
@@ -50,6 +53,7 @@ export function DeleteRow({
   }, [armed]);
 
   const arm = (next: boolean) => {
+    if (disabled) return;
     setError("");
     moved.current = true;
     setArmed(next);
@@ -57,7 +61,11 @@ export function DeleteRow({
 
   return (
     <form
+      onSubmit={(event) => {
+        if (disabled) event.preventDefault();
+      }}
       action={async (form) => {
+        if (disabled) return;
         setError("");
         try {
           await invoke(form);
@@ -78,13 +86,14 @@ export function DeleteRow({
           <p className={hintClass}>
             删掉「<span className="font-mono">{what}</span>」，没有回收站。
           </p>
-          <Confirm />
-          <BackOut ref={backOutRef} onBackOut={() => arm(false)} />
+          <Confirm disabled={disabled} />
+          <BackOut ref={backOutRef} disabled={disabled} onBackOut={() => arm(false)} />
         </div>
       ) : (
         <button
           ref={armRef}
           type="button"
+          disabled={disabled}
           onClick={() => arm(true)}
           className="min-h-11 text-caption break-all text-fg-tertiary transition-colors hover:text-accent"
         >
@@ -103,10 +112,10 @@ export function DeleteRow({
 /** Its own component because `useFormStatus` reads the form it is *inside*.
  *  A delete is idempotent, so a second press did no harm — but it also said
  *  nothing, and a cold database makes that a long silence. */
-function Confirm() {
+function Confirm({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" tone="danger" busy={pending}>
+    <Button type="submit" tone="danger" busy={pending} disabled={disabled}>
       {pending ? "删除中…" : "确认删除"}
     </Button>
   );
@@ -115,10 +124,18 @@ function Confirm() {
 /** Once the delete is on its way it cannot be called back — so while it is,
  *  "算了" says so by being unavailable, instead of folding the sentence away
  *  and letting the row vanish a moment later anyway. */
-function BackOut({ ref, onBackOut }: { ref: Ref<HTMLButtonElement>; onBackOut: () => void }) {
+function BackOut({
+  ref,
+  disabled,
+  onBackOut,
+}: {
+  ref: Ref<HTMLButtonElement>;
+  disabled: boolean;
+  onBackOut: () => void;
+}) {
   const { pending } = useFormStatus();
   return (
-    <Button ref={ref} type="button" disabled={pending} onClick={onBackOut}>
+    <Button ref={ref} type="button" disabled={disabled || pending} onClick={onBackOut}>
       算了
     </Button>
   );

@@ -4,6 +4,7 @@ import { useId } from "react";
 import { Textarea } from "@/components/ui/Field";
 import { postMoment } from "../actions/moments";
 import { SaveControls } from "../ui/SaveControls";
+import { SaveFields } from "../ui/SaveFields";
 import { cardClass, hintClass, labelClass } from "../styles";
 import { useSaveAction } from "../ui/useSaveAction";
 import { MediaField } from "../ui/MediaField";
@@ -22,20 +23,22 @@ export function QuickMoment() {
 
   return (
     <form {...formProps} className={`${cardClass} space-y-5 p-4 sm:p-6`}>
-      <label htmlFor={contentId} className="block space-y-2">
-        <span className={labelClass}>说说正文</span>
-        <Textarea id={contentId} name="content" rows={4} placeholder="此刻在想什么？" />
-      </label>
-      <MediaField
-        name="media"
-        label="图片 / 语音 / 视频（可空）"
-        kind="list"
-        defaultValue=""
-        rows={2}
-      />
-      <p className={hintClass}>
-        发出去就是公开的，时间按此刻。要选文集、写出处或存草稿，去「说说」里写。
-      </p>
+      <SaveFields pending={pending} className="space-y-5">
+        <label htmlFor={contentId} className="block space-y-2">
+          <span className={labelClass}>说说正文</span>
+          <Textarea id={contentId} name="content" rows={4} placeholder="此刻在想什么？" />
+        </label>
+        <MediaField
+          name="media"
+          label="图片 / 语音 / 视频（可空）"
+          kind="list"
+          defaultValue=""
+          rows={2}
+        />
+        <p className={hintClass}>
+          发出去就是公开的，时间按此刻。要选文集、写出处或存草稿，去「说说」里写。
+        </p>
+      </SaveFields>
       <SaveControls state={state} pending={pending} label="发布" cancelable />
     </form>
   );

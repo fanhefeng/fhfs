@@ -8,6 +8,7 @@ import {
   inspectMedia,
   sendMedia,
   uploadOperation,
+  type UploadPhase,
   type UploadedMedia,
 } from "@/lib/client/mediaUpload";
 import { uploadFile } from "@/lib/mediaUploads";
@@ -20,10 +21,21 @@ type Item = {
   local: string;
   kind: UploadedMedia["kind"];
   busy: boolean;
+  phase: "inspecting" | UploadPhase | `poster-${UploadPhase}`;
   media?: UploadedMedia;
   error?: string;
   controller: AbortController;
   posterId?: string;
+};
+
+const PHASE_LABELS: Record<Item["phase"], string> = {
+  inspecting: "读取文件信息…",
+  preparing: "准备上传…",
+  uploading: "上传文件…",
+  confirming: "确认文件可用…",
+  "poster-preparing": "准备上传封面…",
+  "poster-uploading": "上传封面…",
+  "poster-confirming": "确认封面可用…",
 };
 type Props = {
   kind?: "image" | "audio" | "list";
@@ -106,30 +118,45 @@ export function MediaUpload({
         kind: format.kind,
         local: URL.createObjectURL(file),
         busy: true,
+        phase: "inspecting",
         controller: new AbortController(),
       };
       update([...current.current, item]);
       setError("");
+      const ownsItem = () =>
+        batch.current === selectedBatch &&
+        current.current.some((existing) => existing.id === item.id);
+      const active = () => ownsItem() && !item.controller.signal.aborted;
+      const phase = (next: Item["phase"]) => {
+        if (active()) change(item.id, { phase: next });
+      };
       try {
-        const measured = await inspectMedia(file, item.local);
+        const { posterFile, ...measured } = await inspectMedia(
+          file,
+          item.local,
+          item.controller.signal,
+        );
         item.controller.signal.throwIfAborted();
-        const src = await sendMedia(file, item.id, selectedBatch, item.controller.signal);
+        const src = await sendMedia(file, item.id, selectedBatch, item.controller.signal, phase);
         let poster: string | undefined;
-        if (measured.posterFile) {
+        if (posterFile) {
           item.posterId = crypto.randomUUID();
+          change(item.id, { posterId: item.posterId });
           poster = await sendMedia(
-            measured.posterFile,
+            posterFile,
             item.posterId,
             selectedBatch,
             item.controller.signal,
+            (next) => phase(`poster-${next}`),
           );
         }
         item.controller.signal.throwIfAborted();
+        if (!active()) continue;
         const media = { ...measured, src, poster };
         callbacks.current.onUploaded(media);
-        change(item.id, { busy: false, media });
+        if (active()) change(item.id, { busy: false, media });
       } catch (failure) {
-        if (!item.controller.signal.aborted)
+        if (active())
           change(item.id, {
             busy: false,
             error: failure instanceof Error ? failure.message : "上传未完成，请重新选择文件。",
@@ -139,15 +166,23 @@ export function MediaUpload({
   };
 
   const remove = async (item: Item) => {
-    item.controller.abort();
+    const currentItem = current.current.find((existing) => existing.id === item.id);
+    if (!currentItem) return;
+    const selectedBatch = batch.current;
+    const ownsItem = () =>
+      batch.current === selectedBatch &&
+      current.current.some((existing) => existing.id === item.id);
+    currentItem.controller.abort();
     try {
-      await uploadOperation({ action: "cancel", batch: batch.current, id: item.id });
-      if (item.posterId)
-        await uploadOperation({ action: "cancel", batch: batch.current, id: item.posterId });
-      if (item.media) callbacks.current.onRemove(item.media.src);
-      URL.revokeObjectURL(item.local);
+      await uploadOperation({ action: "cancel", batch: selectedBatch, id: item.id });
+      if (currentItem.posterId)
+        await uploadOperation({ action: "cancel", batch: selectedBatch, id: currentItem.posterId });
+      if (!ownsItem()) return;
+      if (currentItem.media) callbacks.current.onRemove(currentItem.media.src);
+      URL.revokeObjectURL(currentItem.local);
       update(current.current.filter((existing) => existing.id !== item.id));
     } catch (failure) {
+      if (!ownsItem()) return;
       change(item.id, {
         busy: false,
         error: failure instanceof Error ? failure.message : "清理未完成，请重试。",
@@ -194,7 +229,8 @@ export function MediaUpload({
         <div key={item.id} className="space-y-2 rounded-chip border border-line p-3">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption">
             <span role="status" className="min-w-0 break-all">
-              {item.name} · {item.busy ? "上传中…" : item.error ? "未完成" : "已上传，等待保存"}
+              {item.name} ·{" "}
+              {item.busy ? PHASE_LABELS[item.phase] : item.error ? "未完成" : "已上传，等待保存"}
             </span>
             <button
               type="button"

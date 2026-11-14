@@ -130,6 +130,10 @@ export default function FilmPage({
               // Raw: the placeholders are the viewer's to fill, not ICU's.
               counter: t.raw("viewer.counter"),
               hint: t("viewer.hint"),
+              loading: t("viewer.loading"),
+              failed: t("viewer.failed"),
+              retry: t("viewer.retry"),
+              original: t("viewer.original"),
             }}
           />
         </section>

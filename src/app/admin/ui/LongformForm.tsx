@@ -14,6 +14,7 @@ import {
 import type { ActionState } from "../actions/shared";
 import { choiceButtonClass, errorClass, labelClass, monoClass } from "../styles";
 import { SaveControls } from "./SaveControls";
+import { SaveFields } from "./SaveFields";
 import { DeleteRow } from "./DeleteRow";
 import { useFieldErrors } from "./fieldErrors";
 import { useSaveAction } from "./useSaveAction";
@@ -85,142 +86,144 @@ export function LongformForm({
   return (
     <>
       <form {...formProps} className="space-y-4 sm:space-y-5" {...check.formProps}>
-        {/* Tells the action to refuse an existing address and, once saved, to
+        <SaveFields pending={pending} className="space-y-4 sm:space-y-5">
+          {/* Tells the action to refuse an existing address and, once saved, to
             redirect to the edit page: this page's props are a blank draft, and
             a saved form resets to its props (useSaveAction) — without the
             redirect a successful save would wipe the editor. */}
-        {(isNew || imported) && (
-          <input type="hidden" name="isNew" value={imported ? "imported" : "1"} />
-        )}
-        <div
-          className={`grid grid-cols-2 gap-3 sm:gap-4 ${head ? "md:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"}`}
-        >
-          <label
-            className={`col-span-full min-w-0 space-y-1.5 ${head ? "md:col-span-1" : "sm:col-span-1"}`}
-          >
-            <span className={labelClass}>slug</span>
-            <Input
-              name="slug"
-              defaultValue={doc.slug}
-              readOnly={!addressEditable}
-              required
-              pattern={KEY_PATTERN}
-              data-mismatch={KEY_MESSAGE}
-              {...check.field("slug")}
-            />
-            {check.message("slug")}
-          </label>
-
-          <div className="min-w-0 space-y-1.5">
-            <span id={localeLabel} className={labelClass}>
-              语言
-            </span>
-            <Select
-              name="locale"
-              labelledBy={localeLabel}
-              defaultValue={doc.locale}
-              disabled={!addressEditable}
-              options={[
-                { value: "zh", label: "zh · 中文" },
-                { value: "en", label: "en · English" },
-              ]}
-            />
-            {/* A disabled control submits nothing — keep the value in the post. */}
-            {!addressEditable && <input type="hidden" name="locale" value={doc.locale} />}
-          </div>
-
-          {head}
-
-          <label className={`min-w-0 space-y-1.5 ${head ? "col-span-full md:col-span-1" : ""}`}>
-            <span className={labelClass}>日期</span>
-            <Input
-              name="date"
-              defaultValue={doc.date}
-              placeholder={imported && !doc.date ? "填写发布日期" : datePlaceholder}
-              required
-              pattern="\d{4}-\d{2}-\d{2}"
-              data-mismatch="日期要写成 YYYY-MM-DD。"
-              {...check.field("date")}
-            />
-            {check.message("date")}
-          </label>
-        </div>
-
-        <label className="block space-y-1.5">
-          <span className={labelClass}>标题</span>
-          <Input name="title" defaultValue={doc.title} required {...check.field("title")} />
-          {check.message("title")}
-        </label>
-
-        <label htmlFor={`${bodyLabelId}-summary`} className="block space-y-1.5">
-          <span className={labelClass}>摘要</span>
-          <Input id={`${bodyLabelId}-summary`} name="summary" defaultValue={doc.summary} />
-        </label>
-
-        <div className={`grid gap-3 sm:gap-4 ${extrasCols}`}>
-          {extras}
-          <div className="flex items-end">
-            <Toggle
-              name="draft"
-              defaultChecked={doc.draft}
-              label="草稿"
-              hint={imported ? "保存为草稿会暂时下架原网址" : draftHint}
-              onLabel="草稿"
-              offLabel="已公开"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          {!isNew && !imported && (
-            <a
-              href={`/admin/preview?${new URLSearchParams({
-                kind: previewKind,
-                slug: doc.slug,
-                locale: doc.locale,
-              })}`}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent"
-            >
-              在站上看上次保存的版本
-            </a>
+          {(isNew || imported) && (
+            <input type="hidden" name="isNew" value={imported ? "imported" : "1"} />
           )}
-          <MarkdownPreview
-            source={body}
-            heading={
-              <span id={bodyLabelId} className={labelClass}>
-                {bodyLabel}
-              </span>
-            }
+          <div
+            className={`grid grid-cols-2 gap-3 sm:gap-4 ${head ? "md:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem]" : "sm:grid-cols-[minmax(0,1fr)_9rem_10rem]"}`}
           >
-            <Textarea
-              ref={body}
-              name="bodyMd"
-              aria-labelledby={bodyLabelId}
-              defaultValue={doc.bodyMd}
-              rows={24}
-              spellCheck={false}
-              className={`${monoClass}`}
-            />
-          </MarkdownPreview>
-          <MediaUpload
-            kind="image"
-            onUploaded={(media) => {
-              if (body.current) body.current.value += `\n\n![图片](${media.src})\n`;
-            }}
-            onRemove={(src) => {
-              if (body.current)
-                body.current.value = body.current.value.replace(`![图片](${src})`, "");
-            }}
-          />
-        </div>
+            <label
+              className={`col-span-full min-w-0 space-y-1.5 ${head ? "md:col-span-1" : "sm:col-span-1"}`}
+            >
+              <span className={labelClass}>slug</span>
+              <Input
+                name="slug"
+                defaultValue={doc.slug}
+                readOnly={!addressEditable}
+                required
+                pattern={KEY_PATTERN}
+                data-mismatch={KEY_MESSAGE}
+                {...check.field("slug")}
+              />
+              {check.message("slug")}
+            </label>
 
+            <div className="min-w-0 space-y-1.5">
+              <span id={localeLabel} className={labelClass}>
+                语言
+              </span>
+              <Select
+                name="locale"
+                labelledBy={localeLabel}
+                defaultValue={doc.locale}
+                disabled={!addressEditable}
+                options={[
+                  { value: "zh", label: "zh · 中文" },
+                  { value: "en", label: "en · English" },
+                ]}
+              />
+              {/* A disabled control submits nothing — keep the value in the post. */}
+              {!addressEditable && <input type="hidden" name="locale" value={doc.locale} />}
+            </div>
+
+            {head}
+
+            <label className={`min-w-0 space-y-1.5 ${head ? "col-span-full md:col-span-1" : ""}`}>
+              <span className={labelClass}>日期</span>
+              <Input
+                name="date"
+                defaultValue={doc.date}
+                placeholder={imported && !doc.date ? "填写发布日期" : datePlaceholder}
+                required
+                pattern="\d{4}-\d{2}-\d{2}"
+                data-mismatch="日期要写成 YYYY-MM-DD。"
+                {...check.field("date")}
+              />
+              {check.message("date")}
+            </label>
+          </div>
+
+          <label className="block space-y-1.5">
+            <span className={labelClass}>标题</span>
+            <Input name="title" defaultValue={doc.title} required {...check.field("title")} />
+            {check.message("title")}
+          </label>
+
+          <label htmlFor={`${bodyLabelId}-summary`} className="block space-y-1.5">
+            <span className={labelClass}>摘要</span>
+            <Input id={`${bodyLabelId}-summary`} name="summary" defaultValue={doc.summary} />
+          </label>
+
+          <div className={`grid gap-3 sm:gap-4 ${extrasCols}`}>
+            {extras}
+            <div className="flex items-end">
+              <Toggle
+                name="draft"
+                defaultChecked={doc.draft}
+                label="草稿"
+                hint={imported ? "保存为草稿会暂时下架原网址" : draftHint}
+                onLabel="草稿"
+                offLabel="已公开"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {!isNew && !imported && (
+              <a
+                href={`/admin/preview?${new URLSearchParams({
+                  kind: previewKind,
+                  slug: doc.slug,
+                  locale: doc.locale,
+                })}`}
+                target="_blank"
+                rel="noopener"
+                className="inline-flex min-h-11 items-center text-caption text-fg-secondary underline decoration-line underline-offset-4 hover:text-accent"
+              >
+                在站上看上次保存的版本
+              </a>
+            )}
+            <MarkdownPreview
+              source={body}
+              heading={
+                <span id={bodyLabelId} className={labelClass}>
+                  {bodyLabel}
+                </span>
+              }
+            >
+              <Textarea
+                ref={body}
+                name="bodyMd"
+                aria-labelledby={bodyLabelId}
+                defaultValue={doc.bodyMd}
+                rows={24}
+                spellCheck={false}
+                className={`${monoClass}`}
+              />
+            </MarkdownPreview>
+            <MediaUpload
+              kind="image"
+              onUploaded={(media) => {
+                if (body.current) body.current.value += `\n\n![图片](${media.src})\n`;
+              }}
+              onRemove={(src) => {
+                if (body.current)
+                  body.current.value = body.current.value.replace(`![图片](${src})`, "");
+              }}
+            />
+          </div>
+        </SaveFields>
         <SaveControls state={state} pending={pending} sticky cancelable />
       </form>
 
       {!isNew && !imported && (
         <DeleteRow
+          disabled={pending}
           action={deleteAction}
           fields={{ slug: doc.slug, locale: doc.locale }}
           what={`${doc.slug}.${doc.locale}`}

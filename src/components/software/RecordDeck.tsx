@@ -390,7 +390,6 @@ export function RecordDeck({ apps, current, arrival, deckRef, focusRequest }: Pr
             {app.tagline}
           </p>
         </div>
-        <p className="text-[0.975rem] leading-relaxed text-fg-secondary">{app.description}</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-1">
           <a
             href={app.downloadUrl ?? app.website}
@@ -419,6 +418,7 @@ export function RecordDeck({ apps, current, arrival, deckRef, focusRequest }: Pr
             </p>
           ) : null}
         </div>
+        <p className="text-[0.975rem] leading-relaxed text-fg-secondary">{app.description}</p>
         {app.repoUrl ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-meta text-fg-tertiary">
             <a

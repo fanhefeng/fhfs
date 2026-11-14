@@ -545,6 +545,10 @@ export function LabStudy({ slug, accent, text, entries, cards, wall, standIn, fi
               next: s("next"),
               counter: s("counter"),
               hint: s("viewerHint"),
+              loading: s("viewerLoading"),
+              failed: s("viewerFailed"),
+              retry: s("viewerRetry"),
+              original: s("viewerOriginal"),
             }}
           />
         </div>

@@ -848,3 +848,14 @@ body {
     transform: none;
   }
 }
+/* An upward popup enters toward its anchor, keeping its top inside the viewport. */
+@keyframes admin-pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.25rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

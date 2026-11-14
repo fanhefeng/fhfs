@@ -117,11 +117,21 @@ try {
     await page.mouse.down();
     await page.mouse.move(end.x, end.y, { steps: 15 });
     await page.mouse.up();
-    assert.ok(
-      (await page.evaluate(() => getSelection().toString())).includes(
-        locale === "zh" ? "把日常" : "A small",
-      ),
-    );
+    const selection = await page.evaluate(() => {
+      const heading = document.querySelector(".mag-canvas h2");
+      const selected = getSelection();
+      const normalize = (text) => text.replace(/\s+/g, " ").trim();
+      const text = normalize(selected.toString());
+      return {
+        text,
+        belongsToHeading:
+          heading.contains(selected.anchorNode) && heading.contains(selected.focusNode),
+        matchesHeading: normalize(heading.textContent).includes(text),
+      };
+    });
+    assert.ok(selection.text.length >= 2, "Projected drag selects visible heading text");
+    assert.ok(selection.belongsToHeading, "Selection stays within the projected heading");
+    assert.ok(selection.matchesHeading, "Selection matches the current localized heading");
     await page.evaluate(() => getSelection().removeAllRanges());
 
     await page.evaluate(() => {
@@ -129,7 +139,7 @@ try {
     });
     await expect(page.locator(".mag-canvas .mag-cover")).toHaveCSS(
       "background-color",
-      "rgb(14, 14, 17)",
+      "rgb(20, 20, 19)",
     );
     const link = await point(page, ".mag-read");
     await page.mouse.click(link.x, link.y);

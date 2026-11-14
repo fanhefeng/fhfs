@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { readVisualViewport, useVisualViewport } from "@/lib/client/useVisualViewport";
+import { selectPopupPlacement } from "@/lib/viewport";
 import { fieldSkin } from "../styles";
 
 export type SelectOption = {
@@ -63,6 +65,33 @@ export function Select({
   const root = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const hidden = useRef<HTMLInputElement>(null);
+  const viewport = useVisualViewport(open);
+  const [placement, setPlacement] = useState({ upward: false, maxHeight: 288 });
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const anchor = root.current?.getBoundingClientRect();
+      const panel = list.current;
+      if (!anchor || !panel) return;
+      const next = selectPopupPlacement(
+        anchor,
+        readVisualViewport(),
+        Math.min(288, panel.scrollHeight),
+      );
+      setPlacement((previous) =>
+        previous.upward === next.upward && previous.maxHeight === next.maxHeight ? previous : next,
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    if (root.current) observer.observe(root.current);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [open, viewport, options]);
 
   // A form reset puts every native field back to its default, and this one is
   // state — so it listens for the reset and does the same. Without it the
@@ -94,8 +123,14 @@ export function Select({
   // Keep the highlighted row in view while arrowing through a long list.
   useEffect(() => {
     if (!open) return;
-    list.current?.children[active]?.scrollIntoView({ block: "nearest" });
-  }, [open, active]);
+    const panel = list.current;
+    const option = panel?.children[active];
+    if (!panel || !(option instanceof HTMLElement)) return;
+    const item = option.getBoundingClientRect();
+    const bounds = panel.getBoundingClientRect();
+    if (item.top < bounds.top) panel.scrollTop -= bounds.top - item.top;
+    else if (item.bottom > bounds.bottom) panel.scrollTop += item.bottom - bounds.bottom;
+  }, [open, active, placement]);
 
   const openAt = (index: number) => {
     setActive(index < 0 ? 0 : index);
@@ -200,7 +235,9 @@ export function Select({
         onKeyDown={onKeyDown}
         className={`${fieldSkin} flex min-h-11 w-full min-w-0 items-center gap-2 px-3 py-2 text-left text-body aria-expanded:border-accent`}
       >
-        <span className="flex-1 truncate">{selected?.label ?? value}</span>
+        <span className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
+          {selected?.label ?? value}
+        </span>
         <span aria-hidden className="shrink-0 text-meta text-fg-secondary">
           {open ? "收起" : "选择"}
         </span>
@@ -212,7 +249,9 @@ export function Select({
           id={listId}
           role="listbox"
           tabIndex={-1}
-          className="absolute z-30 mt-1.5 max-h-72 w-full min-w-36 overflow-auto rounded-card border border-[color:var(--admin-action-border)] bg-surface-raised p-1 shadow-lift motion-safe:animate-[admin-pop_140ms_ease-out]"
+          aria-labelledby={labelledBy}
+          style={{ maxHeight: placement.maxHeight }}
+          className={`absolute z-30 w-full min-w-0 overflow-auto overscroll-contain rounded-card border border-[color:var(--admin-action-border)] bg-surface-raised p-1 shadow-lift ${placement.upward ? "bottom-full mb-1.5 motion-safe:animate-[admin-pop-up_140ms_ease-out]" : "top-full mt-1.5 motion-safe:animate-[admin-pop_140ms_ease-out]"}`}
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
@@ -226,7 +265,11 @@ export function Select({
                 // -1 keeps the options out of the tab order but addressable.
                 tabIndex={-1}
                 aria-selected={isSelected}
-                onMouseEnter={() => setActive(index)}
+                // A popup appearing under a stationary cursor must not replace
+                // the keyboard's active option. Only actual pointer movement does.
+                onPointerMove={(event) => {
+                  if (event.pointerType !== "touch") setActive(index);
+                }}
                 onClick={() => commit(index)}
                 className={`flex min-h-11 cursor-pointer items-baseline gap-2 rounded-[calc(var(--r-chip)-0.25rem)] px-2.5 py-2 text-body transition-colors ${
                   index === active ? "bg-surface" : ""
@@ -235,7 +278,7 @@ export function Select({
                 <span aria-hidden className="w-3 shrink-0 font-mono text-meta">
                   {isSelected ? "✓" : ""}
                 </span>
-                <span className="flex-1">
+                <span className="min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere]">
                   {option.label ?? option.value}
                   {option.hint && (
                     <span className="mt-0.5 block text-caption text-fg-tertiary">

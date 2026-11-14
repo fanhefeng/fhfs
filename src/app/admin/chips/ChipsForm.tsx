@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { saveChips } from "../actions/chips";
 import { ghostButtonClass, inputClass, labelClass } from "../styles";
 import { SaveControls } from "../ui/SaveControls";
+import { SaveFields } from "../ui/SaveFields";
 import { Select } from "../ui/Select";
 import { useSaveAction } from "../ui/useSaveAction";
 
@@ -32,6 +33,7 @@ const TONES = [
  */
 export function ChipsForm({ chips }: { chips: ChipRow[] }) {
   const { state, pending, formProps } = useSaveAction(saveChips);
+  const formId = useId();
   const [rows, setRows] = useState(chips);
   useEffect(() => setRows(chips), [chips]);
 
@@ -40,50 +42,63 @@ export function ChipsForm({ chips }: { chips: ChipRow[] }) {
 
   return (
     <form {...formProps}>
-      <div className="space-y-3">
-        {rows.map((chip, i) => (
-          <div key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_8rem] sm:items-end">
-            <label className="space-y-1">
-              {i === 0 && <span className={labelClass}>中文</span>}
-              <input
-                name={`chip.${i}.label.zh`}
-                value={chip.label.zh}
-                onChange={(e) => edit(i, { ...chip, label: { ...chip.label, zh: e.target.value } })}
-                className={inputClass}
-              />
-            </label>
-            <label className="space-y-1">
-              {i === 0 && <span className={labelClass}>English</span>}
-              <input
-                name={`chip.${i}.label.en`}
-                value={chip.label.en}
-                onChange={(e) => edit(i, { ...chip, label: { ...chip.label, en: e.target.value } })}
-                className={inputClass}
-              />
-            </label>
-            <div className="space-y-1">
-              {i === 0 && <span className={labelClass}>纸色</span>}
-              <Select
-                name={`chip.${i}.tone`}
-                value={chip.tone}
-                onValueChange={(tone) => edit(i, { ...chip, tone: tone as ChipRow["tone"] })}
-                options={TONES}
-              />
+      <SaveFields pending={pending}>
+        <div className="space-y-3">
+          {rows.map((chip, i) => (
+            <div key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_8rem] sm:items-end">
+              <label className="space-y-1">
+                <span className={i === 0 ? labelClass : "sr-only"}>
+                  <span className="sr-only">第 {i + 1} 张 · </span>中文
+                </span>
+                <input
+                  name={`chip.${i}.label.zh`}
+                  value={chip.label.zh}
+                  onChange={(e) =>
+                    edit(i, { ...chip, label: { ...chip.label, zh: e.target.value } })
+                  }
+                  className={inputClass}
+                />
+              </label>
+              <label className="space-y-1">
+                <span className={i === 0 ? labelClass : "sr-only"}>
+                  <span className="sr-only">第 {i + 1} 张 · </span>English
+                </span>
+                <input
+                  name={`chip.${i}.label.en`}
+                  value={chip.label.en}
+                  onChange={(e) =>
+                    edit(i, { ...chip, label: { ...chip.label, en: e.target.value } })
+                  }
+                  className={inputClass}
+                />
+              </label>
+              <div className="space-y-1">
+                <span id={`${formId}-tone-${i}`} className={i === 0 ? labelClass : "sr-only"}>
+                  <span className="sr-only">第 {i + 1} 张 · </span>纸色
+                </span>
+                <Select
+                  name={`chip.${i}.tone`}
+                  labelledBy={`${formId}-tone-${i}`}
+                  value={chip.tone}
+                  onValueChange={(tone) => edit(i, { ...chip, tone: tone as ChipRow["tone"] })}
+                  options={TONES}
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      <button
-        type="button"
-        onClick={() => setRows([...rows, { label: { zh: "", en: "" }, tone: "paper" }])}
-        className={`${ghostButtonClass} mt-4`}
-      >
-        <span aria-hidden className="text-fg-tertiary">
-          +
-        </span>
-        加一张
-      </button>
+        <button
+          type="button"
+          onClick={() => setRows([...rows, { label: { zh: "", en: "" }, tone: "paper" }])}
+          className={`${ghostButtonClass} mt-4`}
+        >
+          <span aria-hidden className="text-fg-tertiary">
+            +
+          </span>
+          加一张
+        </button>
+      </SaveFields>
 
       <SaveControls state={state} pending={pending} sticky />
     </form>

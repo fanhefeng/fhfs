@@ -80,6 +80,7 @@ export function SaveControls({
           取消本次编辑
         </Button>
       )}
+      {pending && <Feedback>正在保存，编辑暂时锁定。</Feedback>}
       {!pending && state.error && (
         <Feedback tone="error" className="min-w-0 basis-full">
           {state.error}

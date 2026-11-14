@@ -4,6 +4,7 @@ import { deleteWork, saveWork } from "../actions/works";
 import { inputClass, labelClass, textareaClass } from "../styles";
 import { DeleteRow } from "../ui/DeleteRow";
 import { SaveControls } from "../ui/SaveControls";
+import { SaveFields } from "../ui/SaveFields";
 import { useFieldErrors } from "../ui/fieldErrors";
 import { KEY_MESSAGE, KEY_PATTERN } from "@/lib/forms";
 import { useSaveAction } from "../ui/useSaveAction";
@@ -28,95 +29,97 @@ export function WorkForm({ work, isNew }: { work: WorkDraft; isNew: boolean }) {
   return (
     <>
       <form {...formProps} className="space-y-5" {...check.formProps}>
-        {/* Tells saveWork to refuse a key that already exists rather than
+        <SaveFields pending={pending} className="space-y-5">
+          {/* Tells saveWork to refuse a key that already exists rather than
             overwrite the work that has it. */}
-        {isNew && <input type="hidden" name="isNew" value="1" />}
-        <div className="grid gap-5 sm:grid-cols-[1fr_7rem_7rem]">
-          <label className="space-y-1.5">
-            <span className={labelClass}>key</span>
-            <input
-              name="key"
-              defaultValue={work.key}
-              readOnly={!isNew}
-              required
-              pattern={KEY_PATTERN}
-              data-mismatch={KEY_MESSAGE}
-              className={`${inputClass} ${isNew ? "" : "text-fg-tertiary"}`}
-              {...check.field("key")}
-            />
-            {check.message("key")}
-          </label>
-          <label className="space-y-1.5">
-            <span className={labelClass}>年份</span>
-            <input name="year" type="number" defaultValue={work.year} className={inputClass} />
-          </label>
-          <label className="space-y-1.5">
-            <span className={labelClass}>排序</span>
-            <input name="sort" type="number" defaultValue={work.sort} className={inputClass} />
-          </label>
-        </div>
-
-        {(["title", "description"] as const).map((field) => (
-          <div key={field}>
-            <span className={labelClass}>{field === "title" ? "标题" : "描述"}</span>
-            <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
-              {(["zh", "en"] as const).map((locale) => (
-                <label key={locale} className="space-y-1">
-                  <span className="font-mono text-meta text-fg-tertiary">{locale}</span>
-                  {field === "description" ? (
-                    <textarea
-                      name={`${field}.${locale}`}
-                      defaultValue={work[field][locale]}
-                      rows={3}
-                      className={textareaClass}
-                    />
-                  ) : (
-                    <input
-                      name={`${field}.${locale}`}
-                      defaultValue={work[field][locale]}
-                      className={inputClass}
-                    />
-                  )}
-                </label>
-              ))}
-            </div>
+          {isNew && <input type="hidden" name="isNew" value="1" />}
+          <div className="grid gap-5 sm:grid-cols-[1fr_7rem_7rem]">
+            <label className="space-y-1.5">
+              <span className={labelClass}>key</span>
+              <input
+                name="key"
+                defaultValue={work.key}
+                readOnly={!isNew}
+                required
+                pattern={KEY_PATTERN}
+                data-mismatch={KEY_MESSAGE}
+                className={`${inputClass} ${isNew ? "" : "text-fg-tertiary"}`}
+                {...check.field("key")}
+              />
+              {check.message("key")}
+            </label>
+            <label className="space-y-1.5">
+              <span className={labelClass}>年份</span>
+              <input name="year" type="number" defaultValue={work.year} className={inputClass} />
+            </label>
+            <label className="space-y-1.5">
+              <span className={labelClass}>排序</span>
+              <input name="sort" type="number" defaultValue={work.sort} className={inputClass} />
+            </label>
           </div>
-        ))}
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="space-y-1.5">
-            <span className={labelClass}>链接（可空）</span>
-            <input name="url" defaultValue={work.url ?? ""} className={inputClass} />
-          </label>
-          <MediaField
-            name="cover"
-            label="封面路径（前台暂未使用）"
-            kind="image"
-            defaultValue={work.cover ?? ""}
-          />
-        </div>
+          {(["title", "description"] as const).map((field) => (
+            <div key={field}>
+              <span className={labelClass}>{field === "title" ? "标题" : "描述"}</span>
+              <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
+                {(["zh", "en"] as const).map((locale) => (
+                  <label key={locale} className="space-y-1">
+                    <span className="font-mono text-meta text-fg-tertiary">{locale}</span>
+                    {field === "description" ? (
+                      <textarea
+                        name={`${field}.${locale}`}
+                        defaultValue={work[field][locale]}
+                        rows={3}
+                        className={textareaClass}
+                      />
+                    ) : (
+                      <input
+                        name={`${field}.${locale}`}
+                        defaultValue={work[field][locale]}
+                        className={inputClass}
+                      />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <label className="space-y-1.5">
-            <span className={labelClass}>标签（逗号分隔）</span>
-            <input name="tags" defaultValue={work.tags.join(", ")} className={inputClass} />
-          </label>
-          <label className="space-y-1.5">
-            <span className={labelClass}>主色（hex，可空）</span>
-            <input
-              name="accent"
-              defaultValue={work.accent ?? ""}
-              placeholder="#4c7a5b"
-              className={inputClass}
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className={labelClass}>链接（可空）</span>
+              <input name="url" defaultValue={work.url ?? ""} className={inputClass} />
+            </label>
+            <MediaField
+              name="cover"
+              label="封面路径（前台暂未使用）"
+              kind="image"
+              defaultValue={work.cover ?? ""}
             />
-          </label>
-        </div>
+          </div>
 
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className={labelClass}>标签（逗号分隔）</span>
+              <input name="tags" defaultValue={work.tags.join(", ")} className={inputClass} />
+            </label>
+            <label className="space-y-1.5">
+              <span className={labelClass}>主色（hex，可空）</span>
+              <input
+                name="accent"
+                defaultValue={work.accent ?? ""}
+                placeholder="#4c7a5b"
+                className={inputClass}
+              />
+            </label>
+          </div>
+        </SaveFields>
         <SaveControls state={state} pending={pending} />
       </form>
 
       {!isNew && (
         <DeleteRow
+          disabled={pending}
           action={deleteWork}
           fields={{ key: work.key }}
           what={work.key}

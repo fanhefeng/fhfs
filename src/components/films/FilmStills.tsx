@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "@/components/ui/Image";
+import { Spinner } from "@/components/ui/Spinner";
 import {
   useCallback,
   useEffect,
@@ -34,6 +35,10 @@ export type ViewerText = {
   /** `{index}` and `{count}` are filled in here. */
   counter: string;
   hint: string;
+  loading: string;
+  failed: string;
+  retry: string;
+  original: string;
 };
 
 type Props = {
@@ -76,6 +81,99 @@ const SIZES: Record<StillSpan, string> = {
 const VIEWER_BUTTON =
   "pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 px-4 font-mono text-meta uppercase tracking-meta text-white/85 backdrop-blur transition-colors hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
+/** A keyed instance owns one picture; an old load/error cannot settle a newer picture or retry. */
+function ViewerImage({
+  still,
+  text,
+  onRetryFocus,
+}: {
+  still: StillItem;
+  text: ViewerText;
+  onRetryFocus: () => void;
+}) {
+  const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [attempt, setAttempt] = useState(0);
+  const generation = useRef(0);
+  const container = useRef<HTMLDivElement>(null);
+  const settle = (next: "ready" | "failed") => {
+    if (attempt === generation.current) setStatus(next);
+  };
+
+  useEffect(() => {
+    // SSR may fetch a cached image before hydration installs its handlers.
+    // complete is also true for a broken image, hence the naturalWidth check.
+    const image = container.current?.querySelector("img");
+    if (image?.complete && attempt === generation.current)
+      setStatus(image.naturalWidth > 0 ? "ready" : "failed");
+  }, [attempt]);
+
+  return (
+    <div ref={container} aria-busy={status === "loading"} className="relative min-h-0 max-w-full">
+      <Image
+        key={attempt}
+        src={still.src}
+        width={still.width}
+        height={still.height}
+        alt={still.alt}
+        sizes="100vw"
+        unoptimized
+        loading="eager"
+        draggable={false}
+        onLoad={() => settle("ready")}
+        onError={() => settle("failed")}
+        aria-hidden={status !== "ready"}
+        className={
+          status === "failed"
+            ? "hidden"
+            : `max-h-[calc(100dvh-11rem)] w-auto max-w-full select-none rounded-card object-contain ${status === "ready" ? "opacity-100" : "opacity-0"}`
+        }
+      />
+      {status === "loading" && (
+        <p
+          role="status"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 px-4 text-center text-caption text-white/85"
+        >
+          <Spinner />
+          {text.loading}
+        </p>
+      )}
+      {status === "failed" && (
+        <div
+          data-lenis-prevent
+          className="flex max-h-[calc(100dvh-11rem)] w-[min(32rem,calc(100vw-2rem))] flex-col items-center gap-4 overflow-y-auto overscroll-contain rounded-card bg-white/5 p-4 text-center"
+        >
+          <p role="alert" className="text-caption text-white/90 [overflow-wrap:anywhere]">
+            {text.failed}
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              className={VIEWER_BUTTON}
+              onClick={() => {
+                onRetryFocus();
+                generation.current++;
+                setStatus("loading");
+                setAttempt(generation.current);
+              }}
+            >
+              {text.retry}
+            </button>
+            <a
+              href={still.src}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-no-transition=""
+              className={VIEWER_BUTTON}
+            >
+              {text.original}
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * A film's wall and its screening room.
  *
@@ -97,6 +195,7 @@ export function FilmStills({ ratio, stills, text }: Props) {
   const [current, setCurrent] = useState<number | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   /** The print that opened the room — focus returns to it. */
   const openerRef = useRef<HTMLElement | null>(null);
   /** Which way the last step went, so the next still slides in from that side. */
@@ -233,7 +332,7 @@ export function FilmStills({ ratio, stills, text }: Props) {
     // across one would have fired its click and a swipe both, stepping twice.
     // Cleared rather than left: a start kept from a touch the browser took
     // over would pair with this press's release and step on its own.
-    if ((e.target as HTMLElement).closest("button")) {
+    if ((e.target as HTMLElement).closest("button, a")) {
       swipeRef.current = null;
       return;
     }
@@ -338,17 +437,11 @@ export function FilmStills({ ratio, stills, text }: Props) {
               ref={frameRef}
               className="pointer-events-auto flex min-h-0 max-w-full flex-col items-center"
             >
-              <Image
-                key={still.id}
-                src={still.src}
-                width={still.width}
-                height={still.height}
-                alt={still.alt}
-                sizes="100vw"
-                unoptimized
-                loading="eager"
-                draggable={false}
-                className="max-h-[calc(100dvh-11rem)] w-auto max-w-full select-none rounded-card object-contain"
+              <ViewerImage
+                key={`${still.id}:${still.src}`}
+                still={still}
+                text={text}
+                onRetryFocus={() => closeButtonRef.current?.focus({ preventScroll: true })}
               />
               <p className="mt-4 flex flex-wrap items-baseline justify-center gap-x-3 gap-y-0.5 px-4 text-center">
                 <span className="text-caption text-white/90">{still.title}</span>
@@ -359,6 +452,7 @@ export function FilmStills({ ratio, stills, text }: Props) {
             </div>
 
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={close}
               className={`${VIEWER_BUTTON} absolute right-4 top-4`}

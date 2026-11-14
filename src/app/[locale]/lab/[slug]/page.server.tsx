@@ -206,6 +206,10 @@ export async function loadPageData(input: PageProps<"/[locale]/lab/[slug]">) {
         // Raw: the placeholders are the viewer's to fill, not ICU's.
         counter: tf.raw("viewer.counter"),
         viewerHint: tf("viewer.hint"),
+        viewerLoading: tf("viewer.loading"),
+        viewerFailed: tf("viewer.failed"),
+        viewerRetry: tf("viewer.retry"),
+        viewerOriginal: tf("viewer.original"),
       });
     } else {
       // The sign keeps its own credit (the lettering's); the stills' is the room's.

@@ -748,7 +748,11 @@
       "prev": "上一张",
       "next": "下一张",
       "counter": "{index} / {count}",
-      "hint": "左右方向键翻页 · Esc 关闭"
+      "hint": "左右方向键翻页 · Esc 关闭",
+      "loading": "正在加载原图……",
+      "failed": "原图没加载出来，可以重试或单独打开。",
+      "retry": "重新加载",
+      "original": "单独打开原图"
     }
   },
   "software": {

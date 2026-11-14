@@ -34,15 +34,19 @@ export const readTheme = (): Theme =>
     ? "dark"
     : "light";
 
-let vtCleanup: number | undefined;
+let themeTransition = 0;
 
 /** Flips the theme, wrapped in the 1.2s view-transition cross-fade. */
 export function toggleTheme(): void {
+  const transitionId = ++themeTransition;
+  let applied = false;
   // Read inside `apply`, not here: `startViewTransition` runs its callback
   // after the snapshot, so a second flip that lands before the first callback
   // would otherwise read the theme it is already on its way to setting, and
   // both presses would resolve to the same side.
   const apply = () => {
+    if (applied) return;
+    applied = true;
     const next: Theme = readTheme() === "light" ? "dark" : "light";
     document.documentElement.dataset.theme = next;
     paintBrowserChrome(next);
@@ -54,20 +58,23 @@ export function toggleTheme(): void {
     window.dispatchEvent(new CustomEvent("fhfs:theme"));
   };
 
-  const doc = document as Document & {
-    startViewTransition?: (cb: () => void) => void;
+  const finish = () => {
+    // A skipped or older transition must not clear the next one's styling.
+    if (transitionId === themeTransition) delete document.documentElement.dataset.vt;
   };
-  if (typeof doc.startViewTransition === "function") {
-    // Scope the theme cross-fade (globals.css, data-vt="theme") to this
-    // transition. One shared timer, reset per toggle — a rapid second flip
-    // must not strip the attribute in the middle of its own transition.
+  if (typeof document.startViewTransition === "function") {
     document.documentElement.dataset.vt = "theme";
-    doc.startViewTransition(apply);
-    window.clearTimeout(vtCleanup);
-    vtCleanup = window.setTimeout(() => {
-      delete document.documentElement.dataset.vt;
-    }, 1400);
+    try {
+      const transition = document.startViewTransition(apply);
+      // `finished` also settles when the visual animation is skipped.
+      void transition.finished.then(finish, finish);
+    } catch {
+      // A browser that cannot start the enhancement still changes theme once.
+      finish();
+      apply();
+    }
     return;
   }
+  finish();
   apply();
 }

@@ -4,7 +4,7 @@ import {
   startTransition,
   useActionState,
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -41,7 +41,9 @@ const FAILED: ActionState = {
  * button. `useServerFn` handles server redirects; other router signals pass
  * through `unstable_rethrow`.
  *
- * The reset still happens where it was wanted: on `ok`. The inline "new" row
+ * SaveFields locks editing while pending, after this hook takes FormData, so
+ * neither the refresh nor reset can discard a newer edit. The reset still
+ * happens where it was wanted: on `ok`. The inline "new" row
  * under a list goes blank for the next one, and an edit form picks up what
  * the server made of the values — by then the refreshed props are in, so the
  * defaults it resets to are the saved ones.
@@ -49,6 +51,10 @@ const FAILED: ActionState = {
 export function useSaveAction(action: SaveAction) {
   const invoke = useServerFn(action);
   const router = useRouter();
+  // React paints pending on the next render; reject a second submit even if
+  // it arrives synchronously before that render disables the fields/buttons.
+  const submitting = useRef(false);
+  const focusedBeforeSave = useRef<HTMLElement | null>(null);
   const guarded = useCallback<SaveAction>(
     async (prev, form) => {
       try {
@@ -72,6 +78,7 @@ export function useSaveAction(action: SaveAction) {
   const onSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (submitting.current) return;
       const form = event.currentTarget;
       setUploadError("");
       setCancelled(false);
@@ -82,18 +89,30 @@ export function useSaveAction(action: SaveAction) {
       formRef.current = form;
       const { submitter } = event.nativeEvent as SubmitEvent;
       const data = new FormData(form, submitter);
+      const focused = form.ownerDocument.activeElement;
+      focusedBeforeSave.current =
+        focused instanceof HTMLElement && form.contains(focused) ? focused : null;
+      submitting.current = true;
       startTransition(() => dispatch(data));
     },
     [dispatch],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (pending) return;
     if (state.ok) {
       resettingAfterSave.current = true;
       formRef.current?.reset();
       resettingAfterSave.current = false;
     }
-  }, [state]);
+    // Reset and unlock settle in the same commit, before the reader can type
+    // into the newly enabled fields. Errors unlock without resetting.
+    submitting.current = false;
+    const focused = focusedBeforeSave.current;
+    focusedBeforeSave.current = null;
+    if (focused?.isConnected && focused.ownerDocument.activeElement === focused.ownerDocument.body)
+      focused.focus({ preventScroll: true });
+  }, [pending, state]);
 
   return {
     state: cancelled ? {} : uploadError ? { error: uploadError } : state,
@@ -101,6 +120,14 @@ export function useSaveAction(action: SaveAction) {
     formProps: {
       action: dispatch,
       onSubmit,
+      onResetCapture: (event: FormEvent<HTMLFormElement>) => {
+        if (submitting.current && !resettingAfterSave.current) {
+          // A script-triggered reset must not change rows/custom selects while
+          // a save is in flight either; stop it before their native listeners.
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      },
       onReset: () => {
         if (!resettingAfterSave.current) {
           setCancelled(true);

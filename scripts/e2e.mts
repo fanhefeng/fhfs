@@ -9,7 +9,7 @@ import { and, eq, like, or, sql } from "drizzle-orm";
 import { connect } from "./connect.mts";
 import { testDatabaseProblem } from "../src/lib/e2e";
 import { hashPassword } from "../src/lib/server/auth/password";
-import { posts, secrets, mediaUploads } from "../src/db/schema";
+import { posts, secrets, films, mediaUploads } from "../src/db/schema";
 import { backupAuditQueries } from "../src/lib/backupAudit";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -121,6 +121,30 @@ try {
   // Establish edit evidence only for the dedicated disposable fixture set.
   for (const table of [posts, secrets])
     await db.execute(backupAuditQueries(table, `isolated-e2e-${run}`).record);
+  // A run-owned wall gives viewer tests deterministic public content in this
+  // guarded, otherwise mostly empty database. Only these prefixed rows are removed.
+  const localized = (zh: string, en: string) => ({ zh, en });
+  const blank = localized("", "");
+  await db.insert(films).values({
+    key: `${prefix}-viewer`,
+    title: localized("隔离看图测试", "Isolated viewer test"),
+    subtitle: localized("仅供浏览器回归", "Browser regression only"),
+    latin: blank,
+    year: "2026",
+    ratio: "video",
+    facts: { director: blank, cast: blank, released: blank, runtime: blank, rating: blank },
+    credit: localized("沿用站内剧照许可", "Existing site stills license"),
+    stills: [
+      { id: "first", src: "/films/odyssey/monkey-king.jpg", width: 1800, height: 1013 },
+      { id: "second", src: "/films/odyssey/wink.jpg", width: 1280, height: 720 },
+    ].map((image) => ({
+      ...image,
+      span: "one" as const,
+      title: localized(image.id === "first" ? "第一张" : "第二张", image.id),
+      alt: localized("测试剧照", "Test still"),
+      meta: blank,
+    })),
+  });
   await writeFile(path.join(state, "session.json"), JSON.stringify({ secret, password, prefix }), {
     mode: 0o600,
   });
@@ -259,6 +283,7 @@ try {
       .where(and(eq(secrets.slug, "kitchen-notes"), like(secrets.title, `${prefix}%`)));
     for (const table of [posts, secrets])
       await db.execute(backupAuditQueries(table, `isolated-e2e-cleanup-${run}`).record);
+    await db.delete(films).where(eq(films.key, `${prefix}-viewer`));
     // All leases here belong to this application's dedicated disposable database.
     await db.delete(mediaUploads);
   } catch {

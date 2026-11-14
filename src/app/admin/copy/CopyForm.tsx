@@ -13,6 +13,7 @@ import {
   metaClass,
 } from "../styles";
 import { SaveControls } from "../ui/SaveControls";
+import { SaveFields } from "../ui/SaveFields";
 import { useSaveAction } from "../ui/useSaveAction";
 
 /**
@@ -47,91 +48,96 @@ export function CopyForm({ namespace, entries }: { namespace: string; entries: C
 
   return (
     <form {...formProps}>
-      <input type="hidden" name="namespace" value={namespace} />
+      <SaveFields pending={pending}>
+        <input type="hidden" name="namespace" value={namespace} />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative min-w-0 flex-1 basis-48 sm:max-w-xs">
-          <Icon
-            name="search"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-tertiary"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="按 key 或文案找…"
-            aria-label="筛选文案"
-            className={`${fieldSkin} h-11 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
-          />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative min-w-0 flex-1 basis-48 sm:max-w-xs">
+            <Icon
+              name="search"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-fg-tertiary"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="按 key 或文案找…"
+              aria-label="筛选文案"
+              className={`${fieldSkin} h-11 w-full pr-3 pl-9 text-body placeholder:text-fg-tertiary`}
+            />
+          </div>
+
+          <Only
+            active={only === "edited"}
+            onPress={() => setOnly((v) => (v === "edited" ? "all" : "edited"))}
+          >
+            只看改过的 {edited}
+          </Only>
+          {spoken > 0 && (
+            <Only
+              active={only === "sr"}
+              onPress={() => setOnly((v) => (v === "sr" ? "all" : "sr"))}
+            >
+              只看读屏的 {spoken}
+            </Only>
+          )}
+
+          <span className={`${metaClass} tabular-nums`}>
+            {hits} / {entries.length} 条
+          </span>
         </div>
 
-        <Only
-          active={only === "edited"}
-          onPress={() => setOnly((v) => (v === "edited" ? "all" : "edited"))}
-        >
-          只看改过的 {edited}
-        </Only>
         {spoken > 0 && (
-          <Only active={only === "sr"} onPress={() => setOnly((v) => (v === "sr" ? "all" : "sr"))}>
-            只看读屏的 {spoken}
-          </Only>
+          <p className={`mt-3 max-w-[70ch] ${hintClass}`}>
+            标着
+            <ScreenReaderBadge />
+            的那几条屏幕上看不见——图片的替代文字、按钮和区域的无障碍名称，
+            只有读屏软件会念出来。写它
+            <b>是什么</b>（「招牌的灯」），别写按下去会怎样（「关灯」）：
+            名字跟着状态变，读出来就成了「把招牌关掉，已按下」。也不用为版面迁就长度，它没有版面。
+          </p>
         )}
 
-        <span className={`${metaClass} tabular-nums`}>
-          {hits} / {entries.length} 条
-        </span>
-      </div>
-
-      {spoken > 0 && (
-        <p className={`mt-3 max-w-[70ch] ${hintClass}`}>
-          标着
-          <ScreenReaderBadge />
-          的那几条屏幕上看不见——图片的替代文字、按钮和区域的无障碍名称， 只有读屏软件会念出来。写它
-          <b>是什么</b>（「招牌的灯」），别写按下去会怎样（「关灯」）：
-          名字跟着状态变，读出来就成了「把招牌关掉，已按下」。也不用为版面迁就长度，它没有版面。
-        </p>
-      )}
-
-      <div className={`${cardClass} mt-4 divide-y divide-line`}>
-        {entries.map((entry) => (
-          <div key={entry.key} className="p-4 sm:p-5" hidden={!matches(entry)}>
-            <p className="flex flex-wrap items-baseline gap-2">
-              <span className="font-mono text-meta text-fg-tertiary">
-                {entry.key.slice(namespace.length + 1)}
-              </span>
-              {entry.overridden && (
-                <span className="rounded-chip border border-accent/40 px-1.5 font-mono text-meta text-accent">
-                  改过
+        <div className={`${cardClass} mt-4 divide-y divide-line`}>
+          {entries.map((entry) => (
+            <div key={entry.key} className="p-4 sm:p-5" hidden={!matches(entry)}>
+              <p className="flex flex-wrap items-baseline gap-2">
+                <span className="font-mono text-meta text-fg-tertiary">
+                  {entry.key.slice(namespace.length + 1)}
                 </span>
-              )}
-              {entry.screenReader && <ScreenReaderBadge />}
-            </p>
-            {entry.note && <p className={`mt-1 max-w-[70ch] ${hintClass}`}>{entry.note}</p>}
+                {entry.overridden && (
+                  <span className="rounded-chip border border-accent/40 px-1.5 font-mono text-meta text-accent">
+                    改过
+                  </span>
+                )}
+                {entry.screenReader && <ScreenReaderBadge />}
+              </p>
+              {entry.note && <p className={`mt-1 max-w-[70ch] ${hintClass}`}>{entry.note}</p>}
 
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1">
-                <span className="font-mono text-meta text-fg-tertiary">zh</span>
-                <input name={`${entry.key}.zh`} defaultValue={entry.zh} className={inputClass} />
-                {entry.overridden && <Default value={entry.zhDefault} />}
-              </label>
-              <label className="space-y-1">
-                <span className="font-mono text-meta text-fg-tertiary">en</span>
-                <input name={`${entry.key}.en`} defaultValue={entry.en} className={inputClass} />
-                {entry.overridden && <Default value={entry.enDefault} />}
-              </label>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1">
+                  <span className="font-mono text-meta text-fg-tertiary">zh</span>
+                  <input name={`${entry.key}.zh`} defaultValue={entry.zh} className={inputClass} />
+                  {entry.overridden && <Default value={entry.zhDefault} />}
+                </label>
+                <label className="space-y-1">
+                  <span className="font-mono text-meta text-fg-tertiary">en</span>
+                  <input name={`${entry.key}.en`} defaultValue={entry.en} className={inputClass} />
+                  {entry.overridden && <Default value={entry.enDefault} />}
+                </label>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {hits === 0 && (
-        <p className={`mt-6 ${hintClass}`}>
-          {only === "edited" && !needle
-            ? "这一组还没有改过的文案。"
-            : `没有匹配「${query}」的文案。`}
-        </p>
-      )}
-
+        {hits === 0 && (
+          <p className={`mt-6 ${hintClass}`}>
+            {only === "edited" && !needle
+              ? "这一组还没有改过的文案。"
+              : `没有匹配「${query}」的文案。`}
+          </p>
+        )}
+      </SaveFields>
       <SaveControls state={state} pending={pending} label="保存这一组" sticky />
     </form>
   );
