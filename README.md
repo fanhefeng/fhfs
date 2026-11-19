@@ -4,6 +4,13 @@
 
 线上地址：[fhfs.fhfs.workers.dev](https://fhfs.fhfs.workers.dev)。通过 Void 官方 CLI 发布到 Cloudflare Workers，数据库和媒体服务与原站共享。
 
+## RSS 与 WebMCP
+
+公开文章可通过 [中文 RSS](https://fhfs.fhfs.workers.dev/zh/rss.xml) 或
+[英文 RSS](https://fhfs.fhfs.workers.dev/en/rss.xml) 订阅，`/rss.xml` 默认跳转到中文。
+支持 WebMCP 的浏览器助手可以搜索公开内容、列出栏目、读取文章正文和打开页面。
+工具和验证步骤见 [WebMCP 文档](docs/WEBMCP.md)。
+
 ## 本地开发
 
 需要 Node 24 和 pnpm 11。Vite+ 管理开发、构建、Lint、格式和测试。

@@ -64,6 +64,7 @@ import { Route as AdminSecretsIndexRouteImport } from './routes/admin/secrets/in
 import { Route as AdminSecretsNewRouteImport } from './routes/admin/secrets/new'
 import { Route as ApiGithubWebhookRouteImport } from './routes/api/github/webhook'
 import { Route as ApiMediaCleanupRouteImport } from './routes/api/media/cleanup'
+import { Route as LocaleBlogSlugArticleDotjsonRouteImport } from './routes/$locale/blog/$slug/article[.]json'
 import { Route as LocaleBlogSlugOpengraphImageRouteImport } from './routes/$locale/blog/$slug/opengraph-image'
 import { Route as LocaleBlogNotesIndexRouteImport } from './routes/$locale/blog/notes/index'
 import { Route as LocaleBlogNotesSlugRouteImport } from './routes/$locale/blog/notes/$slug'
@@ -347,6 +348,12 @@ const ApiMediaCleanupRoute = ApiMediaCleanupRouteImport.update({
   path: '/api/media/cleanup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleBlogSlugArticleDotjsonRoute =
+  LocaleBlogSlugArticleDotjsonRouteImport.update({
+    id: '/article.json',
+    path: '/article.json',
+    getParentRoute: () => LocaleBlogSlugRoute,
+  } as any)
 const LocaleBlogSlugOpengraphImageRoute =
   LocaleBlogSlugOpengraphImageRouteImport.update({
     id: '/opengraph-image',
@@ -437,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/$locale/secrets/': typeof LocaleSecretsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/article.json': typeof LocaleBlogSlugArticleDotjsonRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
@@ -498,6 +506,7 @@ export interface FileRoutesByTo {
   '/$locale/secrets': typeof LocaleSecretsIndexRoute
   '/admin/posts': typeof AdminPostsIndexRoute
   '/admin/secrets': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/article.json': typeof LocaleBlogSlugArticleDotjsonRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
@@ -562,6 +571,7 @@ export interface FileRoutesById {
   '/$locale/secrets/': typeof LocaleSecretsIndexRoute
   '/admin/posts/': typeof AdminPostsIndexRoute
   '/admin/secrets/': typeof AdminSecretsIndexRoute
+  '/$locale/blog/$slug/article.json': typeof LocaleBlogSlugArticleDotjsonRoute
   '/$locale/blog/$slug/opengraph-image': typeof LocaleBlogSlugOpengraphImageRoute
   '/$locale/blog/notes/$slug': typeof LocaleBlogNotesSlugRoute
   '/$locale/blog/tags/$tag': typeof LocaleBlogTagsTagRoute
@@ -627,6 +637,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets/'
     | '/admin/posts/'
     | '/admin/secrets/'
+    | '/$locale/blog/$slug/article.json'
     | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets'
     | '/admin/posts'
     | '/admin/secrets'
+    | '/$locale/blog/$slug/article.json'
     | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
@@ -751,6 +763,7 @@ export interface FileRouteTypes {
     | '/$locale/secrets/'
     | '/admin/posts/'
     | '/admin/secrets/'
+    | '/$locale/blog/$slug/article.json'
     | '/$locale/blog/$slug/opengraph-image'
     | '/$locale/blog/notes/$slug'
     | '/$locale/blog/tags/$tag'
@@ -1157,6 +1170,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaCleanupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/blog/$slug/article.json': {
+      id: '/$locale/blog/$slug/article.json'
+      path: '/article.json'
+      fullPath: '/$locale/blog/$slug/article.json'
+      preLoaderRoute: typeof LocaleBlogSlugArticleDotjsonRouteImport
+      parentRoute: typeof LocaleBlogSlugRoute
+    }
     '/$locale/blog/$slug/opengraph-image': {
       id: '/$locale/blog/$slug/opengraph-image'
       path: '/opengraph-image'
@@ -1203,10 +1223,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface LocaleBlogSlugRouteChildren {
+  LocaleBlogSlugArticleDotjsonRoute: typeof LocaleBlogSlugArticleDotjsonRoute
   LocaleBlogSlugOpengraphImageRoute: typeof LocaleBlogSlugOpengraphImageRoute
 }
 
 const LocaleBlogSlugRouteChildren: LocaleBlogSlugRouteChildren = {
+  LocaleBlogSlugArticleDotjsonRoute: LocaleBlogSlugArticleDotjsonRoute,
   LocaleBlogSlugOpengraphImageRoute: LocaleBlogSlugOpengraphImageRoute,
 }
 

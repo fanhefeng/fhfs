@@ -37,6 +37,7 @@ describe("public WebMCP tools", () => {
     expect(tools.map((tool) => tool.name)).toEqual([
       "fhfs_search",
       "fhfs_list_sections",
+      "fhfs_read_article",
       "fhfs_open_page",
     ]);
     const result = await call("fhfs_search", { query: "React", limit: 2 });
@@ -100,6 +101,65 @@ describe("public WebMCP tools", () => {
     });
     expect(navigate).toHaveBeenCalledWith("/en/moments#m-1", undefined);
     expect(await call("fhfs_open_page", { path: "/zh" })).toMatchObject({ opened: true });
+  });
+
+  it("reads a published article anonymously without loading the index or navigating", async () => {
+    const article = {
+      path: "/en/blog/react",
+      canonicalUrl: "https://site.invalid/zh/blog/react",
+      locale: "zh",
+      isFallback: true,
+      html: "<p>组件与状态</p>",
+    };
+    const fetcher = vi.fn().mockResolvedValue(Response.json(article));
+    vi.stubGlobal("fetch", fetcher);
+    const { tools, call, loadIndex, navigate } = setup();
+    const { signal } = new AbortController();
+    expect(await call("fhfs_read_article", { path: article.path }, signal)).toEqual(article);
+    expect(tools.find((tool) => tool.name === "fhfs_read_article")?.annotations.readOnlyHint).toBe(
+      true,
+    );
+    expect(fetcher).toHaveBeenCalledWith("/en/blog/react/article.json", {
+      credentials: "omit",
+      redirect: "error",
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    expect(loadIndex).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "/admin/preview/react",
+    "/zh/blog",
+    "/zh/blog/react?preview=true",
+    "/zh/blog/react#heading",
+    "/zh/blog/react\n",
+    "/zh/blog/%2e%2e",
+    "https://other.invalid/zh/blog/react",
+  ])("rejects an invalid article path before fetching: %s", async (path) => {
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
+    expect(await setup().call("fhfs_read_article", { path })).toMatchObject({
+      error: { code: "INVALID_INPUT" },
+    });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes a missing public article from a temporarily unavailable one", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(null, { status: 404 }))
+        .mockResolvedValueOnce(new Response(null, { status: 503 })),
+    );
+    const { call } = setup();
+    const input = { path: "/en/blog/react" };
+    expect(await call("fhfs_read_article", input)).toMatchObject({ error: { code: "NOT_FOUND" } });
+    expect(await call("fhfs_read_article", input)).toMatchObject({
+      error: { code: "UNAVAILABLE" },
+    });
   });
 
   it.each([
@@ -197,13 +257,30 @@ describe("WebMCP registration", () => {
     };
     const options = { locale: "zh" as const, navigate: async () => {} };
     const cleanup = registerSiteTools(registry, options);
-    expect(active.size).toBe(3);
+    expect(active.size).toBe(4);
     cleanup();
     expect(active.size).toBe(0);
     const next = registerSiteTools(registry, { ...options, locale: "en" });
-    expect(active.size).toBe(3);
+    expect(active.size).toBe(4);
     next();
     expect(active.size).toBe(0);
+  });
+
+  it("cancels an in-flight article read when the tools leave the page", async () => {
+    const fetcher = vi.fn(
+      (_path: string, { signal }: { signal: AbortSignal }) =>
+        new Promise<Response>((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    const registerTool = vi.fn<WebMcpRegistry["registerTool"]>();
+    const cleanup = registerSiteTools({ registerTool }, { locale: "zh", navigate: async () => {} });
+    const article = registerTool.mock.calls.find(([tool]) => tool.name === "fhfs_read_article")![0];
+    const read = article.execute({ path: "/zh/blog/react" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    cleanup();
+    await expect(read).resolves.toMatchObject({ error: { code: "CANCELLED" } });
   });
 
   it("contains synchronous and asynchronous browser registration failures", async () => {
@@ -217,7 +294,7 @@ describe("WebMCP registration", () => {
       .mockResolvedValueOnce(undefined);
     const cleanup = registerSiteTools({ registerTool }, { locale: "zh", navigate: async () => {} });
     await Promise.resolve();
-    expect(registerTool).toHaveBeenCalledTimes(3);
+    expect(registerTool).toHaveBeenCalledTimes(4);
     expect(warn).toHaveBeenCalledTimes(2);
     cleanup();
     warn.mockRestore();

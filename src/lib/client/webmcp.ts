@@ -1,4 +1,5 @@
 import { routing, type Locale } from "@/i18n/routing";
+import { KEY_PATTERN } from "@/lib/forms";
 import { search, SEARCH_KINDS, type SearchEntry, type SearchKind } from "@/lib/search";
 
 /** The small part of the experimental browser API used by the site. */
@@ -35,6 +36,8 @@ const PUBLIC_SECTIONS = new Set([
   "idols",
 ]);
 const BASE = "https://fhfs.invalid";
+const ARTICLE_PATH_PATTERN = `^/(${routing.locales.join("|")})/blog/${KEY_PATTERN}$`;
+const articlePath = new RegExp(ARTICLE_PATH_PATTERN);
 const localeSchema = {
   type: "string",
   enum: [...routing.locales],
@@ -81,11 +84,10 @@ async function fetchIndex(locale: Locale, signal?: AbortSignal): Promise<SearchE
 }
 
 /** No request is made until a tool is called. All content uses the palette's index and ranking. */
-export function createSiteTools({
-  locale,
-  navigate,
-  loadIndex = fetchIndex,
-}: SiteToolsOptions): WebMcpTool[] {
+export function createSiteTools(
+  { locale, navigate, loadIndex = fetchIndex }: SiteToolsOptions,
+  registrationSignal?: AbortSignal,
+): WebMcpTool[] {
   const tool = (
     name: string,
     description: string,
@@ -97,7 +99,11 @@ export function createSiteTools({
     description,
     inputSchema,
     annotations: { readOnlyHint, untrustedContentHint: true },
-    async execute(input, { signal } = {}) {
+    async execute(input, { signal: executionSignal } = {}) {
+      const signal =
+        executionSignal && registrationSignal
+          ? AbortSignal.any([executionSignal, registrationSignal])
+          : (executionSignal ?? registrationSignal);
       try {
         signal?.throwIfAborted();
         return await run(input, signal);
@@ -127,7 +133,7 @@ export function createSiteTools({
   return [
     tool(
       "fhfs_search",
-      "Search fhf's public articles, software, motion studies, films, people and moments. Returns localized paths for fhfs_open_page. Use keywords in the requested content language; all query terms must match.",
+      "Search fhf's public articles, software, motion studies, films, people and moments. Returns paths for fhfs_open_page and, for articles, fhfs_read_article. Use keywords in the content language; all query terms must match.",
       {
         type: "object",
         properties: {
@@ -187,6 +193,43 @@ export function createSiteTools({
       },
     ),
     tool(
+      "fhfs_read_article",
+      "Read the full body of a published blog article in HTML, with its title, date, actual language and canonical URL. Use the article path from fhfs_search or from the current blog article.",
+      {
+        type: "object",
+        properties: {
+          path: {
+            type: "string",
+            pattern: ARTICLE_PATH_PATTERN,
+            maxLength: 2048,
+            description: "Localized blog article path.",
+          },
+        },
+        required: ["path"],
+        additionalProperties: false,
+      },
+      true,
+      async (input, signal) => {
+        const { path } = inputObject(input, ["path"]);
+        if (typeof path !== "string" || path.length > 2048 || articlePath.exec(path)?.[0] !== path)
+          throw new InvalidInput("Use a blog article path such as /zh/blog/example.");
+        const response = await fetch(`${path}/article.json`, {
+          credentials: "omit",
+          redirect: "error",
+          headers: { Accept: "application/json" },
+          signal,
+        });
+        signal?.throwIfAborted();
+        if (response.status === 404)
+          return { error: { code: "NOT_FOUND", message: "Article unavailable. Search again." } };
+        if (!response.ok || !response.headers.get("Content-Type")?.startsWith("application/json"))
+          throw new Error("Article unavailable");
+        const article: unknown = await response.json();
+        signal?.throwIfAborted();
+        return article;
+      },
+    ),
+    tool(
       "fhfs_open_page",
       "Navigate the current browser tab to a public page returned by fhfs_search or fhfs_list_sections. Pass the exact localized path, including any moment fragment. This changes the visible page.",
       {
@@ -229,7 +272,7 @@ export function registerSiteTools(
 ): () => void {
   if (typeof registry?.registerTool !== "function") return () => {};
   const lifecycle = new AbortController();
-  for (const tool of createSiteTools(options)) {
+  for (const tool of createSiteTools(options, lifecycle.signal)) {
     const report = () => {
       if (!lifecycle.signal.aborted) console.warn(`[fhfs WebMCP] Could not register ${tool.name}.`);
     };

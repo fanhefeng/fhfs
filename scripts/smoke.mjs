@@ -27,10 +27,16 @@ for (let i = 0; i < paths.length; i += 4) {
     }),
   );
 }
+const defaultFeed = await read("/rss.xml", { redirect: "manual" });
+assert.equal(defaultFeed.status, 302);
+assert.equal(new URL(defaultFeed.headers.get("location"), base).pathname, "/zh/rss.xml");
 for (const locale of ["zh", "en"]) {
   const rss = await read(`/${locale}/rss.xml`);
   assert.equal(rss.status, 200);
-  assert.match(await rss.text(), /<rss/);
+  assert.match(rss.headers.get("content-type"), /^application\/rss\+xml/);
+  const feed = await rss.text();
+  assert.match(feed, /<rss version="2.0"/);
+  assert.ok(feed.includes(`/${locale}/rss.xml" rel="self"`));
   const search = await read(`/${locale}/search.json`);
   assert.equal(search.status, 200);
   assert.ok(Array.isArray(await search.json()));
@@ -55,6 +61,14 @@ for (const path of [
 assert.equal((await read("/admin/login", { redirect: "manual" })).status, 200);
 const article = paths.find((path) => /^\/zh\/blog\/(?!notes$)[^/]+$/.test(path));
 assert.ok(article, "sitemap includes a published article");
+const publishedBody = await read(`${article}/article.json`);
+assert.equal(publishedBody.status, 200);
+const published = await publishedBody.json();
+assert.equal(published.path, article);
+assert.equal(published.locale, "zh");
+assert.equal(new URL(published.canonicalUrl).pathname, article);
+assert.equal(typeof published.html, "string");
+assert.equal((await read("/zh/blog/this-page-does-not-exist/article.json")).status, 404);
 for (const path of [
   "/zh/opengraph-image",
   "/en/opengraph-image",
@@ -101,5 +115,5 @@ assert.match(home.headers.get("content-security-policy"), /frame-ancestors 'none
 assert.match(home.headers.get("cache-control"), /no-store/);
 assert.deepEqual(failures, []);
 console.log(
-  `Verified ${checked} sitemap pages, bilingual feeds/search, local share images, 404s, native admin auth, CSRF, assets, and security headers.`,
+  `Verified ${checked} sitemap pages, bilingual RSS/search, public article JSON, local share images, 404s, native admin auth, CSRF, assets, and security headers.`,
 );
