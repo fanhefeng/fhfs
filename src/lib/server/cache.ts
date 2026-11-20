@@ -1,5 +1,6 @@
-import { bypassContentCache, sharePendingRead } from "./cacheScope";
-import { withPublicRead } from "./publicRead";
+import { bypassContentCache, recordSnapshotMiss, sharePendingRead } from "./cacheScope";
+import { PublicReadError, withPublicRead } from "./publicRead";
+import { type PublicSnapshot, readPublicSnapshot } from "./snapshotSource";
 
 type Entry = { value: unknown; expires: number; tags: string[]; order: number };
 const entries = new Map<string, Entry>();
@@ -12,6 +13,7 @@ export function unstable_cache<A extends unknown[], R>(
   read: (...args: A) => Promise<R>,
   keys: string[] = [],
   options: { tags?: string[]; revalidate?: number | false; publicRead?: boolean } = {},
+  fromSnapshot?: (snapshot: PublicSnapshot, ...args: A) => NoInfer<R> | undefined,
 ) {
   return async (...args: A): Promise<R> => {
     if (bypassContentCache()) return read(...args);
@@ -22,9 +24,21 @@ export function unstable_cache<A extends unknown[], R>(
       const started = Date.now();
       const order = ++readOrder;
       const atRevision = revision;
-      const value = options.publicRead
-        ? await withPublicRead(keys[0] ?? "content", () => read(...args))
-        : await read(...args);
+      let value: R;
+      try {
+        value = options.publicRead
+          ? await withPublicRead(keys[0] ?? "content", () => read(...args))
+          : await read(...args);
+      } catch (error) {
+        if (!(error instanceof PublicReadError) || !error.snapshotEligible || !fromSnapshot)
+          throw error;
+        const fallback = fromSnapshot(await readPublicSnapshot(), ...args);
+        if (fallback === undefined) {
+          recordSnapshotMiss();
+          throw error;
+        }
+        return fallback; // Snapshot data never enters the live cache.
+      }
       const lifetime = Math.max(
         0,
         Math.min(

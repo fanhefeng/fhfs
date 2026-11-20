@@ -113,3 +113,21 @@ Healthchecks 收到自然调度信号，最后核对工作流的关键步骤实�
 资料：[Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)、
 [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)、
 [Healthchecks Pinging API](https://healthchecks.io/docs/http_api/)。
+
+## 公开内容的数据库故障兜底
+
+Neon 的额度错误、连接失败或服务不可用时，公开内容读取使用
+`fhfs-site` 的 `db-snapshots` 分支。两站直接读取同一份经校验的公开数据，
+各自渲染页面。首页、写作列表、标签页和文章详情显示快照时间。
+Next.js 页面会在公开内容的 30 秒重验证窗口内重新尝试实时来源。
+
+原站在公开导出通过原有备份校验后，为数据发布 SHA-256 和版本时间。
+读取端检查摘要、必需的表和草稿标志。分支尚未发布版本信息时，读取已知的
+2026-10-20 快照。GitHub 暂时不可用时，优先使用进程内最近验证的快照，
+冷启动则使用仓库内打包的公开副本。故障期间快照只包含导出时已发布的条目；
+在快照中找不到的文章返回 `503`，附带 `Retry-After` 和 `Cache-Control: private, no-store`。
+发布冒烟检查确认快照内的文章仍返回 `200`，并按当前数据来源验收缺失文章的状态码。
+
+快照结果不进入实时数据缓存。下一次公开读取会尝试 Neon，成功后沿用正常的
+30 秒缓存和失效机制。后台和授权预览仍走实时数据库。编辑器打开后保存失败，
+错误显示在表单旁，已输入的字段保留在当前页面，恢复后可再次保存。

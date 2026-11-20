@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { DrizzleQueryError } from "drizzle-orm/errors";
+import { isNeonUnavailable } from "./neonAvailability";
 import type { FetchAttempt } from "../retryFetch";
 
 type Diagnosis = {
@@ -85,7 +86,7 @@ export function diagnosePublicRead(error: unknown): Diagnosis {
 }
 
 export class PublicReadError extends Error {
-  constructor() {
+  constructor(public readonly snapshotEligible = false) {
     super("Public content temporarily unavailable");
     this.name = "PublicReadError";
   }
@@ -117,6 +118,6 @@ export async function withPublicRead<T>(operation: string, read: () => Promise<T
   } catch (error) {
     report("failed", diagnosePublicRead(error));
     // Framework loggers must not serialize Drizzle's SQL/parameters or Neon's credentials.
-    throw new PublicReadError();
+    throw new PublicReadError(isNeonUnavailable(error));
   }
 }

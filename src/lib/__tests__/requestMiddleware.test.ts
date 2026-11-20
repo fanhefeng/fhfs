@@ -12,7 +12,7 @@ vi.mock("@tanstack/react-start/server", () => ({ setResponseHeaders }));
 vi.mock("@/lib/server/auth/session", () => ({ showDrafts }));
 
 import { startInstance } from "@/start";
-import { bypassContentCache } from "@/lib/server/cacheScope";
+import { bypassContentCache, recordSnapshotMiss } from "@/lib/server/cacheScope";
 
 type Context = { request: Request; pathname: string; next: () => Promise<unknown> };
 const [middleware] = (
@@ -40,6 +40,38 @@ describe("request security and native admin", () => {
     const [headers] = setResponseHeaders.mock.calls[0]!;
     expect(headers.get("cache-control")).toBe("private, no-store");
     expect(headers.get("x-frame-options")).toBe("DENY");
+  });
+
+  it("uses a temporary response only for an unhandled public snapshot miss", async () => {
+    const internalError = { response: new Response("Article unavailable", { status: 500 }) };
+    const ordinaryFailure = await middleware!({
+      ...request("/zh/blog/unrecorded"),
+      next: async () => internalError,
+    });
+    expect(ordinaryFailure).toBe(internalError);
+
+    const { response } = (await middleware!({
+      ...request("/zh/blog/unrecorded"),
+      next: async () => {
+        recordSnapshotMiss();
+        return internalError;
+      },
+    })) as { response: Response };
+    expect(response.status).toBe(503);
+    expect(response.headers.get("x-fhfs-content-status")).toBe("snapshot-miss");
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+    expect(await response.text()).toBe("Article unavailable");
+
+    const success = { response: new Response("Published snapshot") };
+    expect(
+      await middleware!({
+        ...request("/zh/blog/known"),
+        next: async () => {
+          recordSnapshotMiss();
+          return success;
+        },
+      }),
+    ).toBe(success);
   });
 
   it("rejects cross-origin mutations before invoking their handlers", async () => {

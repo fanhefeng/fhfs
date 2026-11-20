@@ -35,8 +35,21 @@ for (const locale of ["zh", "en"]) {
   assert.equal(search.status, 200);
   assert.ok(Array.isArray(await search.json()));
 }
-for (const path of ["/fr", "/fr/search.json", "/fr/rss.xml", "/zh/blog/this-page-does-not-exist"])
+for (const path of ["/fr", "/fr/search.json", "/fr/rss.xml"])
   assert.equal((await read(path)).status, 404, path);
+
+const home = await read("/zh");
+assert.equal(home.status, 200);
+const snapshot = /data-public-snapshot="[^"]+"/.test(await home.text());
+const missingArticle = await read("/zh/blog/this-page-does-not-exist");
+if (snapshot) {
+  assert.equal(missingArticle.status, 503, "article absent from the outage snapshot");
+  assert.equal(missingArticle.headers.get("x-fhfs-content-status"), "snapshot-miss");
+  assert.match(missingArticle.headers.get("cache-control"), /no-store/);
+  assert.match(missingArticle.headers.get("retry-after"), /^\d+$/);
+} else {
+  assert.equal(missingArticle.status, 404, "unknown article on the live site");
+}
 for (const path of [
   "/admin",
   "/admin/posts",
@@ -96,10 +109,9 @@ assert.equal(
   200,
   "hashed image",
 );
-const home = await read("/zh");
 assert.match(home.headers.get("content-security-policy"), /frame-ancestors 'none'/);
 assert.match(home.headers.get("cache-control"), /no-store/);
 assert.deepEqual(failures, []);
 console.log(
-  `Verified ${checked} sitemap pages, bilingual feeds/search, local share images, 404s, native admin auth, CSRF, assets, and security headers.`,
+  `Verified ${checked} ${snapshot ? "snapshot" : "live"} sitemap pages, bilingual feeds/search, local share images, 404s, native admin auth, CSRF, assets, and security headers.`,
 );

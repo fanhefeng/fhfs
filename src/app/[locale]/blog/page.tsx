@@ -1,3 +1,4 @@
+import { SnapshotNotice } from "@/components/blog/SnapshotNotice";
 import { YearIndex } from "@/components/blog/PostCard";
 import { TagPill } from "@/components/blog/TagPill";
 import { Reveal } from "@/components/fx/Reveal";
@@ -9,10 +10,11 @@ export default function BlogPage({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { posts, tags } = data;
+  const { locale, posts, tags } = data;
   const t = useTranslations("blog");
   return (
     <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-6 pb-28 pt-32 md:pt-40">
+      <SnapshotNotice locale={locale} snapshotAt={posts[0]?.snapshotAt} />
       <Reveal as="header" className="mb-10">
         <h1 className="text-display-sm">{t("title")}</h1>
         <p className="mt-3 max-w-[46ch] text-body text-fg-secondary">{t("subtitle")}</p>
