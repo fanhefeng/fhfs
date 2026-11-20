@@ -1,6 +1,7 @@
 "use client";
 
 import { RadialFab } from "@/components/fx/RadialFab";
+import { useLocale, useTranslations } from "use-intl";
 import { StudyPanel } from "./StudyPanel";
 
 type Props = {
@@ -18,10 +19,15 @@ type Props = {
  * shows nothing on a desk is no study, so here it is mounted at every width.
  */
 export function RadialFanDemo({ accent, label, body, shareTitle }: Props) {
+  const locale = useLocale();
+  const t = useTranslations("lab");
   return (
     <StudyPanel accent={accent} label={label}>
       <p className="spn-body">{body}</p>
-      <RadialFab shareTitle={shareTitle} always />
+      <RadialFab
+        share={{ path: `/${locale}/lab/radial-fan`, category: t("kicker"), title: shareTitle }}
+        always
+      />
     </StudyPanel>
   );
 }

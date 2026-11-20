@@ -102,6 +102,28 @@
     "fabRss": "RSS feed",
     "fabTheme": "Toggle theme"
   },
+  "share": {
+    "open": "Share",
+    "heading": "Share",
+    "close": "Close",
+    "link": "Share link",
+    "copy": "Copy link",
+    "copied": "Link copied.",
+    "copyFailed": "The link is selected. You can copy it manually.",
+    "systemLink": "Send link",
+    "systemCard": "Send card",
+    "shareFailed": "Sharing couldn't finish. You can copy the link or save the card.",
+    "cardAlt": "Share card with QR code for {title}",
+    "qr": "Enlarge QR code",
+    "qrAlt": "QR code for {title}",
+    "scan": "Scan to open",
+    "loading": "Generating share card…",
+    "cardFailed": "The card couldn't be generated. You can still use the share link above.",
+    "save": "Save card",
+    "momentTitle": "Moment from {time}",
+    "momentLabel": "Share moment from {time}",
+    "momentMedia": "{count, plural, one {# attachment} other {# attachments}}"
+  },
   "about": {
     "title": "About",
     "subtitle": "Who I am, the cities I have worked in, and what I do with my time.",

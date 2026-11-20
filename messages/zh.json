@@ -102,6 +102,28 @@
     "fabRss": "RSS 订阅",
     "fabTheme": "切换主题"
   },
+  "share": {
+    "open": "分享",
+    "heading": "分享内容",
+    "close": "关闭",
+    "link": "分享链接",
+    "copy": "复制链接",
+    "copied": "链接已复制。",
+    "copyFailed": "链接已选中，可以手动复制。",
+    "systemLink": "发送链接",
+    "systemCard": "发送卡片",
+    "shareFailed": "分享未完成。你可以复制链接或保存卡片。",
+    "cardAlt": "《{title}》的分享卡片，含二维码",
+    "qr": "放大二维码",
+    "qrAlt": "《{title}》的二维码",
+    "scan": "扫码查看内容",
+    "loading": "正在生成分享卡片…",
+    "cardFailed": "卡片生成失败，请使用上方的分享链接。",
+    "save": "保存卡片",
+    "momentTitle": "{time} 的说说",
+    "momentLabel": "分享 {time} 的说说",
+    "momentMedia": "{count} 个附件"
+  },
   "about": {
     "title": "关于",
     "subtitle": "我是谁，待过哪些城市，平时做什么。",

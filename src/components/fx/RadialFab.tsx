@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from "use-intl";
 import { gsap, useGSAP, EASE, prefersReducedMotion } from "@/lib/client/gsap";
 import { toggleTheme } from "@/lib/theme";
 import { Icon } from "@/components/icons/Icon";
+import { ShareButton } from "@/components/share/ShareButton";
+import type { ShareTarget } from "@/lib/client/shareCard";
 
 /** Quarter-circle sweep: 180° (due left) → 270° (straight up). */
 const START_ANGLE = 180;
@@ -25,11 +27,11 @@ type Action = { key: string; label: string; onClick?: () => void; href?: string 
  * menu around instead of queueing.
  */
 export function RadialFab({
-  shareTitle,
+  share,
   always = false,
   feed = true,
 }: {
-  shareTitle: string;
+  share: ShareTarget;
   /** Mount at every width — the lab's study, which has no island to defer to. */
   always?: boolean;
   /** Offer the RSS feed. The feed is the blog's; a page that is not the blog
@@ -44,29 +46,7 @@ export function RadialFab({
   const iconRef = useRef<SVGSVGElement>(null);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  /** The "copied" confirmation's timer — one at a time, and none after
-   *  unmount. */
-  const copiedTimer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
-
   /* --- actions ---------------------------------------------------------- */
-
-  const share = useCallback(async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: shareTitle, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.clearTimeout(copiedTimer.current);
-      copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* Cancelled share / denied clipboard — nothing to recover from. */
-    }
-  }, [shareTitle]);
 
   const toTop = useCallback(() => {
     // Lenis owns the scroll position when it is running; bypassing it would
@@ -91,7 +71,6 @@ export function RadialFab({
   }, []);
 
   const actions: Action[] = [
-    { key: "share", label: copied ? t("fabShareDone") : t("fabShare"), onClick: share },
     { key: "top", label: t("fabTop"), onClick: toTop },
     ...(feed ? [{ key: "rss", label: t("fabRss"), href: `/${locale}/rss.xml` }] : []),
     { key: "theme", label: t("fabTheme"), onClick: flipTheme },
@@ -220,6 +199,14 @@ export function RadialFab({
         <Icon ref={iconRef} name="add" className="size-5" />
       </button>
 
+      <ShareButton
+        target={share}
+        className={`${itemClass} cursor-pointer`}
+        label={t("fabShare")}
+        iconOnly
+        returnFocus={triggerRef}
+        onOpen={close}
+      />
       {actions.map((action) =>
         action.href ? (
           <a
@@ -251,38 +238,12 @@ export function RadialFab({
           </button>
         ),
       )}
-
-      {/* Copy confirmation, said twice. The live region tells a screen reader;
-          the chip tells everyone else — the share button has already folded
-          away by the time the clipboard answers, so without it a sighted
-          reader pressed "share" and watched nothing happen. One chip, and one
-          timer behind it: copying again restarts the two seconds rather than
-          stacking a second notice. The words stay in it while it fades, so it
-          leaves as a label and not as an emptying box. */}
-      <span aria-live="polite" className="sr-only">
-        {copied ? t("fabShareDone") : ""}
-      </span>
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute right-full top-1/2 mr-3 -translate-y-1/2"
-      >
-        <span
-          className={`glass-thin block whitespace-nowrap rounded-chip px-3 py-1.5 text-caption text-fg transition-[opacity,translate] duration-300 ease-out ${
-            copied ? "opacity-100" : "translate-y-1 opacity-0"
-          }`}
-        >
-          {t("fabShareDone")}
-        </span>
-      </span>
     </div>
   );
 }
 
 function ActionIcon({ name }: { name: string }) {
   return (
-    <Icon
-      name={name === "share" ? "share" : name === "top" ? "top" : name === "rss" ? "rss" : "sun"}
-      className="size-[18px]"
-    />
+    <Icon name={name === "top" ? "top" : name === "rss" ? "rss" : "sun"} className="size-[18px]" />
   );
 }

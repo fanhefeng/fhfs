@@ -7,6 +7,7 @@ import { Mdx } from "@/components/blog/Mdx";
 import { ArticleContents, ImportedNoteDetails } from "@/components/blog/ImportedNoteDetails";
 import { PostTitle } from "@/components/blog/PostTitle";
 import { RoomMusic } from "@/components/fx/RoomMusic";
+import { ShareButton } from "@/components/share/ShareButton";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { site } from "@/config/site";
@@ -107,15 +108,25 @@ export default function SecretPage({
             </ArticleSummary>
           )}
 
-          {!isPodcast && (
-            <RoomMusic
-              track="secret"
-              tonight={tc("tonight")}
-              title={tt("title")}
-              artist={tt("artist")}
-              className="mt-6"
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {!isPodcast && (
+              <RoomMusic
+                track="secret"
+                tonight={tc("tonight")}
+                title={tt("title")}
+                artist={tt("artist")}
+              />
+            )}
+            <ShareButton
+              target={{
+                path: `/${secret.locale}/secrets/${secret.slug}`,
+                category: t(isPodcast ? "kindPodcast" : "kindEssay"),
+                title: secret.title,
+                summary: secret.summary,
+              }}
+              className="print:hidden"
             />
-          )}
+          </div>
         </header>
 
         {secret.isFallback && (

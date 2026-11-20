@@ -8,6 +8,7 @@ import { inLocale } from "@/lib/localized";
 import { Reveal } from "@/components/fx/Reveal";
 import { RoomMusic } from "@/components/fx/RoomMusic";
 import { FilmStills, type StillItem } from "@/components/films/FilmStills";
+import { ShareButton } from "@/components/share/ShareButton";
 import { useTranslations } from "use-intl";
 
 export default function FilmPage({
@@ -15,7 +16,7 @@ export default function FilmPage({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { locale, row } = data;
+  const { locale, row, slug } = data;
   const t = useTranslations("films");
   const tTracks = useTranslations("tracks");
   const tc = useTranslations("common");
@@ -42,15 +43,25 @@ export default function FilmPage({
           {film.latin && film.year && <span aria-hidden>·</span>}
           {film.year && <span className="tabular-nums">{film.year}</span>}
         </p>
-        {film.track && (
-          <RoomMusic
-            track={film.track}
-            tonight={tc("tonight")}
-            title={tTracks(`${film.track}.title`)}
-            artist={tTracks(`${film.track}.artist`)}
-            className="mt-6"
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {film.track && (
+            <RoomMusic
+              track={film.track}
+              tonight={tc("tonight")}
+              title={tTracks(`${film.track}.title`)}
+              artist={tTracks(`${film.track}.artist`)}
+            />
+          )}
+          <ShareButton
+            target={{
+              path: `/${locale}/films/${slug}`,
+              category: t("kicker"),
+              title: film.title,
+              summary: film.subtitle,
+            }}
+            className="print:hidden"
           />
-        )}
+        </div>
       </Reveal>
 
       {/* The synopsis: the facts, then what happens. */}

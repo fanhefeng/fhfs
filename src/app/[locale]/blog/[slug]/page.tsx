@@ -8,6 +8,8 @@ import { ArticleContents, ImportedNoteDetails } from "@/components/blog/Imported
 import { PostTitle } from "@/components/blog/PostTitle";
 import { TagPill } from "@/components/blog/TagPill";
 import { RadialFab } from "@/components/fx/RadialFab";
+import { ShareButton } from "@/components/share/ShareButton";
+import type { ShareTarget } from "@/lib/client/shareCard";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { site } from "@/config/site";
@@ -48,6 +50,12 @@ export default function PostPage({
   const tn = useTranslations("notebook");
   const format = useFormatter();
   const minutes = post.readingMinutes;
+  const share: ShareTarget = {
+    path: `/${post.locale}/blog/${post.slug}`,
+    category: t("title"),
+    title: post.title,
+    summary: post.summary,
+  };
   return (
     <>
       <TopScrim />
@@ -119,6 +127,7 @@ export default function PostPage({
                 {post.summary}
               </ArticleSummary>
             )}
+            <ShareButton target={share} className="mt-4 print:hidden" />
           </header>
 
           {post.isFallback && (
@@ -151,7 +160,7 @@ export default function PostPage({
           </Link>
         </p>
       </main>
-      <RadialFab shareTitle={post.title} />
+      <RadialFab share={share} />
     </>
   );
 }

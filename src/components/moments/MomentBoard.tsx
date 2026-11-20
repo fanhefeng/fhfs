@@ -4,7 +4,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import Image from "@/components/ui/Image";
 import { Icon } from "@/components/icons/Icon";
 import { Button } from "@/components/ui/Button";
-import { useTranslations } from "use-intl";
+import { ShareButton } from "@/components/share/ShareButton";
+import { useLocale, useTranslations } from "use-intl";
 import { site } from "@/config/site";
 import { groupByYear } from "@/lib/byYear";
 import { YearSection } from "@/components/ui/YearIndex";
@@ -298,7 +299,9 @@ function Chip({
  * board, so pressing "read all" on one line re-rendered all five hundred.
  */
 function MomentCard({ item }: { item: BoardMoment }) {
+  const locale = useLocale();
   const t = useTranslations("moments");
+  const ts = useTranslations("share");
   const [expanded, setExpanded] = useState(false);
   const folds = shouldFold(item.content);
   const clamped = folds && !expanded;
@@ -400,13 +403,11 @@ function MomentCard({ item }: { item: BoardMoment }) {
 
         {item.media.length > 0 && <Attachments media={item.media} />}
 
-        {(item.attribution || folds) && (
-          <footer className="mt-2 flex items-center justify-between gap-4">
-            {item.attribution ? (
-              <p className="text-caption text-fg-tertiary">—— {item.attribution}</p>
-            ) : (
-              <span />
-            )}
+        <footer className="mt-2 flex flex-wrap items-center gap-x-4">
+          {item.attribution && (
+            <p className="text-caption text-fg-tertiary">—— {item.attribution}</p>
+          )}
+          <div className="ml-auto flex flex-wrap items-center gap-x-2">
             {folds && (
               <button
                 type="button"
@@ -417,8 +418,18 @@ function MomentCard({ item }: { item: BoardMoment }) {
                 {expanded ? t("collapse") : t("expand")}
               </button>
             )}
-          </footer>
-        )}
+            <ShareButton
+              target={{
+                path: `/${locale}/moments#${encodeURIComponent(item.key)}`,
+                category: [t("kicker"), item.attribution].filter(Boolean).join(" · "),
+                title: ts("momentTitle", { time: item.time }),
+                summary: item.content || ts("momentMedia", { count: item.media.length }),
+              }}
+              label={ts("momentLabel", { time: item.time })}
+              className="print:hidden"
+            />
+          </div>
+        </footer>
       </article>
     </li>
   );

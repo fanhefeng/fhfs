@@ -11,6 +11,7 @@ import { Reveal } from "@/components/fx/Reveal";
 import { RoomMusic } from "@/components/fx/RoomMusic";
 import { KobeStatueStage } from "@/components/idols/KobeStatueStage";
 import { IdolGallery, type GalleryPhoto } from "@/components/idols/IdolGallery";
+import { ShareButton } from "@/components/share/ShareButton";
 import { statueStandIn } from "@/components/idols/statue";
 import { useTranslations } from "use-intl";
 
@@ -19,7 +20,7 @@ export default function IdolPage({
 }: {
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
-  const { locale, row } = data;
+  const { locale, row, slug } = data;
   const t = useTranslations("idols");
   const tk = useTranslations("idols.kobe");
   const tTracks = useTranslations("tracks");
@@ -56,15 +57,25 @@ export default function IdolPage({
             ))}
         </p>
         <p className="mt-6 max-w-[52ch] text-body text-fg-secondary">{idol.lede}</p>
-        {track && (
-          <RoomMusic
-            track={track}
-            tonight={tc("tonight")}
-            title={tTracks(`${track}.title`)}
-            artist={tTracks(`${track}.artist`)}
-            className="mt-6"
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {track && (
+            <RoomMusic
+              track={track}
+              tonight={tc("tonight")}
+              title={tTracks(`${track}.title`)}
+              artist={tTracks(`${track}.artist`)}
+            />
+          )}
+          <ShareButton
+            target={{
+              path: `/${locale}/idols/${slug}`,
+              category: t("kicker"),
+              title: idol.name,
+              summary: idol.lede,
+            }}
+            className="print:hidden"
           />
-        )}
+        </div>
       </Reveal>
 
       {/* The statue — code, and only his. */}

@@ -33,6 +33,7 @@ export const CLIENT_NAMESPACES = [
   "nav",
   "notFound",
   "search",
+  "share",
   "secrets",
   "software",
   "layout",

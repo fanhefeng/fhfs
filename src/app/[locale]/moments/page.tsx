@@ -5,10 +5,12 @@ import { momentCalendar, stampInZone, type BoardMoment, type MomentMedia } from 
 
 import { Reveal } from "@/components/fx/Reveal";
 import { RadialFab } from "@/components/fx/RadialFab";
+import { ShareButton } from "@/components/share/ShareButton";
+import type { ShareTarget } from "@/lib/client/shareCard";
 import { RoomMusic } from "@/components/fx/RoomMusic";
 import { MomentBoard } from "@/components/moments/MomentBoard";
 import { MomentCalendar } from "@/components/moments/MomentCalendar";
-import { useTranslations } from "use-intl";
+import { useLocale, useTranslations } from "use-intl";
 const resolveMedia = (item: MomentMedia): MomentMedia =>
   item.kind === "video"
     ? { ...item, src: asset(item.src), poster: asset(item.poster) }
@@ -19,6 +21,7 @@ export default function MomentsPage({
   data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
 }) {
   const { rows } = data;
+  const locale = useLocale();
   const t = useTranslations("moments");
   const tt = useTranslations("tracks.lovely");
   const tc = useTranslations("common");
@@ -35,6 +38,12 @@ export default function MomentsPage({
     pinned: row.pinned,
   }));
   const langNotice = t("langNotice");
+  const share: ShareTarget = {
+    path: `/${locale}/moments`,
+    category: t("kicker"),
+    title: t("title"),
+    summary: t("subtitle"),
+  };
   return (
     <>
       <main id="main" className="mx-auto w-full max-w-[720px] flex-1 px-6 pb-28 pt-32 md:pt-40">
@@ -54,13 +63,15 @@ export default function MomentsPage({
               {t("count", { count: items.length })}
             </p>
           )}
-          <RoomMusic
-            track="lovely"
-            tonight={tc("tonight")}
-            title={tt("title")}
-            artist={tt("artist")}
-            className="mt-6"
-          />
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <RoomMusic
+              track="lovely"
+              tonight={tc("tonight")}
+              title={tt("title")}
+              artist={tt("artist")}
+            />
+            <ShareButton target={share} className="print:hidden" />
+          </div>
         </Reveal>
 
         {items.length === 0 ? (
@@ -75,7 +86,7 @@ export default function MomentsPage({
       {/* The longest page on the site, with its filter at the very top: on a
         phone the article pages' quick actions — back to top among them — are
         the way back up. (Desktop has the island; see RadialFab.) */}
-      <RadialFab shareTitle={t("title")} feed={false} />
+      <RadialFab share={share} feed={false} />
     </>
   );
 }

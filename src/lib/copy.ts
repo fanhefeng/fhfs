@@ -107,6 +107,7 @@ export const COPY_GROUPS: CopyGroup[] = [
   { id: "intro", label: "3D 自我介绍 /intro", blurb: "3D 场景里的标题、标语和结尾。" },
   { id: "nav", label: "导航", blurb: "顶栏、页脚、全屏菜单上每条链接的字。" },
   { id: "search", label: "搜索 ⌘K", blurb: "搜索框的提示、各类结果的名字，和没有结果时的提示。" },
+  { id: "share", label: "分享", blurb: "分享面板的按钮、提示和卡片上的扫码文字。" },
   { id: "footer", label: "页脚", blurb: "版权、时钟两侧的词、贴纸提示。" },
   { id: "tracks", label: "背景音乐", blurb: "每首背景音乐在界面上显示的名字。" },
   { id: "common", label: "通用按钮", blurb: "返回、展开、复制这类到处都在用的词。" },

@@ -14,9 +14,8 @@ export const site = {
     en: "The personal site of fhf, who likes music, games and films: essays, self-built software and motion studies.",
   },
   /** Production origin, for canonical URLs, hreflang, the sitemap, RSS and
-   *  the OG images. Read from the deployment (src/lib/siteUrl.ts), so binding
-   *  a domain moves all of them with no edit here; only server code reads it
-   *  — in the browser it is the fallback, which nothing there looks at. */
+   *  OG images and share links. Both the server and browser use the same
+   *  public deployment setting (src/lib/siteUrl.ts). */
   url: siteUrl({ VITE_SITE_URL: import.meta.env?.VITE_SITE_URL }),
   author: "fhf",
   /** Where the author is: the zone the footer clock keeps, and the one every
