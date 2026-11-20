@@ -1,3 +1,4 @@
+import { SnapshotNotice } from "@/components/blog/SnapshotNotice";
 import { htmlLang } from "@/i18n/routing";
 
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -94,6 +95,11 @@ export default function HomePage({
         enterHint={td("enterHint")}
       />
       <main id="main" className="flex-1">
+        {allPosts[0]?.snapshotAt && (
+          <div className="mx-auto max-w-[720px] px-6 pt-24">
+            <SnapshotNotice locale={locale} snapshotAt={allPosts[0]?.snapshotAt} />
+          </div>
+        )}
         <JsonLd
           data={{
             "@context": "https://schema.org",

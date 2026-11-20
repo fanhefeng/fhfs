@@ -12,7 +12,7 @@ const security = createMiddleware().server(async ({ request, pathname, next }) =
     )
       return new Response("Forbidden", { status: 403 });
   }
-  const { withContentCacheBypass } = await import("@/lib/server/cacheScope");
+  const { publicSnapshotMissed, withContentCacheBypass } = await import("@/lib/server/cacheScope");
   const { showDrafts } = await import("@/lib/server/auth/session");
   const { setResponseHeaders } = await import("@tanstack/react-start/server");
   // Let Start reconcile headers without replacing its redirect/stream metadata.
@@ -27,6 +27,14 @@ const security = createMiddleware().server(async ({ request, pathname, next }) =
     }),
   );
   const bypass = pathname.startsWith("/admin") || (await showDrafts());
-  return withContentCacheBypass(bypass, next);
+  return withContentCacheBypass(bypass, async () => {
+    const result = await next();
+    if (!publicSnapshotMissed() || result.response.status !== 500) return result;
+    const headers = new Headers(result.response.headers);
+    headers.set("cache-control", "private, no-store");
+    headers.set("retry-after", "120");
+    headers.set("x-fhfs-content-status", "snapshot-miss");
+    return { ...result, response: new Response(result.response.body, { status: 503, headers }) };
+  });
 });
 export const startInstance = createStart(() => ({ requestMiddleware: [security] }));

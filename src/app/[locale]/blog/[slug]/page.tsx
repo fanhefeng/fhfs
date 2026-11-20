@@ -1,3 +1,4 @@
+import { SnapshotNotice } from "@/components/blog/SnapshotNotice";
 import { htmlLang } from "@/i18n/routing";
 
 import { Link } from "@/i18n/navigation";
@@ -52,6 +53,7 @@ export default function PostPage({
     <>
       <TopScrim />
       <main id="main" className="mx-auto w-full max-w-[68ch] flex-1 px-6 pb-28 pt-32 md:pt-40">
+        <SnapshotNotice locale={locale} snapshotAt={post.snapshotAt} />
         <JsonLd
           data={{
             "@context": "https://schema.org",
