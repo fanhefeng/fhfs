@@ -1,0 +1,45 @@
+# Draft: synthetic-only recovery rehearsal. No schedule, remote credentials, or notification target.
+name: private recovery rehearsal (synthetic only)
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_synthetic:
+        description: Rehearse against generated local files only
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: fhfs-private-recovery-rehearsal
+  cancel-in-progress: false
+jobs:
+  encrypted_round_trip:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && vars.FHFS_RECOVERY_REHEARSAL_ENABLED == 'true' && inputs.confirm_synthetic }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          check-latest: true
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11.20.0
+          run_install: false
+      - name: Install dependencies without project scripts
+        run: pnpm install --frozen-lockfile --ignore-scripts
+        timeout-minutes: 4
+      - name: Install verified Restic in the ephemeral runner
+        run: bash scripts/install-restic.sh "$RUNNER_TEMP/fhfs-rehearsal-archive" "$RUNNER_TEMP/fhfs-rehearsal-bin"
+        timeout-minutes: 3
+      - name: Verify a real local encrypted round trip with synthetic files
+        # Explicitly scrub environment, including any Restic/Pg/AWS/HC variable.
+        # The self-test constructs a fresh filesystem repository and random password.
+        run: env -i PATH="$PATH" HOME="$RUNNER_TEMP" TMPDIR="$RUNNER_TEMP" node --import tsx scripts/private-backup-selftest.mts
+        timeout-minutes: 5

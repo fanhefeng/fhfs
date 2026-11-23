@@ -104,7 +104,7 @@ CLOUDFLARE_WORKERS_SUBDOMAIN=fhfs pnpm run deploy
 
 此前共享后台版本的生产环境仅配置了 `DATABASE_URL`。首次发布独立后台之前，必须补齐 `AUTH_SECRET` 和 `ADMIN_PASSWORD_HASH`；Void 会检查必需 Secret 是否存在，不会自动上传本地 `.env`。
 
-公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。`ADMIN_MODE` 已移除；后台始终留在本部署，不跳转到原站。分享图片和后台图标在构建时生成，Worker 通过 `ASSETS` 绑定直接返回 PNG，不在请求期间加载字体或运行绘图 WASM。
+公开链接默认使用 `https://fhfs.fhfs.workers.dev`，使用自定义域名时在构建环境设置公开的 `VITE_SITE_URL`。`ADMIN_MODE` 已移除；后台始终留在本部署，不跳转到原站。仅在构建时生成中英文通用分享封面和后台图标，不读取公开搜索索引，也不打包文章专属 PNG 或清单。文章仍使用原分享图片路由，返回对应语言的通用封面。Worker 通过 `ASSETS` 绑定直接返回 PNG，不在请求期间加载字体或运行绘图 WASM。
 
 本地 `.env` 与生产 Secrets 分开；Void 不会自动上传 `.env`。本地环境需要：
 
