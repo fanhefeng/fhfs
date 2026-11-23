@@ -2,7 +2,6 @@ import type { App } from "@/lib/server/content";
 import type { Locale } from "@/i18n/routing";
 import type { GithubProject, Release, RepositoryStats } from "@/lib/githubData";
 import { appGithubRepo } from "@/lib/githubData";
-import { desktopPreview } from "@/lib/desktopPreview";
 
 /** The four buckets the segmented filter offers, in display order — the same
  *  union `App["category"]` carries out of the database enum. */
@@ -41,7 +40,6 @@ export type SoftwareApp = {
   /** "v0.12.0" — the repo's latest GitHub release, when it has one. */
   version?: string;
   release?: Release;
-  desktopPreview?: ReturnType<typeof desktopPreview>;
   stats?: RepositoryStats;
   repoUrl?: string;
   /** A release with downloadable files, rather than the app's home page. */
@@ -88,7 +86,6 @@ export function toSoftwareApp(
   const category = app.category;
   const repo = appGithubRepo(app);
   const release = github?.release ?? undefined;
-  const preview = app.key === "file-tidy" ? desktopPreview(repo, locale) : undefined;
   const downloadable =
     (category === "desktop" || category === "tool") && Boolean(release?.downloads.length);
   return {
@@ -109,7 +106,6 @@ export function toSoftwareApp(
           : "download",
     version: release?.version,
     release,
-    ...(preview ? { desktopPreview: preview } : {}),
     stats: github?.stats ?? undefined,
     repoUrl: repo ? `https://github.com/${repo}` : undefined,
     downloadUrl: downloadable ? release?.url : undefined,
