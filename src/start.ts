@@ -1,5 +1,6 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 import { contentSecurityPolicy } from "@/config/csp";
+import { legacyPageRedirect } from "@/lib/server/legacyPageRedirect";
 const security = createMiddleware().server(async ({ request, pathname, next }) => {
   if (
     !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
@@ -12,6 +13,8 @@ const security = createMiddleware().server(async ({ request, pathname, next }) =
     )
       return new Response("Forbidden", { status: 403 });
   }
+  const compatibility = legacyPageRedirect(request);
+  if (compatibility) return compatibility;
   const { publicSnapshotMissed, withContentCacheBypass } = await import("@/lib/server/cacheScope");
   const { showDrafts } = await import("@/lib/server/auth/session");
   const { setResponseHeaders } = await import("@tanstack/react-start/server");
