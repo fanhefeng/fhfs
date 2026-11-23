@@ -4,6 +4,7 @@ import { getTranslations } from "@/i18n/server";
 import { routing, htmlLang, type Locale } from "@/i18n/routing";
 import { site } from "@/config/site";
 import { getPosts } from "@/lib/server/content";
+import { PublicReadError } from "@/lib/server/publicRead";
 
 export const dynamic = "force-static";
 // Two feeds, and nothing else. The proxy's matcher skips paths with a dot in
@@ -19,6 +20,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return new Response("Not found", { status: 404 });
   const l: Locale = hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
+
+  let posts;
+  try {
+    posts = await getPosts(l);
+  } catch (error) {
+    if (!(error instanceof PublicReadError)) throw error;
+    // A usable snapshot is returned by getPosts, not by this error path.
+    // Keep a transient backend failure distinct from a successful empty feed.
+    return new Response("Feed temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "private, no-store", "Retry-After": "120" },
+    });
+  }
 
   const self = `${site.url}/${l}/rss.xml`;
   const feed = new Feed({
@@ -48,7 +62,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
   // shared id is what keeps a reader subscribed to both feeds from seeing the
   // same article twice.
   const t = await getTranslations({ locale: l, namespace: "blog" });
-  for (const post of await getPosts(l)) {
+  for (const post of posts) {
     // RSS requires a date; undated originals stay readable in the writing index.
     if (!post.date) continue;
     const url = `${site.url}/${post.locale}/blog/${post.slug}`;
