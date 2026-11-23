@@ -419,6 +419,43 @@ export function RecordDeck({ apps, current, arrival, deckRef, focusRequest }: Pr
           ) : null}
         </div>
         <p className="text-[0.975rem] leading-relaxed text-fg-secondary">{app.description}</p>
+        {app.desktopPreview ? (
+          <section
+            className="rounded-xl border border-line p-4"
+            aria-label={app.desktopPreview.title}
+          >
+            <h3 className="text-caption font-medium text-fg">{app.desktopPreview.title}</h3>
+            <p className="mt-2 text-caption leading-relaxed text-fg-secondary">
+              {app.desktopPreview.description}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-caption">
+              <a
+                href={app.desktopPreview.downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center text-accent underline underline-offset-4"
+              >
+                {app.desktopPreview.downloadLabel}
+              </a>
+              <a
+                href={app.desktopPreview.releaseUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center text-fg-secondary underline underline-offset-4"
+              >
+                {app.desktopPreview.notesLabel}
+              </a>
+              <a
+                href={app.desktopPreview.checksumUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center text-fg-secondary underline decoration-line underline-offset-4"
+              >
+                {app.desktopPreview.checksumLabel}
+              </a>
+            </div>
+          </section>
+        ) : null}
         {app.repoUrl ? (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-meta text-fg-tertiary">
             <a

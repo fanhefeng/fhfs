@@ -15,6 +15,7 @@ export function desktopPreview(repo: string | null, locale: Locale) {
     downloadUrl:
       "https://github.com/fanhefeng/file-tidy/releases/download/desktop-v0.5.4/File.Tidy-0.5.4-arm64.dmg",
     releaseUrl: "https://github.com/fanhefeng/file-tidy/releases/tag/desktop-v0.5.4",
-    checksumUrl: "https://github.com/fanhefeng/file-tidy/releases/download/desktop-v0.5.4/SHA256SUMS",
+    checksumUrl:
+      "https://github.com/fanhefeng/file-tidy/releases/download/desktop-v0.5.4/SHA256SUMS",
   };
 }
