@@ -98,6 +98,9 @@
     "fabAria": "Quick actions",
     "fabShare": "Share",
     "fabShareDone": "Link copied",
+    "shareManual": "Copy this article link manually.",
+    "shareLink": "Article link",
+    "shareClose": "Close",
     "fabTop": "Back to top",
     "fabRss": "RSS feed",
     "fabTheme": "Toggle theme"

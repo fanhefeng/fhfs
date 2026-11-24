@@ -1,4 +1,5 @@
 import { SnapshotNotice } from "@/components/blog/SnapshotNotice";
+import { ArticleShare, useArticleShare } from "@/components/blog/ArticleShare";
 import { htmlLang } from "@/i18n/routing";
 
 import { Link } from "@/i18n/navigation";
@@ -39,12 +40,22 @@ function TopScrim() {
     </div>
   );
 }
-export default function PostPage({
-  data,
-}: {
-  data: Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
-}) {
-  const { locale, post, older, newer } = data;
+type PostPageData = Awaited<ReturnType<typeof import("./page.server").loadPageData>>;
+
+export default function PostPage({ data }: { data: PostPageData }) {
+  const { shareTarget } = data;
+  const variant = !shareTarget ? "none" : shareTarget.title === undefined ? "link" : "rich";
+  return (
+    <PostContent
+      key={`${data.locale}:${data.slug}:${variant}:${shareTarget?.url ?? ""}`}
+      data={data}
+    />
+  );
+}
+
+function PostContent({ data }: { data: PostPageData }) {
+  const { locale, post, older, newer, shareTarget } = data;
+  const share = useArticleShare(shareTarget);
   const t = useTranslations("blog");
   const tn = useTranslations("notebook");
   const format = useFormatter();
@@ -121,6 +132,7 @@ export default function PostPage({
                 {post.summary}
               </ArticleSummary>
             )}
+            <ArticleShare share={share} />
           </header>
 
           {post.isFallback && (
@@ -153,7 +165,15 @@ export default function PostPage({
           </Link>
         </p>
       </main>
-      <RadialFab shareTitle={post.title} />
+      <RadialFab
+        articleShare={
+          share && {
+            run: share.run,
+            busy: share.status === "busy",
+            copied: share.status === "copied",
+          }
+        }
+      />
     </>
   );
 }

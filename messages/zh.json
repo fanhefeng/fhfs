@@ -98,6 +98,9 @@
     "fabAria": "快捷操作",
     "fabShare": "分享",
     "fabShareDone": "链接已复制",
+    "shareManual": "请手动复制文章链接。",
+    "shareLink": "文章链接",
+    "shareClose": "关闭",
     "fabTop": "回到顶部",
     "fabRss": "RSS 订阅",
     "fabTheme": "切换主题"
