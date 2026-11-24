@@ -1,4 +1,5 @@
 import type { Metadata } from "@/lib/metadata";
+import { articleShareTarget } from "@/lib/articleShare";
 import { notFound } from "@/lib/navigation";
 import { hasLocale } from "use-intl";
 
@@ -17,10 +18,18 @@ export async function loadPageData(input: PageProps<"/[locale]/blog/[slug]">) {
   const locale = await pageLocale(params);
   const { slug } = await params;
 
-  const post = await getPost(slug, locale, await showDrafts());
+  const preview = await showDrafts();
+  const post = await getPost(slug, locale, preview);
   if (!post) notFound();
   const { older, newer } = await getAdjacentPosts(post.slug, locale);
-  return { locale, slug, post, older, newer };
+  return {
+    locale,
+    slug,
+    post,
+    older,
+    newer,
+    shareTarget: articleShareTarget(site.url, post, preview),
+  };
 }
 
 export async function generateMetadata({

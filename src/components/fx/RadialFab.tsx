@@ -11,7 +11,13 @@ const START_ANGLE = 180;
 const END_ANGLE = 270;
 const RADIUS = 104;
 
-type Action = { key: string; label: string; onClick?: () => void; href?: string };
+type Action = {
+  key: string;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  disabled?: boolean;
+};
 
 /**
  * Quick-actions FAB for article pages, mobile only (the dynamic island covers
@@ -26,10 +32,13 @@ type Action = { key: string; label: string; onClick?: () => void; href?: string 
  */
 export function RadialFab({
   shareTitle,
+  articleShare,
   always = false,
   feed = true,
 }: {
-  shareTitle: string;
+  shareTitle?: string;
+  /** null hides the action for article previews; undefined preserves other pages. */
+  articleShare?: { run: () => void; busy: boolean; copied: boolean } | null;
   /** Mount at every width — the lab's study, which has no island to defer to. */
   always?: boolean;
   /** Offer the RSS feed. The feed is the blog's; a page that is not the blog
@@ -90,8 +99,18 @@ export function RadialFab({
     toggleTheme();
   }, []);
 
+  const copiedLink = articleShare?.copied ?? copied;
+  const shareAction: Action | undefined =
+    articleShare || (articleShare === undefined && shareTitle)
+      ? {
+          key: "share",
+          label: copiedLink ? t("fabShareDone") : t("fabShare"),
+          onClick: articleShare?.run ?? share,
+          disabled: articleShare?.busy,
+        }
+      : undefined;
   const actions: Action[] = [
-    { key: "share", label: copied ? t("fabShareDone") : t("fabShare"), onClick: share },
+    ...(shareAction ? [shareAction] : []),
     { key: "top", label: t("fabTop"), onClick: toTop },
     ...(feed ? [{ key: "rss", label: t("fabRss"), href: `/${locale}/rss.xml` }] : []),
     { key: "theme", label: t("fabTheme"), onClick: flipTheme },
@@ -241,6 +260,7 @@ export function RadialFab({
             type="button"
             aria-label={action.label}
             title={action.label}
+            disabled={action.disabled}
             className={`${itemClass} cursor-pointer`}
             onClick={() => {
               action.onClick?.();
@@ -260,7 +280,7 @@ export function RadialFab({
           stacking a second notice. The words stay in it while it fades, so it
           leaves as a label and not as an emptying box. */}
       <span aria-live="polite" className="sr-only">
-        {copied ? t("fabShareDone") : ""}
+        {!articleShare && copied ? t("fabShareDone") : ""}
       </span>
       <span
         aria-hidden="true"
@@ -268,7 +288,7 @@ export function RadialFab({
       >
         <span
           className={`glass-thin block whitespace-nowrap rounded-chip px-3 py-1.5 text-caption text-fg transition-[opacity,translate] duration-300 ease-out ${
-            copied ? "opacity-100" : "translate-y-1 opacity-0"
+            copiedLink ? "opacity-100" : "translate-y-1 opacity-0"
           }`}
         >
           {t("fabShareDone")}
