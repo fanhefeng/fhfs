@@ -12,6 +12,7 @@ const motionEntry = fileURLToPath(new URL("./src/lib/client/gsap.ts", import.met
 const motionSsr = fileURLToPath(new URL("./src/lib/client/gsap-ssr.ts", import.meta.url));
 
 export default defineConfig({
+  define: { "import.meta.env.FHFS_TARGET": JSON.stringify(vercel ? "vercel" : "cloudflare") },
   publicDir: ".generated/public",
   plugins: process.env.VITEST
     ? []
