@@ -44,23 +44,14 @@ describe("every table in the schema", () => {
     expect([...NOT_CONTENT].filter((name) => !tables.some(([t]) => t === name))).toEqual([]);
   });
 
-  it("is counted by db:check", () => {
-    const script = read("scripts/db-check.mts");
+  it("is handled by the guarded public snapshot export, if it holds content", () => {
+    const script = read("scripts/export-public-snapshot.mts");
     expect(
-      tables.filter(([, sqlName]) => !script.includes(`"${sqlName}"`)).map(([name]) => name),
+      content
+        .filter(([name]) => !new RegExp(`\\bschema\\.${name}\\b`).test(script))
+        .map(([name]) => name),
     ).toEqual([]);
   });
-
-  for (const script of ["scripts/db-export.mts", "scripts/db-import.mts"]) {
-    it(`is handled by ${script}, if it holds content`, () => {
-      const text = read(script);
-      expect(
-        content
-          .filter(([name]) => !new RegExp(`\\bschema\\.${name}\\b`).test(text))
-          .map(([name]) => name),
-      ).toEqual([]);
-    });
-  }
 
   it("has its rows in backup/db.json, if it holds content", () => {
     const backup = Object.keys(JSON.parse(read("backup/db.json")) as Record<string, unknown>);

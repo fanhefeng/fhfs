@@ -1,225 +1,41 @@
-# 库没了怎么办
+# 数据备份与恢复
 
-站点的内容全在 Postgres 里，而 Postgres 在别人手上。这份文档是那一天的操作单：
-从「手滑删错一行」到「Neon 账号整个没了」，每一级该怎么走。
+| 副本 | 归属 | 调度 |
+| --- | --- | --- |
+| 公开快照 | 本仓库 `db-snapshots` 分支 | 每天北京时间 03:00，另可手动执行 |
+| 加密私有备份 | 现有独立 B2 存储的 restic 仓库 | 每天 04:17 创建并校验数据库，每三小时检查新鲜度 |
+| SQL 恢复演练 | 独立 Neon 恢复项目 | 每月 8 日 06:53，季度另做媒体字节验证 |
+| 独立告警 | GitHub Actions 与 Healthchecks | 每三小时审计真实执行证据 |
 
-读这份文档的人多半正在着急，所以每一级都是可以照着敲的命令，解释放在后面。
+公开快照仅包含已发布内容，由具备专用只读凭据的 Actions 事务导出，并依据后台编辑证据核对表和行数。
+Cloudflare 与 Vercel 读取同一份公开快照，保持独立的后台和会话。文件不能用于恢复草稿或完整私有数据库。
+下载或查看 `db-snapshots` 时只操作历史和文件。项目没有将公开 JSON 导回生产的支持入口。
 
-## 备份都在哪
+现有加密仓库继续使用相同存储地址、密码、`fhfs-private` 标签和 `fhfs-site` 快照主机标签。
+保留这些标签可继续发现历史快照。凭据独立保管，禁止把还原的私有内容提交到 Git 或公开 Actions。
+Neon 自身的恢复窗口在控制台核对，跨账户恢复使用已验证的独立备份。
 
-| 副本                                | 位置                            | 多久更新一次                       |
-| ----------------------------------- | ------------------------------- | ---------------------------------- |
-| `backup/`（main 分支）              | GitHub + 你本机的 clone         | 每个改内容的 PR，跟着代码走        |
-| `backup/`（`db-snapshots` 分支）    | GitHub                          | 每天 03:00 自动，内容有变才提交    |
-| Neon 自己的 history / branch restore | Neon                            | 连续，但只保留很短一段时间         |
-| 私有 restic 仓库（配置并验证后） | 独立加密存储 | 每天 04:00；包含草稿和媒体 |
+## 接管设置
 
-前两份是同一个 `backup/db.json`，`pnpm db:import` 读的就是它。第三份是 Neon 的
-point-in-time restore，**只在情形一里有用**：它和库存在同一个账号里，账号没了它
-一起没。早期演练时这个项目的保留期实测是 **21600 秒，正好 6 小时**（Free 计划），
-这只是当时的记录。事故时应先在控制台核实当前可恢复窗口；超出窗口后，使用已配置并验证的
-私有 restic 副本，或上面两份公开快照。公开快照不含草稿和媒体。
+1. 先在 `fanhefeng/fhfs` 发布原 `db-snapshots` 历史，并为旧快照添加原始时间和 SHA-256。从公开地址读回校验后再部署新的快照读取源。快照分支的 `vercel.json` 关闭其部署。
+2. 新仓库的公开导出只设置 `PUBLIC_BACKUP_DATABASE_URL` 专用只读凭据。运行时的应用连接串保持在各平台，编译、验证和快照任务不需要该连接串。
+3. 将现有 `BACKUP_DATABASE_URL`、`BACKUP_RESTORE_DATABASE_URL`、`RESTIC_REPOSITORY`、`RESTIC_PASSWORD`、`BACKUP_AWS_ACCESS_KEY_ID`、`BACKUP_AWS_SECRET_ACCESS_KEY` 配置为本仓库 Secret，沿用 `BACKUP_AWS_REGION`。从密码管理或受保护的本机配置注入，完整名单见 [PRIVATE-BACKUP.md](PRIVATE-BACKUP.md)。
+4. Neon 恢复后，在默认分支手动运行公开备份、加密 `create`、`verify-database` 和受保护的 `restore-database`。核对真实快照、最新公开内容、前台实时读取、搜索、RSS、sitemap 和恢复对比摘要。
+5. 创建或交接备份专用的 `HEALTHCHECKS_PING_URL`。保持原监控信号，直到新仓库证实收到自然调度信号。设置 `PUBLIC_BACKUP_ENABLED`、`PRIVATE_BACKUP_ENABLED`、`PRIVATE_RESTORE_ENABLED` 和 `MONITOR_ENABLED`；确认现有 `E2E_ENABLED` 仍为 `true`。在切换窗口内串行停用旧仓库的重复定时写入，避免两个仓库同一时段写同一 restic 仓库。旧站网页与原有告警继续保留，直至新任务完成至少一次自然运行并核对通知。
+6. 将共享 `fhfs-media` 每小时清理切到新版 Cloudflare 的 `/api/media/cleanup`。确认现有上传密钥匹配、静态资源及 KV 绑定保留，并验证自然 Cron。只修改清理目标时不需要替换媒体静态资源。详见 [媒体上传](MEDIA-UPLOADS.md)。
+7. 按 [GitHub 同步](GITHUB-SYNC.md) 核对已有仓库的 Webhook，在新部署验证签名与事件响应。确认历史跳转和监控这些独立接管项后，再停用旧站流量。
 
-**没有备份、也不需要备份的东西**：`AUTH_SECRET` 和 `ADMIN_PASSWORD_HASH` 丢了
-跑 `pnpm admin:password` 重新生成一对，填回 Vercel 就是了——它们不锁任何数据。
-`public/` 下的音乐、模型、照片都在 git 里。`messages/*.json` 是全部文案的默认值，
-也在 git 里：就算 `copy_blocks` 整张表没了，站点照文件显示，不会白屏。
+## 共享数据库结构
 
-**说说的图片、语音、视频不在 git 里，也不在库里**：在媒体站——Cloudflare 免费版上的 Worker
-`fhfs-media`（`media/`），库里只存地址（`MEDIA_ORIGIN` 开头）。换库、恢复库都不碰它。
-`pnpm media:pull` 把库里指到的每个文件拉回本机的 `media/files/`，这就是备份的办法，也是
-重新部署之前必须做的一步（部署会整体替换，`media:deploy` 发现缺文件会拒绝）。媒体站整个没了：
-先用 `media:pull` 过的本机副本，或已经配置且验证过的[私有备份](PRIVATE-BACKUP.md)恢复。
-git 历史里**没有**它们——2026-10-01 改写历史时把
-`public/moments/` 整个拿掉了。改写前的完整历史在两处：用户本机的一个 bundle
-（`../fhfs-site-history-backup/`），和 GitHub 上已设为私有并归档的旧仓库 `fanhefeng/fhfs-site-archive`
-（10-02 起，旧的 48 个 PR 也都在那里）。都没有的话，视频和图片得从原平台重新下载。
+`drizzle/` 保留从旧仓库复制的完整迁移历史。本仓库维护未来的 schema 变更。
+交接只转移记录和维护入口；数据库 schema、迁移编号和现有记录沿用。
+Drizzle 工具要求单独设置显式直连变量 `DRIZZLE_MIGRATION_DATABASE_URL`。
+代码发布、演练和生产验收均不执行生产迁移。
 
-真正只存在于数据库、丢了就没有第二份的，只有 `backup/db.json` 里那些表——除了登录限流用的
-`login_attempts` 和临时上传租约 `media_uploads`，内容表都在里面（`tables.test.ts` 守着这一点）。上传租约仅导出公开内容实际引用的部分，恢复时保留 UUID；详见 [MEDIA-UPLOADS.md](MEDIA-UPLOADS.md)。
+## 恢复
 
-**草稿不进公开备份。** 仓库和 `db-snapshots` 分支都是公开的，导出草稿等于当晚就把它
-发出去，所以 `db:export` 只写已发布的文章、秘密、说说、电影和偶像。私有 restic 备份另含草稿，
-但要先按 [PRIVATE-BACKUP.md](PRIVATE-BACKUP.md) 配置并完成首次验证；尚未启用时，草稿仍只有数据库
-与 Neon 的恢复窗口可用。`db:import` 对这五张表
-只做 upsert，恢复备份不会删掉库里现有的草稿。
+恢复先落在预置保护标记的独立数据库，逐表验证列、行、序列和迁移记录。
+`restore-database` 拒绝生产和 E2E 目标；读回数据库和清单的 `verify-database`
+只检查完整性。正式恢复或切换仍需要单独确认恢复目标、时间点和停写窗口。
 
-库里还有一个 `neon_auth` schema（`user`、`session`、`account`、`jwks` 等 9 张表），
-那是 Neon 自己的托管认证功能建的，**站点代码一个字都没碰过**（后台登录走的是
-`AUTH_SECRET` 签的 jose JWT）。恢复时不用管它，也不用重建。
-
-## 情形一：删错了、改错了，库还在
-
-最常见的一种，也最好救。两条路，选快的那条：
-
-**如果是刚刚发生的**（在 Neon 的保留期内），去 Neon console 从事故之前的时间点
-建一个 branch，确认数据对，再把它 promote 成主分支。这条路连没备份的那几分钟
-编辑也一起救回来。
-
-**如果已经过了保留期**，或者你只想退回上一次快照：
-
-```bash
-git fetch origin db-snapshots
-git checkout db-snapshots -- backup/     # 取最新的自动快照
-pnpm db:import
-git checkout main -- backup/             # 别把快照混进工作区
-```
-
-`db:import` 对有主键的表是 upsert，**不会删掉**备份之后新建的行——真要干净回滚，
-多出来的行自己去 `/admin` 删。`chips`、`nav_items`、`copy_blocks` 三张表是整表
-替换，会精确回到备份的样子。
-
-导完看[收尾](#每次恢复完都要做的事)。
-
-## 情形二：库或项目没了，Neon 账号还在
-
-Neon 项目被删、分支被误删、或者欠费清理掉了。账号还能登录，所以只是重建一个空库。
-
-```bash
-# 1. Neon console 新建 project，拿两个连接串写进 .env.local：
-#    DATABASE_URL           （带 -pooler 的）
-#    DATABASE_URL_UNPOOLED  （直连的，迁移和脚本用它）
-
-# 2. 空库建表 —— 迁移都在 drizzle/ 里
-pnpm db:migrate
-
-# 3. 灌内容。先确认手上这份 backup/ 是最新的：
-git fetch origin db-snapshots
-git log --oneline origin/db-snapshots | head -3    # 最后一次自动快照是哪天
-git checkout db-snapshots -- backup/               # 比 main 的新就用它
-pnpm db:import
-
-# 4. 对一下行数
-pnpm db:check
-git checkout main -- backup/
-```
-
-然后把新的 `DATABASE_URL` 填进 Vercel 的环境变量（Production / Preview /
-Development 三个环境都要），重新部署一次。GitHub 那个叫 `DATABASE_URL` 的
-secret 也要换成新库的只读角色，否则每天的自动备份会一直失败——那正是它该失败
-的方式，别忽略它。
-
-别忘了在新库上重建只读角色，CI 的 build 和每日备份都用它。这几句 SQL 在
-**Neon console 的 SQL Editor** 里跑——这台机器没有 `psql`（`vp` 只管 JS 工具链），
-公开 JSON 恢复不依赖 `psql`；私有 dump 恢复另需原生客户端，见私有备份操作单：
-
-```sql
-CREATE ROLE ci_readonly WITH LOGIN PASSWORD '…';
-GRANT CONNECT ON DATABASE neondb TO ci_readonly;
-GRANT USAGE ON SCHEMA public TO ci_readonly;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO ci_readonly;
-REVOKE SELECT ON login_attempts FROM ci_readonly;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ci_readonly;
-```
-
-## 情形三：Neon 账号整个没了
-
-账号被封、注销、或者哪天 Neon 这家公司不在了。PITR、分支、项目一起消失，
-先用已配置并验证的私有 restic dump 恢复草稿与媒体；没有这份副本时，
-`backup/db.json` 是剩下的内容来源——它在 GitHub 上，也在你本机的 clone 里。
-
-好消息是代码对 Neon 的绑定很浅：**Neon 专有的代码只有三个文件**，schema、全部
-迁移、所有查询、`drizzle.config.ts`（`dialect: "postgresql"`）、`src/config/env.ts`
-的校验（只认 `postgres://`）全都不用动。
-
-换成任意一家标准 Postgres（Supabase、Railway、Render、自己的机器都行），改这三处：
-
-1. **`src/db/index.ts`** — `drizzle-orm/neon-http` 换成 `drizzle-orm/postgres-js`，
-   删掉 `neonConfig.fetchFunction` 那段。`withConnectionRetry` 包的是 HTTP fetch，
-   换了驱动就没有 fetch 可包了，重连交给驱动自己。
-2. **`scripts/connect.mts`** — 同上。它的 `DATABASE_URL_UNPOOLED ?? DATABASE_URL`
-   回退本来就在，别家没有「unpooled」这个概念也能跑。
-3. **`scripts/db-import.mts`** — `db.batch()` 是 neon-http 专有的，换成
-   `db.transaction()`。换过去之后反而更强：真事务，不再有「一张表一个请求」的限制。
-
-包也要换：`@neondatabase/serverless` 出，`postgres` 进。
-
-改完就是情形二的流程：`pnpm db:migrate` → `pnpm db:import` → 改 Vercel 环境变量
-→ 部署。
-
-顺带一提，`src/db/index.ts` 的注释写着「没有多语句事务」是设计前提——标签用数组
-列、保存永远是单条 upsert。换到真驱动之后这条约束就没了，但**别急着依赖它**：
-`src/lib/retryFetch.ts` 的连接级重试之所以安全，正是因为每条语句都幂等。
-
-## 每次恢复完都要做的事
-
-站点是静态预渲染的，页面挂在 `unstable_cache` 的标签上。**库变了，页面不会自己
-知道**——它会继续端着老内容，一直到有什么东西调用 `updateTag`。
-
-所以：**去 `/admin` 随便找个东西按一次保存**。任何一次保存都会刷掉相关缓存。
-
-本地 dev 另说，dev 的数据缓存在 `.next/dev` 下（Next 16 的位置变了）：
-
-```bash
-rm -rf .next/dev/cache/fetch-cache && pnpm dev
-```
-
-## 每日自动备份是怎么跑的
-
-`.github/workflows/backup.yml`，每天 03:00（北京时间），跑 `pnpm db:export`，
-内容有变就往 `db-snapshots` 分支提交一个 commit。那个分支只装 `backup/` 和这份
-文档的副本，不带 main 的历史。
-
-中间隔着一道 `scripts/db-snapshot-guard.mts`：**任何一张有行的表变成空表，这次
-快照就被拒绝、整个 job 失败。** 理由在 `src/lib/backup.ts` 里写着——一个没人看的
-定时任务最危险的失效方式，是它成功地把一份空备份盖在好备份上面。
-
-所以 backup 这个 workflow 变红了要去看，那通常不是 CI 抽风。
-
-要临时手动跑一次：Actions → backup → Run workflow。
-
-## 演练记录
-
-**2026-09-20：走通了，核心步骤 46 秒。**
-
-在 Neon 建沙箱分支 → `DROP SCHEMA public + drizzle` 清成真空库（站点 12 张表和
-迁移记录全部消失）→ `pnpm db:migrate` **34 秒**跑完 12 个迁移 → `pnpm db:import`
-**12 秒**灌回 12 张表 → 逐表比对行数，13 张全部一致 → 再从恢复出来的库
-`pnpm db:export` 一次，与原 `backup/` **逐字节相同**（`diff -r` 零差异，含
-db.json 和全部 markdown 副本）→ 删掉沙箱分支。
-
-连建分支、清库、比对在内，全程 **298 秒**。真出事时照这份文档做，数据库这一段
-五分钟以内，剩下的时间都花在 Vercel 改环境变量和重新部署上。
-
-演练逮到的问题（都已修）：
-
-- 清库只 drop `public` 不够，`drizzle` schema 里的迁移记录会让 `db:migrate`
-  跳过建表——上面那段已经写明。
-- 文档原来用 `psql`，这台机器没有。
-- `db:import` 结束时对 `chips` / `nav_items` / `copy_blocks` 打印的是**语句数**
-  而不是行数，屏幕上会显示 `nav_items 2`。演练时我自己先当成了「恢复丢了数据」。
-  真出事时更容易误判，已经改成打印行数。
-
-下次再练还是这一套，成本很低，Neon 建分支是一键的事。
-
-先在 Neon console → Branches → New Branch 建一个沙箱（叫 `restore-drill` 之类），
-然后在它的 **SQL Editor** 里把库清成真空的：
-
-```sql
-DROP SCHEMA IF EXISTS public CASCADE;
-DROP SCHEMA IF EXISTS drizzle CASCADE;   -- ← 别漏这句，理由见下
-CREATE SCHEMA public;
-```
-
-⚠️ **`drizzle` 那句是整个演练最容易漏的一步。** drizzle-kit 的迁移记录表
-（`__drizzle_migrations`）不在 `public` 里，而在它自己的 `drizzle` schema 里。
-只清 `public` 的话，`db:migrate` 会看到 12 条迁移记录还在、认为都跑过，**直接
-跳过建表**；接着 `db:import` 撞上一堆不存在的表报错——而错误信息指向 import，
-不指向真正的原因。真出事那天在这里卡住是很贵的。
-
-清完之后，用沙箱那个不带 `-pooler` 的连接串跑（`process.loadEnvFile` 不覆盖已有
-的环境变量，所以这样前缀着写不会动到 `.env.local`）：
-
-```bash
-export DRILL=postgresql://…   # 沙箱的直连串
-DATABASE_URL="$DRILL" DATABASE_URL_UNPOOLED="$DRILL" pnpm db:migrate
-DATABASE_URL="$DRILL" DATABASE_URL_UNPOOLED="$DRILL" pnpm db:import
-DATABASE_URL="$DRILL" DATABASE_URL_UNPOOLED="$DRILL" pnpm db:check
-# 跟 backup/db.json 里的行数逐表对上，就算通过
-# 验完把沙箱分支删掉，生产分支全程没被碰过
-```
-
-再走通一次就把日期和耗时记在下面——真出事的时候，知道这件事要五分钟还是两小时，
-比知道它可行更重要。
-
-- **2026-09-20** — 全程 298 秒，migrate 34s + import 12s，往返导出零差异。
+若公开快照尚未产生新版本，故障读使用已校验的已有公开快照。紧急撤稿先屏蔽公开访问，再用正常备份发布新的已验证版本。依次复查详情、列表、搜索、RSS 和 sitemap。历史快照、公共 Git 历史和下载副本需独立处理。

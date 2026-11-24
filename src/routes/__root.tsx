@@ -4,10 +4,9 @@ import { ThemeInitScript } from "@/app/ThemeInitScript";
 import { htmlLang } from "@/i18n/routing";
 import "@/app/globals.css";
 import "@/app/font-faces.css";
-import icon from "@/app/icon.svg?url";
 export const Route = createRootRoute({
   head: () => ({
-    links: [{ rel: "icon", type: "image/svg+xml", href: icon }],
+    links: [{ rel: "icon", type: "image/svg+xml", href: "/icon.svg" }],
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },

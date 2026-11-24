@@ -1,6 +1,6 @@
 # 后台编辑与备份保护
 
-`fhfs` 与 `fhfs-site` 的后台独立部署，内容共用 Neon。定时公开快照、私有备份和 Healthchecks.io 巡检仍由 `fhfs-site` 负责；两个后台使用相同的写入协议。
+`fhfs` 与 `fhfs-site` 的后台独立部署，内容共用 Neon。定时公开快照、私有备份和 Healthchecks.io 巡检的接管步骤见 [数据备份与恢复](RECOVERY.md)，各后台使用相同的写入协议。
 
 ## 正常编辑
 
@@ -23,9 +23,9 @@
 - 历史快照仍保留在 `db-snapshots` 的 Git 历史中；私有完整备份仍独立执行。
 - 这里保护数量异常，不能识别有数据库写权限的人同时篡改内容和审计表，也不把行数相同的内容损坏当成已检测到。
 
-## 一次性上线
+## 2026-10 原站一次性上线记录
 
-共享 schema 由 `fhfs-site` 管理，仅在那里新增 `drizzle/0018_admin_content_state.sql`。既有内容表和上传协议不变。
+当时共享 schema 由 `fhfs-site` 管理，仅在那里新增 `drizzle/0018_admin_content_state.sql`。既有内容表和上传协议不变。
 
 生产迁移需要遵守仓库关于迁移的明确授权约束。上线前先完成两个项目的 check、build 和只读公开页面验证，再：
 

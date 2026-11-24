@@ -12,7 +12,16 @@ const loadCounts = createServerFn({ method: "GET" }).handler(async () => {
 export const Route = createFileRoute("/admin")({
   loader: () => loadCounts(),
   head: () => ({
-    meta: [{ title: "Admin | fhf" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "Admin | fhf" },
+      { name: "robots", content: "noindex, nofollow" },
+      { name: "apple-mobile-web-app-title", content: "fhf 后台" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+    ],
+    links: [
+      { rel: "manifest", href: "/admin/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/admin/apple-icon" },
+    ],
   }),
   component: AdminLayout,
 });

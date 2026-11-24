@@ -49,6 +49,7 @@ export const ASSET_SETS = [
  * keeps stable, relative file links; app UI uses bundled geometry instead.
  */
 export const MUTABLE_DIRS: readonly string[] = ["/icons"];
+const MUTABLE_FILES = new Set(["/icon.svg"]);
 
 export const HASH_LENGTH = 8;
 const HASH = `:hash([0-9a-f]{${HASH_LENGTH}})`;
@@ -98,7 +99,9 @@ export function isImmutable(urlPath: string): boolean {
 
 /** URL paths of files in `public/` that no list above accounts for. */
 export function unclassified(urlPaths: readonly string[]): string[] {
-  return urlPaths.filter((url) => !under(url, IMMUTABLE_DIRS) && !under(url, MUTABLE_DIRS));
+  return urlPaths.filter(
+    (url) => !under(url, IMMUTABLE_DIRS) && !under(url, MUTABLE_DIRS) && !MUTABLE_FILES.has(url),
+  );
 }
 
 /** `/lab/lens/sea.jpg` + `3fa9c1d2` → `/lab/lens/sea.3fa9c1d2.jpg`. */

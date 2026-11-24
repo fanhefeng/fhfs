@@ -14,3 +14,7 @@ test-results/
 .void-wrangler.jsonc
 .pnpm-store/
 .e2e/
+.vercel/
+.nitro/
+media/files/
+.private-backup-recovery/

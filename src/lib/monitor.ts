@@ -89,7 +89,12 @@ export function monitorChecks(
       hours: 35 * 24,
       step: "Restore into the guarded disposable database",
     },
-    { label: "browser flows", runs: browserRuns, hours: 36, step: "Run pnpm e2e" },
+    {
+      label: "native admin flows",
+      runs: browserRuns,
+      hours: 36,
+      step: "Verify native admin against its guarded test database and local media",
+    },
     {
       label: "public snapshot",
       runs: publicRuns,

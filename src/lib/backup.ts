@@ -11,10 +11,7 @@
  * out.
  *
  * So: a table that had rows and now has none is not a snapshot, it is an
- * alarm. Emptying a table on purpose is rare and always deliberate — the
- * commit that does it carries a hand-run `pnpm db:export` with it (copy_blocks
- * was emptied exactly that way), and the automation is meant to stop and say
- * so rather than quietly record the loss.
+ * alarm unless authenticated edit evidence accounts for the change.
  *
  * Shrinkage is deliberately not checked. Deleting most of a table is ordinary
  * editing, and a threshold that fires on it teaches everyone to ignore the

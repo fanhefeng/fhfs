@@ -24,7 +24,7 @@ type Tables = {
 
 export type PublicSnapshot = { publishedAt: string; tables: Tables };
 
-const origin = "https://raw.githubusercontent.com/fanhefeng/fhfs-site";
+const origin = "https://raw.githubusercontent.com/fanhefeng/fhfs";
 const branch = `${origin}/db-snapshots/backup`;
 const knownVersion = "cd75c7f39bea50779e45aa71485176323fd683a1";
 const knownDate = "2026-10-20T03:09:06Z";

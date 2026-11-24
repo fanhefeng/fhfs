@@ -1,24 +1,8 @@
 import { defineConfig } from "drizzle-kit";
 
-// drizzle-kit runs outside Next, so nothing has loaded .env for us.
-try {
-  process.loadEnvFile(".env");
-} catch {
-  // Fine in CI, where the variables are already in the environment.
-}
-
-/**
- * Migrations and seeding go through the *unpooled* connection: PgBouncer
- * breaks prepared statements, which DDL and bulk upserts rely on. The app
- * itself uses the pooled `DATABASE_URL` (see src/db/index.ts).
- */
-const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
-
-if (!url) {
-  throw new Error(
-    "DATABASE_URL_UNPOOLED (preferred) or DATABASE_URL must be set to run migrations.",
-  );
-}
+// Select a deliberately provisioned direct connection for migration tooling.
+const url = process.env.DRIZZLE_MIGRATION_DATABASE_URL;
+if (!url) throw new Error("Set an explicit DRIZZLE_MIGRATION_DATABASE_URL");
 
 export default defineConfig({
   schema: "./src/db/schema.ts",

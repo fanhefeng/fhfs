@@ -44,7 +44,7 @@ const walls = [
 // reserves the box with. A picture swapped for one of another shape still
 // loads — into the old box, cropped or letterboxed, with nothing to notice.
 // The films and idols keep theirs in the database, edited in /admin, so this
-// reads the backup (`pnpm db:export`); an upload's size is measured by the
+// reads the public snapshot; an upload's size is measured by the
 // browser that sends it, so only the files in `public/` are checked here.
 describe("the pictures the rooms hang", () => {
   it("finds the walls", () => {

@@ -1,52 +1,31 @@
-/**
- * Writes the whole database out to `backup/`, so the content keeps a
- * plain-text life outside Postgres.
- *
- * This matters more than a normal backup would. Moving content into a
- * database traded away the two things files gave for free: a diff and a
- * history. Exporting into the repo hands both back — `git log backup/` is a
- * record of what the site has said, and a restore needs nothing but
- * `db:import`.
- *
- * Two shapes, on purpose:
- *   backup/db.json      every table, complete, and what db:import reads
- *   backup/posts/*.md   the prose again as markdown with frontmatter, so a
- *                       diff on an article reads like a diff on an article
- *   backup/about.*.md   the about page's prose, outside posts/ so a post
- *                       slugged "about" can never collide with it
- *
- * db:import reads only db.json — the markdown copies exist for the diff.
- *
- * Drafts stay out. The repository is public, and so is the `db-snapshots`
- * branch the nightly workflow commits this to: a draft exported here would
- * be readable on GitHub the same night, which is exactly what marking it a
- * draft was meant to prevent. A draft therefore lives only in the database
- * (and Neon's own history) until it is published — and since db:import only
- * upserts posts, secrets, moments, films and idols, restoring a backup never
- * deletes one.
- *
- *   pnpm db:export
- */
-import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+/** Export published records and transactional audit evidence into a new directory. */
+import { access, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { asc, eq, inArray } from "drizzle-orm";
+import { hasLocale } from "use-intl";
 import { stringify as toYaml } from "yaml";
 import * as schema from "../src/db/schema";
+import { routing } from "../src/i18n/routing";
+import { validKey } from "../src/lib/forms";
 import { connect } from "./connect.mjs";
 import { snapshotProblems } from "../src/lib/backupAudit";
 import { uploadIds } from "../src/lib/mediaUploads";
 
-const db = connect(undefined, { isolationLevel: "RepeatableRead", readOnly: true });
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = path.join(ROOT, "backup");
-/**
- * The snapshot is built next door and moved into place. `backup/` is the
- * committed copy of the database, and emptying it before the first write means
- * a connection that drops halfway leaves a half-written backup where a whole
- * one used to be — recoverable from git, but only if someone notices.
- */
-const STAGE = path.join(ROOT, ".backup.staging");
+const url = process.env.PUBLIC_BACKUP_DATABASE_URL;
+if (!url) throw new Error("PUBLIC_BACKUP_DATABASE_URL must use the dedicated read-only role");
+
+const output = process.argv[2];
+if (!output || !path.isAbsolute(output))
+  throw new Error("Give an absolute path for a new snapshot output directory");
+const exists = await access(output).then(
+  () => true,
+  (error: NodeJS.ErrnoException) => {
+    if (error.code !== "ENOENT") throw error;
+    return false;
+  },
+);
+if (exists) throw new Error("Snapshot output directory already exists");
+const db = connect(url, { isolationLevel: "RepeatableRead", readOnly: true });
 
 /**
  * Every ordering below is total, not just sorted.
@@ -166,13 +145,21 @@ if (data.mediaUploads.length !== publicUploadIds.length)
 const strip = <T extends Record<string, unknown>>(rows: T[]) =>
   rows.map(({ id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...rest }) => rest);
 
-await rm(STAGE, { recursive: true, force: true });
-await mkdir(path.join(STAGE, "posts"), { recursive: true });
+// Older database rows may predate the editor's path validation.
+if (
+  [...data.posts, ...data.secrets].some(
+    ({ slug, locale }) => !validKey(slug) || !hasLocale(routing.locales, locale),
+  ) ||
+  data.abouts.some(({ locale }) => !hasLocale(routing.locales, locale))
+)
+  throw new Error("Backup refused: a public record has an invalid export filename");
 
+const stage = await mkdtemp(path.join(path.dirname(output), ".public-snapshot-"));
 try {
-  await writeFile(path.join(STAGE, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
+  await mkdir(path.join(stage, "posts"));
+  await writeFile(path.join(stage, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
   await writeFile(
-    path.join(STAGE, "db.json"),
+    path.join(stage, "db.json"),
     JSON.stringify(
       Object.fromEntries(
         Object.entries(data).map(([table, rows]) => [
@@ -184,7 +171,7 @@ try {
                   state: "retained",
                 }),
               )
-            : strip(rows as any),
+            : strip(rows as Record<string, unknown>[]),
         ]),
       ),
       null,
@@ -201,14 +188,14 @@ try {
       summary: post.summary,
     });
     await writeFile(
-      path.join(STAGE, "posts", `${post.slug}.${post.locale}.md`),
+      path.join(stage, "posts", `${post.slug}.${post.locale}.md`),
       `---\n${frontmatter}---\n\n${post.bodyMd}`,
     );
   }
 
   /** The secrets likewise, in their own folder — a slug shared with a post
    *  must not overwrite it. */
-  await mkdir(path.join(STAGE, "secrets"), { recursive: true });
+  await mkdir(path.join(stage, "secrets"), { recursive: true });
   for (const secret of data.secrets) {
     const frontmatter = toYaml({
       title: secret.title,
@@ -219,7 +206,7 @@ try {
       ...(secret.duration != null ? { duration: secret.duration } : {}),
     });
     await writeFile(
-      path.join(STAGE, "secrets", `${secret.slug}.${secret.locale}.md`),
+      path.join(stage, "secrets", `${secret.slug}.${secret.locale}.md`),
       `---\n${frontmatter}---\n\n${secret.bodyMd}`,
     );
   }
@@ -227,21 +214,14 @@ try {
   for (const about of data.abouts) {
     const frontmatter = toYaml({ title: about.title });
     await writeFile(
-      path.join(STAGE, `about.${about.locale}.md`),
+      path.join(stage, `about.${about.locale}.md`),
       `---\n${frontmatter}---\n\n${about.bodyMd}`,
     );
   }
-} catch (error) {
-  await rm(STAGE, { recursive: true, force: true });
-  throw error;
+  await rename(stage, output);
+} finally {
+  await rm(stage, { recursive: true, force: true });
 }
-
-// Every write landed: the old backup goes, and the staged one takes its name.
-// Outside the guard above on purpose — the moment `backup/` is gone the
-// staged copy is the only copy there is, and a rename that fails must leave
-// it standing rather than be swept up as a failed write.
-await rm(OUT, { recursive: true, force: true });
-await rename(STAGE, OUT);
 
 const counts = Object.entries(data).map(
   ([table, rows]) => `${table} ${(rows as unknown[]).length}`,
