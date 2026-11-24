@@ -20,6 +20,11 @@
   "include": [
     "src",
     "ops",
+    "scripts/db-snapshot-guard.mts",
+    "scripts/export-public-snapshot.mts",
+    "scripts/media.mts",
+    "scripts/monitor.mts",
+    "scripts/private-backup.mts",
     "scripts/e2e.mts",
     "scripts/uptime.mts",
     "tests/e2e",

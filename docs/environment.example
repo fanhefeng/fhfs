@@ -1,18 +1,14 @@
-# Copy to .env.local, or pull the real values: `vercel env pull .env.local`.
-# The rules each value must meet are in src/config/env.ts; a production build or
-# server refuses to start when one fails. env.test.ts keeps this file and that
-# list naming the same variables.
+# Local application environment. Set production values through the platform's
+# secret manager. See src/config/env.ts for application value requirements.
 
-# Neon Postgres, the pooled connection string. Required at build time too:
-# pages are prerendered from the database.
+# Neon Postgres pooled runtime connection. Public asset builds do not use it.
 DATABASE_URL=
 
-# Optional. Neon's direct (unpooled) string; the scripts under scripts/ and
-# drizzle-kit prefer it when set.
+# Optional direct database connection for explicitly authorized Node tools.
+# Drizzle migrations take their own DRIZZLE_MIGRATION_DATABASE_URL variable.
 DATABASE_URL_UNPOOLED=
 
-# Both printed by `pnpm admin:password`. The hash is `salt:hash` from scrypt;
-# the password itself is stored nowhere.
+# Independent application session secret and the administrator's scrypt salt:hash.
 AUTH_SECRET=
 ADMIN_PASSWORD_HASH=
 
@@ -38,6 +34,12 @@ GITHUB_WEBHOOK_SECRET=
 # never in code or logs. MONITOR_FLAGS is supplied from repository variables.
 HEALTHCHECKS_PING_URL=
 MONITOR_FLAGS=
+
+# Optional, only for the guarded public snapshot exporter. Dedicated read-only role.
+PUBLIC_BACKUP_DATABASE_URL=
+# Optional, only for the authorized local media inventory commands. Dedicated
+# read-only role with access to media references in drafts.
+MEDIA_INVENTORY_DATABASE_URL=
 
 # Optional, only for pnpm backup:private. This direct connection uses a
 # separate read-only role that can read drafts and migration metadata.

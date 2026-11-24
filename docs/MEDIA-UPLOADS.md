@@ -22,11 +22,11 @@ KV 免费额度为账号共 1 GB，每值最多 25 MiB；每日 1,000 次写入�
 
 ## 部署与恢复
 
-1. `pnpm db:migrate` 增加租约表；现有内容不改。
-2. Worker 绑定 `UPLOADS` 命名空间，设置 `MEDIA_UPLOAD_SECRET`；站点生产环境设置相同密钥。值不得进入命令参数、日志或 Git。
-3. `pnpm media:deploy` 部署 Worker，Git 主分支部署站点。Cron 的站点地址由 `UPLOAD_SITE_ORIGIN` 指定。
-4. `pnpm e2e` 只使用已标记的测试库和本地 Wrangler KV 模拟器。`E2E_MEDIA_ORIGIN` 仅在 E2E_BUILD 时有效；不写生产媒体。
+1. 保留现有 `UPLOADS` KV 命名空间与 `ASSETS` 绑定。Worker 和各应用生产环境配置同一 `MEDIA_UPLOAD_SECRET`，通过平台加密变量或受控进程环境注入。
+2. 仅迁移 Cron 时，通过 Cloudflare 修改现有 Worker 的 `UPLOAD_SITE_ORIGIN`，设置 `global_fetch_strictly_public` 并保留部署代码、资产和绑定。Cron 每小时第 17 分钟请求新版 Cloudflare 的 `/api/media/cleanup`。先核对实际运行版本和自然调度记录，再停旧站端点。
+3. 静态媒体部署使用 `pnpm media:pull` 补齐资产和引用，先运行 `pnpm media:check`。检查使用专用只读 `MEDIA_INVENTORY_DATABASE_URL`，包括草稿引用与已知资产清单。具备完整资产和已验证私有备份后，`pnpm media:deploy` 会在替换资产前后分别运行加密备份。
+4. `pnpm e2e` 使用已标记的测试库和本地 Wrangler KV 模拟器。`E2E_MEDIA_ORIGIN` 仅在 E2E_BUILD 生效。
 
-公开导出仅包含公开内容实际引用的上传租约，保留 UUID；临时上传和仅草稿引用的文件信息不进 Git。`db:import` 恢复这些 retained 租约。私有备份的数据库包含所有租约及草稿，已引用文件照常进入加密媒体备份。
+公开导出仅包含公开内容实际引用的上传租约并保留 UUID。私有备份保护完整数据库和草稿，引用媒体进入加密副本。
 
-`media:pull` 仍可下载所有已引用文件，包括 KV 上传。恢复时把文件放回 `media/files/` 后按现有流程部署；KV 未命中时 Worker 会读取恢复的同地址静态副本。
+恢复时把所需文件放回 `media/files/` 并核对完整清单；KV 未命中时 Worker 会读取恢复的同地址静态副本。

@@ -34,9 +34,7 @@ export async function saveChips(_prev: ActionState, form: FormData): Promise<Act
     rows.push({ label, tone, sort: index });
   }
 
-  // Delete and insert travel in one `db.batch()` — a single atomic request —
-  // so a failed insert cannot leave the table empty. Same contract as
-  // scripts/db-import.mts.
+  // Replace the rows and update audit evidence in one transaction.
   const wipe = db.delete(schema.chips);
   await auditedBatch(
     schema.chips,

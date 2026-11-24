@@ -97,14 +97,40 @@ describe("request security and native admin", () => {
   });
 });
 
-describe("unprefixed public compatibility", () => {
+describe("legacy public route compatibility", () => {
   it.each([
+    ["/?source=old", "/en?source=old"],
+    ["/about", "/en/about"],
+    ["/intro", "/en/intro"],
+    ["/resume", "/en/resume"],
+    ["/blog", "/en/blog"],
+    ["/blog/frontend-deployment?x=%2f", "/en/blog/frontend-deployment?x=%2f"],
+    ["/blog/notes/a-career-imagined", "/en/blog/notes/a-career-imagined"],
+    ["/blog/tags/%E6%89%8B%E6%9C%AD", "/en/blog/tags/%E6%89%8B%E6%9C%AD"],
+    ["/blog/tags/100%2520", "/en/blog/tags/100%2520"],
+    ["/films", "/en/films"],
+    ["/films/odyssey", "/en/films/odyssey"],
+    ["/idols", "/en/idols"],
+    ["/idols/kobe", "/en/idols/kobe"],
+    ["/lab", "/en/lab"],
+    ["/lab/approach", "/en/lab/approach"],
+    ["/life", "/en/life"],
+    ["/moments", "/en/moments"],
+    ["/secrets", "/en/secrets"],
+    ["/secrets/a-career-imagined", "/en/secrets/a-career-imagined"],
     ["/software?app=file-tidy&x=a+b&x=%2f", "/en/software?app=file-tidy&x=a+b&x=%2f"],
     ["/blog/notes?section=writing&x=a%2Bb", "/en/life?section=writing&x=a%2Bb"],
     ["/blog/notes?section=life&section=it", "/en/life?section=life&section=it"],
     ["/blog/notes?section=it&section=life", "/en/blog?section=it&section=life"],
     ["/blog/notes", "/en/blog"],
     ["/lab/grove?next=https%3a%2f%2felse.example", "/en/lab/grove?next=https%3a%2f%2felse.example"],
+    ["/portfolio?app=file-tidy", "/en/software?app=file-tidy"],
+    ["/grove", "/en/lab/grove"],
+    ["/lab/grove-stage", "/en/lab/approach"],
+    ["/lab/album", "/en/lab"],
+    ["/lab/aurora", "/en/lab"],
+    ["/lab/grain", "/en/lab"],
+    ["/odyssey", "/en/films/odyssey"],
   ])("keeps the exact query in a same-origin redirect from %s", async (path, target) => {
     const next = vi.fn();
     const response = (await middleware!({
@@ -144,23 +170,60 @@ describe("unprefixed public compatibility", () => {
   );
 
   it.each([
+    ["/grove", "/lab/grove"],
+    ["/portfolio", "/software"],
+    ["/lab/grove-stage", "/lab/approach"],
+    ["/lab/album", "/lab"],
+    ["/lab/aurora", "/lab"],
+    ["/lab/grain", "/lab"],
+    ["/odyssey", "/films/odyssey"],
+  ])("keeps the locale and query in permanent redirects from %s", async (path, target) => {
+    for (const [locale, method] of [
+      ["zh", "GET"],
+      ["en", "HEAD"],
+    ]) {
+      const next = vi.fn();
+      const response = (await middleware!({
+        ...request(`/${locale}${path}?x=a+b&x=%2f`, {
+          method,
+          headers: { cookie: "NEXT_LOCALE=zh", "accept-language": "zh-CN" },
+        }),
+        next,
+      })) as Response;
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe(`/${locale}${target}?x=a+b&x=%2f`);
+      expect(response.headers.has("vary")).toBe(false);
+      expect(await response.text()).toBe("");
+      expect(next).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each([
     ["GET", "/software/"],
     ["GET", "/%73oftware"],
     ["GET", "/lab/%67rove"],
     ["GET", "/lab/grove%2F"],
     ["GET", "/lab/grove%5c"],
     ["GET", "/lab/grove%"],
-    ["GET", "/lab"], // Not in the verified root-scope set.
-    ["GET", "/lab/unlisted"],
-    ["GET", "/blog/notes/unlisted"],
+    ["GET", "/lab/bad.slug"],
+    ["GET", "/blog/notes/bad.slug"],
+    ["GET", "/blog/tags/broken%"],
+    ["GET", "/blog/tags/extra/path"],
+    ["GET", "/unlisted"],
+    ["GET", "/fr/grove"],
+    ["GET", "/en/%67rove"],
+    ["GET", "/en/portfolio/archive"],
     ["GET", "/zh/software?app=file-tidy"],
     ["GET", "/en/lab/grove"],
     ["GET", "/admin"],
     ["GET", "/api/health"],
+    ["GET", "/api/github/webhook"],
+    ["GET", "/icon.svg"],
     ["GET", "/rss.xml"],
     ["GET", "/sitemap.xml"],
     ["GET", "/zh/search.json"],
     ["POST", "/software"],
+    ["POST", "/en/portfolio"],
     ["OPTIONS", "/software"],
   ])("leaves %s %s to the existing router", async (method, path) => {
     const result = { response: new Response(null, { status: 404 }) };

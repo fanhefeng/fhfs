@@ -44,6 +44,16 @@ export const ENV_RULES: Record<string, Rule> = {
     },
     shape: "repository variables as a JSON object; supplied only by the cloud monitor workflow",
   },
+  PUBLIC_BACKUP_DATABASE_URL: {
+    required: false,
+    valid: (v) => /^postgres(ql)?:\/\/\S+$/.test(v),
+    shape: "a dedicated read-only Postgres URL for exporting published content",
+  },
+  MEDIA_INVENTORY_DATABASE_URL: {
+    required: false,
+    valid: (v) => /^postgres(ql)?:\/\/\S+$/.test(v),
+    shape: "a dedicated read-only Postgres URL for collecting public and private media references",
+  },
   BACKUP_RESTORE_DATABASE_URL: {
     required: false,
     valid: (v) => /^postgres(ql)?:\/\/\S+$/.test(v),
@@ -93,19 +103,17 @@ export const ENV_RULES: Record<string, Rule> = {
   DATABASE_URL_UNPOOLED: {
     required: false,
     valid: (v) => /^postgres(ql)?:\/\/\S+$/.test(v),
-    shape: "a postgres:// connection string (Neon's direct one; scripts and migrations prefer it)",
+    shape: "a postgres:// connection string (Neon's direct one, used by Node tooling)",
   },
   AUTH_SECRET: {
     required: true,
-    // `pnpm admin:password` mints 32 random bytes; anything much shorter is
-    // a placeholder someone forgot to replace.
     valid: (v) => v.length >= 32,
-    shape: "at least 32 characters — `pnpm admin:password` prints one",
+    shape: "at least 32 random characters",
   },
   ADMIN_PASSWORD_HASH: {
     required: true,
     valid: (v) => /^[0-9a-f]{16,}:[0-9a-f]{64,}$/.test(v),
-    shape: "`salt:hash` in hex, as `pnpm admin:password` prints it",
+    shape: "a hexadecimal scrypt salt and hash separated by a colon",
   },
   SITE_URL: {
     required: false,

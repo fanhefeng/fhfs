@@ -1,0 +1,75 @@
+name: backup
+on:
+  schedule:
+    - cron: "0 19 * * *" # 03:00 Asia/Shanghai.
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-snapshot
+  cancel-in-progress: false
+jobs:
+  snapshot:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name == 'workflow_dispatch' || vars.PUBLIC_BACKUP_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11.20.0
+          cache: true
+          run_install: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Fetch the last verified public snapshot
+        env:
+          REMOTE: https://github.com/${{ github.repository }}.git
+        run: |
+          git clone --depth 1 --branch db-snapshots "$REMOTE" "$RUNNER_TEMP/snapshot"
+          test -s "$RUNNER_TEMP/snapshot/backup/db.json"
+          test -s "$RUNNER_TEMP/snapshot/backup/snapshot-version.json"
+      - name: Export only published content
+        env:
+          PUBLIC_BACKUP_DATABASE_URL: ${{ secrets.PUBLIC_BACKUP_DATABASE_URL }}
+        run: pnpm exec tsx scripts/export-public-snapshot.mts "$RUNNER_TEMP/snapshot-next"
+      - name: Refuse incomplete or unaudited output
+        run: pnpm exec tsx scripts/db-snapshot-guard.mts "$RUNNER_TEMP/snapshot-next" "$RUNNER_TEMP/snapshot/backup/db.json"
+      - name: Commit the snapshot, if it says anything new
+        env:
+          SNAPSHOT_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          snap="$RUNNER_TEMP/snapshot"
+          next="$RUNNER_TEMP/snapshot-next"
+          if cmp -s "$next/db.json" "$snap/backup/db.json"; then
+            cp "$snap/backup/snapshot-version.json" "$next/snapshot-version.json"
+          else
+            node scripts/write-public-snapshot-version.mjs "$next"
+          fi
+
+          rm -rf "$snap/backup"
+          mv "$next" "$snap/backup"
+          cp docs/RECOVERY.md "$snap/RECOVERY.md"
+          # The public snapshot branch contains data only.
+          printf '{\n  "git": { "deploymentEnabled": false }\n}\n' > "$snap/vercel.json"
+          git -C "$snap" add -A
+          if git -C "$snap" diff --cached --quiet; then
+            echo "No change since the last snapshot"
+            exit 0
+          fi
+
+          git -C "$snap" -c user.name=github-actions[bot] -c user.email=41898282+github-actions[bot]@users.noreply.github.com commit -m "Snapshot of $(date -u +%Y-%m-%d)"
+          auth=$(printf 'x-access-token:%s' "$SNAPSHOT_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+            GIT_CONFIG_VALUE_0="Authorization: Basic $auth" \
+            git -C "$snap" push origin HEAD:db-snapshots

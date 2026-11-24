@@ -1,0 +1,124 @@
+name: private backup
+run-name: private backup / ${{ inputs.operation || (github.event.schedule == '17 20 * * *' && 'create') || (github.event.schedule == '47 21 1 */3 *' && 'verify') || (github.event.schedule == '53 22 7 * *' && 'restore-database') || 'health' }}
+
+on:
+  schedule:
+    - cron: "17 20 * * *" # Daily, 04:17 Asia/Shanghai.
+    - cron: "37 2,5,8,11,14,17,20,23 * * *" # Read-only health every three hours.
+    - cron: "47 21 1 */3 *" # Quarterly restore and byte verification.
+    - cron: "53 22 7 * *" # Monthly SQL restore drill, day 8 at 06:53 Asia/Shanghai.
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [create, health, verify, verify-database, restore-database, alert-test]
+        default: create
+
+permissions:
+  contents: read
+concurrency:
+  group: private-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && (github.event_name == 'workflow_dispatch' || (vars.PRIVATE_BACKUP_ENABLED == 'true' && (github.event.schedule != '53 22 7 * *' || vars.PRIVATE_RESTORE_ENABLED == 'true')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Select operation
+        id: operation
+        env:
+          REQUESTED: ${{ inputs.operation }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          operation=health
+          if [ "$SCHEDULE" = '17 20 * * *' ]; then operation=create; fi
+          if [ "$SCHEDULE" = '47 21 1 */3 *' ]; then operation=verify; fi
+          if [ "$SCHEDULE" = '53 22 7 * *' ]; then operation=restore-database; fi
+          if [ -n "$REQUESTED" ]; then operation="$REQUESTED"; fi
+          case "$operation" in create|health|verify|verify-database|restore-database|alert-test) ;; *) exit 1 ;; esac
+          echo "value=$operation" >> "$GITHUB_OUTPUT"
+      - name: Controlled alert drill
+        if: steps.operation.outputs.value == 'alert-test'
+        run: |
+          echo '::error::Controlled backup alert drill. No database or backup repository was accessed.'
+          exit 1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11.20.0
+          cache: true
+          run_install: false
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+        timeout-minutes: 3
+      # Cache is optional. A cache outage falls back to the bounded official download.
+      - name: Cache verified restic archive
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        timeout-minutes: 1
+        continue-on-error: true
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+        with:
+          path: ${{ runner.temp }}/fhfs-restic-download
+          key: restic-linux-amd64-${{ hashFiles('scripts/install-restic.sh') }}
+      - name: Install verified restic
+        timeout-minutes: 3
+        run: bash scripts/install-restic.sh "$RUNNER_TEMP/fhfs-restic-download" "$RUNNER_TEMP/fhfs-restic-bin"
+      - name: Install native backup clients
+        if: steps.operation.outputs.value != 'health'
+        timeout-minutes: 8
+        env:
+          OPERATION: ${{ steps.operation.outputs.value }}
+        run: |
+          if [ "$OPERATION" != health ]; then
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y postgresql-common
+            sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
+            sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y postgresql-client-18
+            echo /usr/lib/postgresql/18/bin >> "$GITHUB_PATH"
+          fi
+      - name: Run backup operation and verify freshness
+        if: steps.operation.outputs.value != 'restore-database'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          RESTIC_REPOSITORY: ${{ secrets.RESTIC_REPOSITORY }}
+          RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BACKUP_AWS_REGION }}
+          OPERATION: ${{ steps.operation.outputs.value }}
+        run: |
+          pnpm backup:private "$OPERATION"
+          if [ "$OPERATION" = create ]; then pnpm backup:private verify-database; fi
+          if [ "$OPERATION" != health ]; then pnpm backup:private health; fi
+      - name: Restore into the guarded disposable database
+        if: steps.operation.outputs.value == 'restore-database'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          RESTIC_REPOSITORY: ${{ secrets.RESTIC_REPOSITORY }}
+          RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ vars.BACKUP_AWS_REGION }}
+          BACKUP_RESTORE_DATABASE_URL: ${{ secrets.BACKUP_RESTORE_DATABASE_URL }}
+        run: |
+          pnpm backup:private restore-database
+          pnpm backup:private health
+      - name: Report failure without private data
+        if: failure()
+        env:
+          OPERATION: ${{ steps.operation.outputs.value }}
+        run: |
+          if [ "$OPERATION" = alert-test ]; then
+            echo '::error::Controlled notification test completed; this failure was intentional.'
+          else
+            echo '::error::Private backup failed. Inspect configuration and storage; private native-tool output is intentionally withheld.'
+          fi

@@ -19,6 +19,36 @@ async function authenticate(page: Page, expired = false) {
     ]);
 }
 
+test("the admin login exposes its installation manifest and same-origin icons", async ({
+  page,
+}) => {
+  await page.goto("/admin/login");
+  await expect(page.locator("link[rel='manifest']")).toHaveAttribute(
+    "href",
+    "/admin/manifest.webmanifest",
+  );
+  await expect(page.locator("link[rel='apple-touch-icon']")).toHaveAttribute(
+    "href",
+    "/admin/apple-icon",
+  );
+  const response = await page.request.get("/admin/manifest.webmanifest");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("application/manifest+json");
+  const manifest = await response.json();
+  expect(manifest.start_url).toBe("/admin");
+  expect(manifest.icons).toEqual(
+    expect.arrayContaining([
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/admin/apple-icon", sizes: "180x180", type: "image/png" },
+    ]),
+  );
+  for (const { src, type } of manifest.icons) {
+    const icon = await page.request.get(src);
+    expect(icon.status()).toBe(200);
+    expect(icon.headers()["content-type"]).toContain(type);
+  }
+});
+
 test("collapsing a new record preserves edits until the form is reset", async ({ page }) => {
   await authenticate(page);
   await page.goto("/admin/apps", { waitUntil: "networkidle" });

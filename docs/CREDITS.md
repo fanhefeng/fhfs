@@ -45,7 +45,7 @@
 有署名），F 由原版的 E 去掉底横而来、H 是照它的笔画新造的，不用字体；砖墙是 canvas 画的。
 
 同一块招牌也是首页的大门（`components/home/NeonSplash.tsx`），它的圆环与音符也是站标：favicon
-（`app/icon.svg`）、灵动岛和页脚上套着 `fhf` 的圆环（`components/neon/SignRing.tsx`）、OG 卡题头
+（`public/icon.svg`）、灵动岛和页脚上套着 `fhf` 的圆环（`components/neon/SignRing.tsx`）、OG 卡题头
 （`lib/server/ogMark.tsx`）都从同一份几何（`lib/neon/geometry.ts`）画出来。
 
 ## 手写动画

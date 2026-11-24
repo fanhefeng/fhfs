@@ -8,24 +8,20 @@ import { pageLocale } from "@/i18n/page";
 import { site } from "@/config/site";
 import { feedTypes } from "@/lib/server/seo";
 import { getPostsByTag } from "@/lib/server/content";
-import { decodeSegment } from "@/lib/routeParam";
 
 export async function loadPageData(input: PageProps<"/[locale]/blog/tags/[tag]">) {
   const { params } = input;
   const locale = await pageLocale(params);
-  const { tag: encoded } = await params;
-  const tag = decodeSegment(encoded);
-
+  const { tag } = await params;
   const posts = await getPostsByTag(tag, locale);
-  return { locale, encoded, tag, posts };
+  return { locale, tag, posts };
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/blog/tags/[tag]">): Promise<Metadata> {
-  const { locale, tag: encoded } = await params;
+  const { locale, tag } = await params;
   if (!hasLocale(routing.locales, locale)) return {};
-  const tag = decodeSegment(encoded);
   const t = await getTranslations({ locale, namespace: "blog" });
   const posts = await getPostsByTag(tag, locale);
   return {

@@ -63,6 +63,12 @@ describe("published snapshot", () => {
     vi.setSystemTime(Date.now() + 30_001);
     await expect(read()).resolves.toBe(verified);
     expect(fetch).toHaveBeenCalledTimes(4);
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      "https://raw.githubusercontent.com/fanhefeng/fhfs/db-snapshots/backup/snapshot-version.json",
+      "https://raw.githubusercontent.com/fanhefeng/fhfs/db-snapshots/backup/db.json",
+      "https://raw.githubusercontent.com/fanhefeng/fhfs/db-snapshots/backup/snapshot-version.json",
+      "https://raw.githubusercontent.com/fanhefeng/fhfs/db-snapshots/backup/db.json",
+    ]);
   });
 
   it("uses published locale editions and excludes article bodies from the index", () => {

@@ -139,9 +139,9 @@ describe("cloud monitoring policy", () => {
     const snapshot = run({ id: 3 });
     const checks = monitorChecks([], [browser], [snapshot], NATURAL_CREATE_DEADLINE - 1);
     expect(checks.some((check) => check.label === "natural create")).toBe(false);
-    expect(assessCheck(checks.find((check) => check.label === "browser flows")!).successful).toBe(
-      browser,
-    );
+    expect(
+      assessCheck(checks.find((check) => check.label === "native admin flows")!).successful,
+    ).toBe(browser);
     expect(assessCheck(checks.find((check) => check.label === "public snapshot")!).successful).toBe(
       snapshot,
     );

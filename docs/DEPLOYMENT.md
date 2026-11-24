@@ -1,6 +1,15 @@
-# Void 部署
+# Cloudflare 与 Vercel 部署
 
 新站已通过 Void 官方 CLI 发布到 Cloudflare Worker `fhfs`，线上地址为 [fhfs.fhfs.workers.dev](https://fhfs.fhfs.workers.dev)。2026-10-19 首次成功发布版本：`f8f8e4c8-a1f3-4bae-8cc6-2ceb2b8ea15a`。
+
+## 双平台部署
+
+两个站点从同一份 TanStack Start 代码构建。Cloudflare 使用 Void 和现有的 `fhfs` Worker，Vercel 使用 Nitro 和现有的 `fhfs-projects/fhfs` 项目。两端各自运行公开页面、API 和后台，沿用同一 Neon schema 和媒体 Worker。
+
+- Cloudflare 使用 `pnpm build` 和 `pnpm deploy:cloudflare`，继续服务 `fhfs.fhfs.workers.dev`。
+- Vercel 使用 `pnpm build:vercel`，通过 `vercel.json` 选择 TanStack Start。产物位于 `.vercel/output`，默认生产地址为 `https://fhfs.vercel.app`。需要变更规范地址时，设置该项目的 `VITE_SITE_URL`。
+- Vercel Production 配置 `DATABASE_URL`、独立生成的 `AUTH_SECRET`、`ADMIN_PASSWORD_HASH` 和兼容共享媒体 Worker 的 `MEDIA_UPLOAD_SECRET`。按目标服务配置 `GITHUB_WEBHOOK_SECRET` 和可选 `GITHUB_TOKEN`。Preview 使用隔离数据和会话配置，生产密钥只进入 Production。
+- 在两端分别核对生产域名、公开页面、搜索、RSS、分享图和后台登录边界。后台写入验收只使用明确隔离的测试数据库与媒体。备份、巡检、媒体清理和 Webhook 的交接见 [OPERATIONS.md](OPERATIONS.md)。
 
 ## 2026-11-11 断环印记组件体系
 
@@ -61,13 +70,13 @@
 不降低 `pnpm audit --audit-level low` 的发布门槛。修复范围与兼容性变化见
 [Hono 4.13.16 官方发布说明](https://github.com/honojs/hono/releases/tag/v4.13.16)。
 
-工作流位于 `.github/workflows/check.yml`：推送到 `main` 后先运行 `pnpm check` 和 `pnpm build`，成功后用 Void 发布到现有 Worker `fhfs`，最后检查 sitemap 中的公开页面、本部署的后台鉴权和分享图片。PR 只运行检查；Actions 页面也可手动运行工作流。
+工作流位于 `.github/workflows/check.yml`：推送到 `main` 后先运行 `pnpm check`、`pnpm build` 和 `pnpm build:vercel`，成功后用 Void 发布到现有 Worker `fhfs`，最后检查 sitemap 中的公开页面、本部署的后台鉴权和分享图片。PR 只运行检查；Actions 页面也可手动运行工作流。
 
 部署任务通过 `fhfs-production` 并发组串行执行，不中断正在进行的发布。每次发布前核对远端 `main` 的提交，避免较旧的检查任务覆盖新版本。
 
 需要在仓库 Actions Secrets 中保存专用的 `CLOUDFLARE_API_TOKEN`，权限限制到此账户下的目标 Worker。账户 ID 和 `workers.dev` 子域是公开配置，已在工作流中固定。`DATABASE_URL` 继续保存在现有 Worker 的加密 Secret 中，不需要复制到 GitHub，也不运行数据库迁移。
 
-只使用 Cloudflare 部署目标；`pnpm run deploy` 和 `pnpm run deploy:cloudflare` 都先生成 `.generated/public` 中的哈希资源，再显式选择 `--platform cloudflare`。Void CLI 内部构建不运行 `package.json` 的 build 脚本，因此每次发布都必须执行资源生成，不能依赖本地已有目录或其他 CI 任务的构建产物。Void Cloud 托管部署已取消。
+`pnpm run deploy` 和 `pnpm run deploy:cloudflare` 都先生成 `.generated/public` 中的哈希资源，再显式选择 `--platform cloudflare`。Void CLI 内部构建不运行 `package.json` 的 build 脚本，因此每次发布都必须执行资源生成，不能依赖本地已有目录或其他 CI 任务的构建产物。Void Cloud 托管部署已取消。
 
 ## 现有 Cloudflare 部署
 
@@ -80,7 +89,7 @@ pnpm exec void connect --platform cloudflare
 
 ## 最小生产配置
 
-应用与后台独立于原站，数据和媒体服务仍按项目约定共享。以下三项必须作为本 Worker 的加密 Secret 配置，不能提交到 GitHub、不能使用 `VITE_` 前缀：
+应用与后台由各自的部署处理，数据和媒体服务仍按项目约定共享。以下三项必须各自在运行平台配置为加密 Secret，不能提交到 GitHub、不能使用 `VITE_` 前缀：
 
 - `DATABASE_URL`：现有 Neon 数据库连接串，沿用兼容 schema。
 - `AUTH_SECRET`：为本应用生成的至少 32 字符随机会话密钥。
@@ -139,7 +148,7 @@ Smoke 读取 sitemap 并检查所有公开页面，以及双语 RSS/搜索、本
 
 2026-10-19 发布验证通过：`pnpm check` 的 411 项测试、生产构建，以及正式地址上的 120 个 sitemap 页面和上述接口检查。浏览器另验证了首页欢迎交互、页面内导航和语言切换。
 
-部署不运行数据库迁移、种子或导入脚本。`void info` 应显示没有需要创建的持久化资源。共享数据库的 schema 继续由 `fhfs-site` 管理。
+部署不运行数据库迁移、种子或导入脚本。`void info` 应显示没有需要创建的持久化资源。共享数据库的 schema 与迁移历史在本仓库的 `src/db/schema.ts` 和 `drizzle/`。
 
 GitHub Actions 在 main 检查通过后自动发布。排障时可在 Actions 页面重跑工作流，或使用 `pnpm run deploy:cloudflare` 手动发布。
 

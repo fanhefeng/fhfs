@@ -25,11 +25,10 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
     return { error: "服务器未配置管理员密码。" };
   }
 
-  const headerList = await headers();
-  // Trusting the leftmost XFF entry is only sound behind a proxy that
-  // overwrites the header (Vercel does). Self-hosting without one would let
-  // a client mint fresh identities per request and reset its own throttle.
-  const ip = headerList.get("cf-connecting-ip") ?? headerList.get("x-real-ip") ?? "unknown";
+  // Only the current platform's ingress sets a trusted client IP header.
+  const clientIpHeader =
+    import.meta.env.FHFS_TARGET === "vercel" ? "x-real-ip" : "cf-connecting-ip";
+  const ip = (await headers()).get(clientIpHeader) ?? "unknown";
 
   const { throttled } = await recordAttempt(ip);
   if (throttled) {
