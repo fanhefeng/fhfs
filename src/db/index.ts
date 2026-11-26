@@ -4,6 +4,7 @@ import { neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { withConnectionRetry } from "../lib/retryFetch";
 import { observePublicReadAttempt } from "../lib/server/publicRead";
+import { searchTransportSignal } from "../lib/server/cacheScope";
 import * as schema from "./schema";
 
 /**
@@ -42,7 +43,12 @@ if (!url) {
  * insert into a serial-keyed table would not be.
  */
 neonConfig.fetchFunction = withConnectionRetry(
-  (input, init) => fetch(input, init),
+  (input, init) => {
+    const deadline = searchTransportSignal();
+    if (!deadline) return fetch(input, init);
+    const signal = init?.signal ? AbortSignal.any([deadline, init.signal]) : deadline;
+    return fetch(input, { ...init, signal });
+  },
   undefined,
   undefined,
   observePublicReadAttempt,

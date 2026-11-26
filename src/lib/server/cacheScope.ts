@@ -5,6 +5,16 @@ const scope = new AsyncLocalStorage<{
   pending: Map<string, Promise<unknown>>;
   snapshotMiss?: boolean;
 }>();
+const searchTransport = new AsyncLocalStorage<AbortSignal>();
+
+/** Only the anonymous search route sets a deadline for its own Neon reads. */
+export function withSearchTransportSignal<T>(signal: AbortSignal, read: () => T): T {
+  return searchTransport.run(signal, read);
+}
+
+export function searchTransportSignal() {
+  return searchTransport.getStore();
+}
 
 /** Pending I/O promises belong to their HTTP request, never the Worker isolate. */
 export function withContentCacheBypass<T>(bypass: boolean, read: () => T): T {

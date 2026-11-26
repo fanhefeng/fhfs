@@ -16,12 +16,15 @@ import { routing } from "./routing";
 function requestLocale() {
   return new URL(getRequest().url).pathname.split("/")[1] === "en" ? "en" : "zh";
 }
+export async function getDefaultMessages(locale: string): Promise<AbstractIntlMessages> {
+  return locale === "en"
+    ? (await import("../../messages/en.json")).default
+    : (await import("../../messages/zh.json")).default;
+}
+
 export async function getMessages(locale: string = requestLocale()): Promise<AbstractIntlMessages> {
   const l = locale === "en" ? "en" : routing.defaultLocale;
-  const catalogue =
-    l === "en"
-      ? (await import("../../messages/en.json")).default
-      : (await import("../../messages/zh.json")).default;
+  const catalogue = await getDefaultMessages(l);
   return merge(catalogue, await getCopyOverrides(l)) as AbstractIntlMessages;
 }
 type Translator = {
