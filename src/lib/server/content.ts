@@ -941,7 +941,6 @@ export const getSearchContent = unstable_cache(
   },
   ["search-content"],
   cacheOptions(TAGS.nav, TAGS.posts, TAGS.secrets, TAGS.apps, TAGS.films, TAGS.idols, TAGS.moments),
-  snapshotContent.search,
 );
 
 /** One list, filtered per surface — Header, Footer, FullNav and the sitemap.

@@ -1,8 +1,7 @@
-import { hasLocale } from "use-intl";
-import { getTranslations } from "@/i18n/server";
+import { createTranslator, hasLocale } from "use-intl/core";
 import { routing, type Locale } from "@/i18n/routing";
 import { site } from "@/config/site";
-import { getSearchContent } from "@/lib/server/content";
+import { loadSearchResponse } from "@/lib/server/searchAvailability";
 import { inLocale } from "@/lib/localized";
 import { stampInZone } from "@/lib/moments";
 import type { SearchEntry } from "@/lib/search";
@@ -26,17 +25,24 @@ export function generateStaticParams() {
  * half that on the wire, and a search that missed an old line would be the
  * one thing the board cannot do already.
  */
-export async function GET(_request: Request, { params }: { params: Promise<{ locale: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) return new Response("Not found", { status: 404 });
   const l: Locale = locale;
-  // Copy overrides keep their independent fallback to the file catalogue.
-  const [tn, tl, ts, { nav, posts, secrets, apps, films, idols, moments }] = await Promise.all([
-    getTranslations({ locale: l, namespace: "nav" }),
-    getTranslations({ locale: l, namespace: "lab" }),
-    getTranslations({ locale: l, namespace: "software" }),
-    getSearchContent(l),
-  ]);
+  const state = await loadSearchResponse(l, request.signal);
+  if (!state) {
+    return new Response("Search temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "private, no-store", "Retry-After": "30" },
+    });
+  }
+  const {
+    content: { nav, posts, secrets, apps, films, idols, moments },
+    messages,
+  } = state;
+  const translate = (namespace: string) =>
+    createTranslator({ locale: l, namespace, messages, timeZone: site.timeZone });
+  const [tn, tl, ts] = [translate("nav"), translate("lab"), translate("software")];
 
   const entries: SearchEntry[] = [
     ...nav.map((row) => ({
@@ -103,5 +109,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ loc
       })),
   ];
 
-  return Response.json(entries);
+  return Response.json(
+    entries,
+    state.snapshotAt
+      ? {
+          headers: {
+            "Cache-Control": "private, no-store",
+            "X-FHFS-Content-Status": "snapshot",
+            "X-FHFS-Snapshot-At": state.snapshotAt,
+          },
+        }
+      : undefined,
+  );
 }
